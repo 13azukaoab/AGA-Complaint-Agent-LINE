@@ -3,7 +3,7 @@ const path = require('path');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const KEY_FILE = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
-const SHEET_NAME = 'Sheet1'; // ชื่อ tab ใน Google Sheet (ค่าเริ่มต้น)
+const SHEET_NAME = 'ชีต1'; // ชื่อ tab ใน Google Sheet
 
 /**
  * สร้าง Google Sheets client ที่ authenticate ด้วย Service Account
@@ -33,20 +33,24 @@ async function appendComplaint(data) {
   try {
     const sheets = await getSheetClient();
     const row = [
-      data.timestamp,
-      data.groupId,
-      data.senderId,
-      data.pestType,
-      data.location,
-      data.severity,
-      data.rawMessage,
-      data.summary,
+      data.timestamp,    // A — Timestamp
+      data.groupId,      // B — Group ID
+      data.senderId,     // C — Sender ID
+      data.pestType,     // D — Pest ที่แจ้ง
+      data.location,     // E — สถานที่/อาคาร
+      data.floor,        // F — ชั้น
+      data.severity,     // G — ระดับ
+      data.contactName,  // H — ผู้ติดต่อ
+      data.contactPhone, // I — เบอร์ติดต่อ
+      data.rawMessage,   // J — ข้อความต้นฉบับ
+      data.summary,      // K — สรุป
     ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:H`,
+      range: `${SHEET_NAME}!A1:K1`,
       valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
       requestBody: {
         values: [row],
       },

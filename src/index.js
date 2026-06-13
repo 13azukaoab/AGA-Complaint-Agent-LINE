@@ -59,8 +59,11 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
     console.log('   ✅ พบการแจ้งปัญหา!');
     console.log('   🐛 แมลง   :', result.pest_type);
-    console.log('   📍 สถานที่:', result.location);
+    console.log('   🏢 สถานที่:', result.location);
+    console.log('   🏬 ชั้น   :', result.floor);
     console.log('   ⚡ ระดับ  :', result.severity);
+    console.log('   👤 ติดต่อ :', result.contact_name);
+    console.log('   📞 เบอร์  :', result.contact_phone);
     console.log('   📝 สรุป   :', result.summary);
 
     // บันทึกลง Google Sheets
@@ -70,7 +73,10 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       senderId: event.source.userId || 'ไม่ระบุ',
       pestType: result.pest_type,
       location: result.location,
+      floor: result.floor || 'ไม่ระบุ',
       severity: result.severity,
+      contactName: result.contact_name || 'ไม่ระบุ',
+      contactPhone: result.contact_phone || 'ไม่ระบุ',
       rawMessage: text,
       summary: result.summary,
     });
