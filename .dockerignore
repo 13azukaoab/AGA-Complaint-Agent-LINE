@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+
+# Secrets — ห้ามติดไปใน image เด็ดขาด
+credentials/
+Secret Key.env
+*.env
+
+# ไฟล์ที่ไม่จำเป็นใน container
+docs/
+*.png
+*.md
+test_*.js
