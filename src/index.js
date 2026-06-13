@@ -12,8 +12,36 @@ const lineConfig = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 };
 
+const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+
+async function getGroupName(groupId) {
+  try {
+    const res = await fetch(`https://api.line.me/v2/bot/group/${groupId}/summary`, {
+      headers: { 'Authorization': `Bearer ${LINE_TOKEN}` }
+    });
+    if (!res.ok) return 'ไม่ระบุ';
+    const data = await res.json();
+    return data.groupName || 'ไม่ระบุ';
+  } catch (e) {
+    return 'ไม่ระบุ';
+  }
+}
+
+async function getMemberName(groupId, userId) {
+  try {
+    const res = await fetch(`https://api.line.me/v2/bot/group/${groupId}/member/${userId}`, {
+      headers: { 'Authorization': `Bearer ${LINE_TOKEN}` }
+    });
+    if (!res.ok) return 'ไม่ระบุ';
+    const data = await res.json();
+    return data.displayName || 'ไม่ระบุ';
+  } catch (e) {
+    return 'ไม่ระบุ';
+  }
+}
+
 const allowedGroups = process.env.ALLOWED_GROUP_IDS
-  ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim())
+  ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
   : [];
 
 app.post('/webhook', middleware(lineConfig), async (req, res) => {
@@ -29,21 +57,21 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
     const timestamp = new Date(event.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
-    // รูปภาพ
+    const groupName = await getGroupName(groupId);
+    const senderName = event.source.userId
+      ? await getMemberName(groupId, event.source.userId)
+      : 'ไม่ระบุ';
+
     if (event.type === 'message' && event.message.type === 'image') {
-      console.log('🖼️  รูปภาพจากกลุ่ม:', groupId);
-      console.log('   เวลา:', timestamp);
-      console.log('   [แนบรูปภาพ]');
-      console.log('---');
+      console.log('🖼️  รูปภาพจากกลุ่ม:', groupName);
       continue;
     }
 
-    // ข้อความ text
     if (event.type !== 'message' || event.message.type !== 'text') continue;
 
     const text = event.message.text;
     console.log(`\n📨 ข้อความ: "${text}"`);
-    console.log('   เวลา:', timestamp);
+    console.log('   กลุ่ม:', groupName, '| ผู้ส่ง:', senderName);
 
     const result = await analyzeComplaint(text);
 
@@ -58,19 +86,13 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     }
 
     console.log('   ✅ พบการแจ้งปัญหา!');
-    console.log('   🐛 แมลง   :', result.pest_type);
-    console.log('   🏢 สถานที่:', result.location);
-    console.log('   🏬 ชั้น   :', result.floor);
-    console.log('   ⚡ ระดับ  :', result.severity);
-    console.log('   👤 ติดต่อ :', result.contact_name);
-    console.log('   📞 เบอร์  :', result.contact_phone);
-    console.log('   📝 สรุป   :', result.summary);
 
-    // บันทึกลง Google Sheets
     await appendComplaint({
       timestamp,
       groupId,
       senderId: event.source.userId || 'ไม่ระบุ',
+      groupName,
+      senderName,
       pestType: result.pest_type,
       location: result.location,
       floor: result.floor || 'ไม่ระบุ',

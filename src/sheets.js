@@ -2,17 +2,28 @@ const { google } = require('googleapis');
 const path = require('path');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const KEY_FILE = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
 const SHEET_NAME = 'ชีต1'; // ชื่อ tab ใน Google Sheet
 
+// Local dev: ใช้ไฟล์ JSON โดยตรง
+// Cloud Run: ใช้ GOOGLE_APPLICATION_CREDENTIALS ที่ชี้ไปยัง Secret Manager
+const LOCAL_KEY_FILE = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
+
 /**
- * สร้าง Google Sheets client ที่ authenticate ด้วย Service Account
+ * สร้าง Google Sheets client
+ * - Local: อ่าน JSON key จาก credentials/
+ * - Cloud Run: ใช้ GOOGLE_APPLICATION_CREDENTIALS env var (mount จาก Secret Manager)
  */
 async function getSheetClient() {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: KEY_FILE,
+  const authOptions = {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
+  };
+
+  // ถ้าไม่มี env var → ใช้ไฟล์ local (สำหรับ dev เท่านั้น)
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    authOptions.keyFile = LOCAL_KEY_FILE;
+  }
+
+  const auth = new google.auth.GoogleAuth(authOptions);
   const authClient = await auth.getClient();
   return google.sheets({ version: 'v4', auth: authClient });
 }
@@ -36,19 +47,21 @@ async function appendComplaint(data) {
       data.timestamp,    // A — Timestamp
       data.groupId,      // B — Group ID
       data.senderId,     // C — Sender ID
-      data.pestType,     // D — Pest ที่แจ้ง
-      data.location,     // E — สถานที่/อาคาร
-      data.floor,        // F — ชั้น
-      data.severity,     // G — ระดับ
-      data.contactName,  // H — ผู้ติดต่อ
-      data.contactPhone, // I — เบอร์ติดต่อ
-      data.rawMessage,   // J — ข้อความต้นฉบับ
-      data.summary,      // K — สรุป
+      data.groupName,    // D — ชื่อกลุ่ม
+      data.senderName,   // E — ชื่อผู้แจ้ง
+      data.pestType,     // F — Pest ที่แจ้ง
+      data.location,     // G — สถานที่/อาคาร
+      data.floor,        // H — ชั้น
+      data.severity,     // I — ระดับ
+      data.contactName,  // J — ผู้ติดต่อ
+      data.contactPhone, // K — เบอร์ติดต่อ
+      data.rawMessage,   // L — ข้อความต้นฉบับ
+      data.summary,      // M — สรุป
     ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A1:K1`,
+      range: `${SHEET_NAME}!A1:M1`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
