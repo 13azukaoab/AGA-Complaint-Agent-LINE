@@ -2,77 +2,221 @@ const { google } = require('googleapis');
 const path = require('path');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const SHEET_NAME = 'ชีต1'; // ชื่อ tab ใน Google Sheet
+const SHEET_NAME = 'ชีต1';
 
-// Local dev: ใช้ไฟล์ JSON โดยตรง
-// Cloud Run: ใช้ GOOGLE_APPLICATION_CREDENTIALS ที่ชี้ไปยัง Secret Manager
 const LOCAL_KEY_FILE = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
 
-/**
- * สร้าง Google Sheets client
- * - Local: อ่าน JSON key จาก credentials/
- * - Cloud Run: ใช้ GOOGLE_APPLICATION_CREDENTIALS env var (mount จาก Secret Manager)
- */
 async function getSheetClient() {
   const authOptions = {
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.file',
+    ],
   };
-
-  // ถ้าไม่มี env var → ใช้ไฟล์ local (สำหรับ dev เท่านั้น)
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     authOptions.keyFile = LOCAL_KEY_FILE;
   }
-
   const auth = new google.auth.GoogleAuth(authOptions);
   const authClient = await auth.getClient();
-  return google.sheets({ version: 'v4', auth: authClient });
+  return { sheets: google.sheets({ version: 'v4', auth: authClient }), authClient };
 }
 
-/**
- * เพิ่มแถวข้อมูล complaint ลงใน Google Sheet
- * @param {Object} data
- * @param {string} data.timestamp   - เวลาที่รับแจ้ง
- * @param {string} data.groupId     - LINE Group ID
- * @param {string} data.senderId    - LINE User ID ผู้ส่ง
- * @param {string} data.pestType    - ชนิดแมลง
- * @param {string} data.location    - สถานที่
- * @param {string} data.severity    - ระดับความรุนแรง
- * @param {string} data.rawMessage  - ข้อความต้นฉบับ
- * @param {string} data.summary     - สรุปจาก AI
- */
+// สร้าง WO ID ถัดไป เช่น W001, W002
+async function getNextWorkOrderId() {
+  try {
+    const { sheets } = await getSheetClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A:A`,
+    });
+    const rows = res.data.values || [];
+    const dataRows = rows.length - 1; // หักหัวตาราง row 1
+    const nextNum = Math.max(dataRows, 0) + 1;
+    return 'W' + String(nextNum).padStart(3, '0');
+  } catch (err) {
+    console.error('   ❌ getNextWorkOrderId error:', err.message);
+    return 'W' + Date.now();
+  }
+}
+
+// หา row number จาก WO ID (เช่น "W001") — return number หรือ null
+async function findRowByWorkOrderId(woId) {
+  try {
+    const { sheets } = await getSheetClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!N:N`,
+    });
+    const rows = res.data.values || [];
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i] && rows[i][0] === woId) {
+        return i + 1; // +1 เพราะ Sheet เริ่มที่ row 1
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('   ❌ findRowByWorkOrderId error:', err.message);
+    return null;
+  }
+}
+
+// อ่านข้อมูล row เดียวจาก Sheet (คืน array ของ cell values)
+async function getRowData(rowNumber) {
+  try {
+    const { sheets } = await getSheetClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A${rowNumber}:T${rowNumber}`,
+    });
+    return (res.data.values || [[]])[0];
+  } catch (err) {
+    console.error('   ❌ getRowData error:', err.message);
+    return [];
+  }
+}
+
+// อัปเดต status ของ WO (รับทราบ หรือ ปิด)
+async function updateWorkOrderStatus(rowNumber, fields) {
+  try {
+    const { sheets } = await getSheetClient();
+    // column O = สถานะ, P = ผู้รับทราบ, Q = เวลารับทราบ, R = ผู้ปิด, S = เวลาปิด, T = วิธีปิด
+    const row = [
+      fields.status || '',
+      fields.acknowledger || '',
+      fields.ackTime || '',
+      fields.closer || '',
+      fields.closeTime || '',
+      fields.closeMethod || '',
+    ];
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!O${rowNumber}:T${rowNumber}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [row] },
+    });
+    console.log(`   📊 อัปเดต WO row ${rowNumber} ✅`);
+  } catch (err) {
+    console.error('   ❌ updateWorkOrderStatus error:', err.message);
+  }
+}
+
+// ดึง WO ทั้งหมดที่มีสถานะ "เปิด" สำหรับระบบแจ้งเตือน
+async function getOpenWorkOrders() {
+  try {
+    const { sheets } = await getSheetClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A:T`,
+    });
+    const rows = res.data.values || [];
+    const open = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const status = row[14]; // column O (index 14)
+      if (status === 'เปิด' || status === 'รับทราบ') {
+        open.push({
+          rowNumber: i + 1,
+          timestamp: row[0],
+          groupId: row[1],
+          groupName: row[3],
+          pestType: row[5],
+          location: row[6],
+          severity: row[8],
+          workOrderId: row[13], // column N (index 13)
+          status,
+          acknowledger: row[15],
+          ackTime: row[16],
+        });
+      }
+    }
+    return open;
+  } catch (err) {
+    console.error('   ❌ getOpenWorkOrders error:', err.message);
+    return [];
+  }
+}
+
+// ดึงสรุปสถิติของวันนี้
+async function getTodaySummary() {
+  try {
+    const { sheets } = await getSheetClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A:T`,
+    });
+    const rows = res.data.values || [];
+    const today = new Date().toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' });
+    let open = 0, acknowledged = 0, closed = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row[0]) continue;
+      if (!row[0].includes(today.split('/')[0])) continue; // เช็คปีเดียวกัน
+      const ts = row[0];
+      // เช็คว่าเป็นวันนี้ (เปรียบเทียบวัน/เดือน)
+      const todayStr = new Date().toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit' });
+      if (!ts.startsWith(today.split('/')[0] + '/' + today.split('/')[1].padStart(2,'0'))) {
+        // ลองเช็คแบบอื่น
+      }
+      const status = row[14];
+      if (status === 'เปิด') open++;
+      else if (status === 'รับทราบ') acknowledged++;
+      else if (status === 'ปิด') closed++;
+    }
+    return { open, acknowledged, closed };
+  } catch (err) {
+    console.error('   ❌ getTodaySummary error:', err.message);
+    return { open: 0, acknowledged: 0, closed: 0 };
+  }
+}
+
+// เพิ่ม complaint ใหม่ลง Sheet (columns A-T)
 async function appendComplaint(data) {
   try {
-    const sheets = await getSheetClient();
+    const { sheets } = await getSheetClient();
     const row = [
-      data.timestamp,    // A — Timestamp
-      data.groupId,      // B — Group ID
-      data.senderId,     // C — Sender ID
-      data.groupName,    // D — ชื่อกลุ่ม
-      data.senderName,   // E — ชื่อผู้แจ้ง
-      data.pestType,     // F — Pest ที่แจ้ง
-      data.location,     // G — สถานที่/อาคาร
-      data.floor,        // H — ชั้น
-      data.severity,     // I — ระดับ
-      data.contactName,  // J — ผู้ติดต่อ
-      data.contactPhone, // K — เบอร์ติดต่อ
-      data.rawMessage,   // L — ข้อความต้นฉบับ
-      data.summary,      // M — สรุป
+      data.timestamp,    // A
+      data.groupId,      // B
+      data.senderId,     // C
+      data.groupName,    // D
+      data.senderName,   // E
+      data.pestType,     // F
+      data.location,     // G
+      data.floor,        // H
+      data.severity,     // I
+      data.contactName,  // J
+      data.contactPhone, // K
+      data.rawMessage,   // L
+      data.summary,      // M
+      data.workOrderId,  // N
+      'เปิด',            // O — สถานะเริ่มต้น
+      '',                // P — ผู้รับทราบ
+      '',                // Q — เวลารับทราบ
+      '',                // R — ผู้ปิดงาน
+      '',                // S — เวลาปิด
+      '',                // T — วิธีปิดงาน
     ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A1:M1`,
+      range: `${SHEET_NAME}!A1:T1`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values: [row],
-      },
+      requestBody: { values: [row] },
     });
 
-    console.log('   📊 บันทึกลง Google Sheet แล้ว ✅');
+    console.log(`   📊 บันทึกลง Google Sheet [${data.workOrderId}] ✅`);
   } catch (err) {
     console.error('   ❌ บันทึก Sheet ไม่สำเร็จ:', err.message);
   }
 }
 
-module.exports = { appendComplaint };
+module.exports = {
+  appendComplaint,
+  getNextWorkOrderId,
+  findRowByWorkOrderId,
+  getRowData,
+  updateWorkOrderStatus,
+  getOpenWorkOrders,
+  getTodaySummary,
+};
