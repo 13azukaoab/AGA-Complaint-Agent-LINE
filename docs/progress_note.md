@@ -57,12 +57,24 @@
 
 ---
 
+### Phase 4 — Google Cloud Run (เสร็จ 100% ✅)
+- สร้าง `Dockerfile` + `.dockerignore` ✅
+- แก้ `src/sheets.js` ให้รองรับ Cloud Run (ใช้ GOOGLE_APPLICATION_CREDENTIALS env var) ✅
+- สร้าง Artifact Registry repo `cloud-run-source-deploy` ✅
+- เก็บ Secrets ทั้งหมดใน Secret Manager (6 ตัว) ✅
+- Deploy สำเร็จ: `aga-complaint-agent-396358198178.asia-southeast1.run.app` ✅
+- อัปเดต LINE Webhook URL → Verify Success ✅
+- ทดสอบ end-to-end ผ่าน: LINE → Gemini → Sheet ✅
+- ตั้ง `--no-cpu-throttling` + `--memory=512Mi` เพื่อให้ async task ทำงานได้ ✅
+- เปิดรับทุกกลุ่ม (ไม่จำกัด Group ID) ✅
+- Gemini API Key ใหม่: ผูกกับ project `457755056139` (AGA Complaint Agent-LINE) ✅
+
+---
+
 ## 🔜 สิ่งที่เหลือ
 
 | Phase | งาน | สถานะ |
 |-------|-----|--------|
-| 4 | สร้าง `Dockerfile` | ยังไม่เริ่ม |
-| 4 | Deploy บน Google Cloud Run | ยังไม่เริ่ม |
 | 5 | เพิ่มวิเคราะห์รูปภาพแมลงด้วย Vision AI | ยังไม่เริ่ม — model รองรับแล้ว |
 
 ---
