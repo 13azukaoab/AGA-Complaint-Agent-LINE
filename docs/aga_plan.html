@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGA Complaint Agent — Roadmap</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans Thai', sans-serif;
+    background: #0a0e1a;
+    color: #f0f4ff;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* ── HEADER ── */
+  .header {
+    background: #0d1530;
+    border: 1px solid #006e60;
+    border-radius: 20px;
+    padding: 36px 40px;
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg, transparent, transparent 39px, #111928 39px, #111928 40px
+    );
+    pointer-events: none;
+  }
+  .header h1 {
+    font-size: 2.6rem; font-weight: 700;
+    color: #f0f4ff; position: relative; z-index: 1;
+  }
+  .header .sub {
+    color: #00c9b1; font-size: 1.05rem; margin-top: 10px;
+    position: relative; z-index: 1;
+  }
+  .header .meta {
+    color: #3a4560; font-size: 0.8rem; margin-top: 8px;
+    font-family: monospace; position: relative; z-index: 1;
+  }
+
+  /* ── PHASE GRID ── */
+  .phase-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  @media(max-width: 768px) { .phase-grid { grid-template-columns: 1fr; } }
+
+  .phase-card {
+    background: #1e2540;
+    border-radius: 18px;
+    border: 2px solid var(--accent);
+    overflow: hidden;
+    position: relative;
+  }
+  .phase-card::before {
+    content: '';
+    display: block;
+    height: 6px;
+    background: var(--accent);
+  }
+  .phase-header {
+    padding: 18px 20px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .phase-num {
+    font-size: 1.8rem; font-weight: 700;
+    color: var(--accent); line-height: 1;
+  }
+  .phase-title {
+    font-size: 1.05rem; font-weight: 600;
+    color: #f0f4ff; margin-top: 4px;
+  }
+  .status-badge {
+    font-size: 0.72rem; font-family: monospace;
+    padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent); white-space: nowrap;
+  }
+  .divider {
+    height: 1px; background: #3a4560;
+    margin: 0 16px 12px;
+  }
+  .items { padding: 0 20px 16px; list-style: none; }
+  .items li {
+    display: flex; align-items: flex-start;
+    gap: 10px; padding: 5px 0;
+    font-size: 0.9rem; color: #f0f4ff;
+  }
+  .items li::before {
+    content: '';
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0; margin-top: 6px;
+  }
+  .stack-row {
+    padding: 10px 20px 18px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .stack-label {
+    font-size: 0.72rem; font-family: monospace;
+    color: #3a4560; margin-right: 4px;
+  }
+  .tag {
+    font-size: 0.72rem; font-family: monospace;
+    padding: 3px 10px; border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+
+  /* phase colours */
+  .p1 { --accent: #00c9b1; }
+  .p2 { --accent: #f5a623; }
+  .p3 { --accent: #7b8ec8; }
+  .p4 { --accent: #7b8ec8; }
+
+  /* ── SECTION CARD ── */
+  .section-card {
+    background: #0d1530;
+    border: 1px solid #3a4560;
+    border-radius: 18px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+  }
+  .section-title {
+    font-size: 1rem; font-weight: 700;
+    color: #00c9b1; margin-bottom: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── DATA FLOW ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+  .flow-node {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+  }
+  .node-circle {
+    width: 88px; height: 88px; border-radius: 50%;
+    background: #1e2540;
+    border: 2px solid #00c9b1;
+    box-shadow: 0 0 0 4px #006e6022;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: 0.82rem; font-weight: 600;
+    color: #f0f4ff; line-height: 1.3;
+  }
+  .flow-arrow {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    padding: 0 6px;
+  }
+  .arrow-line {
+    width: 60px; height: 2px; background: #00c9b1;
+    position: relative;
+  }
+  .arrow-line::after {
+    content: '▶';
+    position: absolute; right: -10px; top: -8px;
+    color: #00c9b1; font-size: 10px;
+  }
+  .arrow-label {
+    font-size: 0.68rem; font-family: monospace;
+    color: #006e60; white-space: nowrap;
+  }
+  @media(max-width:640px){
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+
+  /* ── COST TABLE ── */
+  .cost-table { width: 100%; border-collapse: collapse; }
+  .cost-table th {
+    text-align: left; font-size: 0.78rem;
+    font-family: monospace; color: #ffffff;
+    padding: 6px 12px; border-bottom: 1px solid #3a4560;
+  }
+  .cost-table td {
+    padding: 12px 12px; font-size: 0.9rem;
+    border-bottom: 1px solid #ffffff08;
+  }
+  .cost-table tr:nth-child(odd) td { background: #ffffff05; border-radius: 6px; }
+  .td-svc { color: #f0f4ff; }
+  .td-tier { color: #ffffff; }
+  .td-cost { color: #00c9b1; font-weight: 700; }
+  .total-row td {
+    border-top: 1px solid #f5a623 !important;
+    padding-top: 14px;
+  }
+  .total-row .td-svc { color: #f5a623; font-weight: 700; font-size: 1rem; }
+  .total-row .td-cost { color: #f5a623; font-size: 1.2rem; }
+
+  /* ── SAMPLE OUTPUT ── */
+  .sample-grid {
+    display: grid; gap: 6px;
+  }
+  .sample-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 12px; align-items: baseline;
+    padding: 6px 0;
+  }
+  .sample-key {
+    font-family: monospace; font-size: 0.8rem;
+    color: #84ad8a;
+  }
+  .sample-val {
+    font-size: 0.9rem; color: #f0f4ff;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center; margin-top: 20px;
+    padding: 20px;
+    border-top: 1px solid #3a4560;
+    color: #3a4560; font-size: 0.78rem;
+    font-family: monospace;
+  }
+  .footer span { color: #006e60; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>AGA Complaint Agent</h1>
+    <p class="sub">LINE Group &nbsp;→&nbsp; วิเคราะห์ด้วย AI &nbsp;→&nbsp; บันทึกลง Excel</p>
+    <p class="meta">ARCHITECTURE &amp; ROADMAP &nbsp;|&nbsp; AGA Pest Control (Dizzy) &nbsp;|&nbsp; 2569</p>
+  </div>
+
+  <!-- PHASES -->
+  <div class="phase-grid">
+
+    <!-- Phase 1 -->
+    <div class="phase-card p1">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num">01</div>
+          <div class="phase-title">LINE Webhook</div>
+        </div>
+        <span class="status-badge">เสร็จแล้ว ✓</span>
+      </div>
+      <div class="divider"></div>
+      <ul class="items">
+        <li>LINE Messaging API Channel</li>
+        <li>Node.js + Express Server</li>
+        <li>รับข้อความผ่าน /webhook</li>
+        <li>ngrok tunnel (ช่วง dev)</li>
+        <li>เก็บ Group ID แล้ว</li>
+      </ul>
+      <div class="stack-row">
+        <span class="stack-label">Stack:</span>
+        <span class="tag">Node.js</span>
+        <span class="tag">@line/bot-sdk</span>
+        <span class="tag">ngrok</span>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-card p2">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num">02</div>
+          <div class="phase-title">วิเคราะห์ด้วย AI</div>
+        </div>
+        <span class="status-badge">ถัดไป →</span>
+      </div>
+      <div class="divider"></div>
+      <ul class="items">
+        <li>Gemini 1.5 Flash API</li>
+        <li>วิเคราะห์ภาษาไทย (NLP)</li>
+        <li>แยกชนิดแมลง (pest_type)</li>
+        <li>แยกสถานที่ (location)</li>
+        <li>ระดับความรุนแรง (severity)</li>
+      </ul>
+      <div class="stack-row">
+        <span class="stack-label">Stack:</span>
+        <span class="tag">Gemini API</span>
+        <span class="tag">@google/generative-ai</span>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-card p3">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num">03</div>
+          <div class="phase-title">บันทึก Google Sheets</div>
+        </div>
+        <span class="status-badge">วางแผนไว้</span>
+      </div>
+      <div class="divider"></div>
+      <ul class="items">
+        <li>Service Account auth</li>
+        <li>เขียนข้อมูลอัตโนมัติ (appendRow)</li>
+        <li>รองรับหลายกลุ่ม LINE</li>
+        <li>เก็บ Timestamp + ข้อความต้นฉบับ</li>
+        <li>Export เป็น Excel ได้</li>
+      </ul>
+      <div class="stack-row">
+        <span class="stack-label">Stack:</span>
+        <span class="tag">googleapis</span>
+        <span class="tag">Google Sheets API</span>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-card p4">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num">04</div>
+          <div class="phase-title">Deploy บน Cloud</div>
+        </div>
+        <span class="status-badge">วางแผนไว้</span>
+      </div>
+      <div class="divider"></div>
+      <ul class="items">
+        <li>สร้าง Dockerfile</li>
+        <li>Deploy บน Google Cloud Run</li>
+        <li>Webhook URL ถาวร (ไม่ต้องใช้ ngrok)</li>
+        <li>ทำงาน 24/7 ไม่ต้องเปิดเครื่อง</li>
+        <li>ใช้งานฟรี (free tier)</li>
+      </ul>
+      <div class="stack-row">
+        <span class="stack-label">Stack:</span>
+        <span class="tag">Docker</span>
+        <span class="tag">Google Cloud Run</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DATA FLOW -->
+  <div class="section-card">
+    <div class="section-title">เส้นทางข้อมูล (Data Flow)</div>
+    <div class="flow">
+      <div class="flow-node">
+        <div class="node-circle">LINE<br>Group</div>
+      </div>
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">Webhook</div>
+      </div>
+      <div class="flow-node">
+        <div class="node-circle">Webhook<br>Server</div>
+      </div>
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">POST event</div>
+      </div>
+      <div class="flow-node">
+        <div class="node-circle">Gemini<br>AI</div>
+      </div>
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">JSON</div>
+      </div>
+      <div class="flow-node">
+        <div class="node-circle">Google<br>Sheets</div>
+      </div>
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">appendRow</div>
+      </div>
+      <div class="flow-node">
+        <div class="node-circle">Excel<br>Report</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COST TABLE -->
+  <div class="section-card">
+    <div class="section-title">ค่าใช้จ่ายต่อเดือน</div>
+    <table class="cost-table">
+      <thead>
+        <tr>
+          <th>บริการ</th>
+          <th>Free Tier</th>
+          <th>ค่าใช้จ่าย</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-svc">LINE Messaging API</td>
+          <td class="td-tier">ฟรี — ไม่ส่งข้อความกลับ</td>
+          <td class="td-cost">฿0</td>
+        </tr>
+        <tr>
+          <td class="td-svc">Gemini 1.5 Flash</td>
+          <td class="td-tier">ฟรี — 1M tokens / วัน</td>
+          <td class="td-cost">฿0</td>
+        </tr>
+        <tr>
+          <td class="td-svc">Google Sheets API</td>
+          <td class="td-tier">ฟรี — ไม่จำกัด</td>
+          <td class="td-cost">฿0</td>
+        </tr>
+        <tr>
+          <td class="td-svc">Google Cloud Run</td>
+          <td class="td-tier">ฟรี — 2M requests / เดือน</td>
+          <td class="td-cost">฿0</td>
+        </tr>
+        <tr class="total-row">
+          <td class="td-svc">รวมทั้งหมด / เดือน</td>
+          <td></td>
+          <td class="td-cost">฿0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SAMPLE OUTPUT -->
+  <div class="section-card">
+    <div class="section-title">ตัวอย่างข้อมูลที่บันทึกลง Excel</div>
+    <div class="sample-grid">
+      <div class="sample-row">
+        <span class="sample-key">Timestamp</span>
+        <span class="sample-val">7/6/2569 &nbsp; 11:41:20</span>
+      </div>
+      <div class="sample-row">
+        <span class="sample-key">Group</span>
+        <span class="sample-val">Specialist Termite (54)</span>
+      </div>
+      <div class="sample-row">
+        <span class="sample-key">pest_type</span>
+        <span class="sample-val">มดปีก</span>
+      </div>
+      <div class="sample-row">
+        <span class="sample-key">location</span>
+        <span class="sample-val">ห้อง 111</span>
+      </div>
+      <div class="sample-row">
+        <span class="sample-key">severity</span>
+        <span class="sample-val">ปานกลาง</span>
+      </div>
+      <div class="sample-row">
+        <span class="sample-key">raw_message</span>
+        <span class="sample-val">"ฝากตรวจห้อง 111 มีมดปีกเยอะมาก"</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    AGA Pest Control &nbsp;·&nbsp; Dizzy &nbsp;·&nbsp; 2569 &nbsp;&nbsp;
+    <span>LINE Complaint Agent — Architecture v1.0</span>
+  </div>
+
+</div>
+</body>
+</html>

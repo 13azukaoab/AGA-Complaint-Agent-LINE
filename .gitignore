@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Secrets — ห้าม commit ขึ้น GitHub เด็ดขาด
+Secret Key.env
+credentials/*.json
+credentials/*.txt
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
