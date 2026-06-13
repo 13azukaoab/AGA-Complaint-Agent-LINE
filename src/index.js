@@ -90,6 +90,7 @@ async function uploadPhotoToDrive(messageId, woId, authClient) {
       requestBody: {
         name: `${woId}_close_photo.jpg`,
         mimeType: 'image/jpeg',
+        parents: ['1HcY1doc7d4G_z5tUo3VPDc_sXZvyxeHq'],
       },
       media: {
         mimeType: 'image/jpeg',
@@ -223,7 +224,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     }
 
     // ตรวจ command: "ปิดงาน WXXX [วิธีปิด]"
-    const closeMatch = text.match(/^ปิดงาน\s+(W\d+)\s*(.*)?$/i);
+    const closeMatch = text.match(/^ปิดงาน\s*(W\d+)\s*(.*)?$/i);
     if (closeMatch) {
       const woId = closeMatch[1].toUpperCase();
       const closeMethod = (closeMatch[2] || '').trim();
