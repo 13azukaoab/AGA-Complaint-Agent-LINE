@@ -119,15 +119,6 @@
           <option value="">ทั้งหมด</option>
         </select>
       </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">ความรุนแรง</label>
-        <div class="flex gap-1.5">
-          <button class="sev-chip active-all" id="sev-all" onclick="setSev('')">ทั้งหมด</button>
-          <button class="sev-chip" id="sev-low" onclick="setSev('น้อย')">น้อย</button>
-          <button class="sev-chip" id="sev-med" onclick="setSev('ปานกลาง')">ปานกลาง</button>
-          <button class="sev-chip" id="sev-high" onclick="setSev('มาก')">มาก</button>
-        </div>
-      </div>
       <div class="flex gap-2 ml-auto">
         <button id="clearFilter" class="text-sm text-slate-400 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg transition">ล้าง</button>
         <button id="exportBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm transition font-medium">⬇ Export CSV</button>
@@ -219,9 +210,9 @@
             <th class="th-sort py-2.5 pr-3" data-col="senderName">ผู้แจ้ง <span class="sort-arrow" data-col="senderName">↕</span></th>
             <th class="th-sort py-2.5 pr-3" data-col="pestType">ชนิด <span class="sort-arrow" data-col="pestType">↕</span></th>
             <th class="th-sort py-2.5 pr-3" data-col="location">พื้นที่ <span class="sort-arrow" data-col="location">↕</span></th>
-            <th class="th-sort py-2.5 pr-3" data-col="severity">ความรุนแรง <span class="sort-arrow" data-col="severity">↕</span></th>
+            <th class="py-2.5 pr-3">ชั้น</th>
             <th class="th-sort py-2.5 pr-3" data-col="status">สถานะ <span class="sort-arrow" data-col="status">↕</span></th>
-            <th class="py-2.5 pr-3">SLA</th>
+            <th class="py-2.5 pr-3">SLA <span class="text-slate-300 cursor-help" title="🟢 ≤4ชม. = ดี  🟡 4-24ชม. = ควรเร่ง  🔴 >24ชม. = เกินกำหนด">ⓘ</span></th>
             <th class="th-sort py-2.5 pr-3" data-col="closer">ผู้ปิดงาน <span class="sort-arrow" data-col="closer">↕</span></th>
             <th class="py-2.5 pr-3">วิธีปิด</th>
             <th class="py-2.5 pr-3">รูป</th>
@@ -256,7 +247,6 @@ let allRecords   = [];
 let sortCol      = 'timestamp';
 let sortDir      = 'desc';
 let filterStatus = '';
-let filterSev    = '';
 let currentPage  = 1;
 const charts     = {};
 
@@ -269,7 +259,9 @@ function parseThai(ts) {
 }
 function fmtDate(d) {
   if (!d) return '—';
-  return d.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'2-digit' });
+  const date = d.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'2-digit' });
+  const time = d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+  return `${date} ${time}`;
 }
 function fmtHours(ms) {
   const h = ms / 3600000;
@@ -380,7 +372,6 @@ function getFiltered() {
     if (fromD && d && d < fromD) return false;
     if (toD   && d && d > toD)   return false;
     if (filterStatus && r.status    !== filterStatus) return false;
-    if (filterSev    && r.severity  !== filterSev)    return false;
     if (pest         && r.pestType  !== pest)          return false;
     if (group        && r.groupName !== group)         return false;
     if (q) {
@@ -394,15 +385,11 @@ function getFiltered() {
 
 /* ---- sort ---- */
 function sortRows(rows) {
-  const SEV_ORDER = { 'มาก':3, 'ปานกลาง':2, 'น้อย':1 };
   return [...rows].sort((a, b) => {
     let va, vb;
     if (sortCol === 'timestamp') {
       va = (parseThai(a.timestamp) || new Date(0)).getTime();
       vb = (parseThai(b.timestamp) || new Date(0)).getTime();
-    } else if (sortCol === 'severity') {
-      va = SEV_ORDER[a.severity] || 0;
-      vb = SEV_ORDER[b.severity] || 0;
     } else {
       va = (a[sortCol] || '').toLowerCase();
       vb = (b[sortCol] || '').toLowerCase();
@@ -435,12 +422,6 @@ function setStatus(val) {
   render();
 }
 function setSev(val) {
-  filterSev = val;
-  currentPage = 1;
-  document.getElementById('sev-all').className  = 'sev-chip' + (val === ''        ? ' active-all'  : '');
-  document.getElementById('sev-low').className  = 'sev-chip' + (val === 'น้อย'    ? ' active-low'  : '');
-  document.getElementById('sev-med').className  = 'sev-chip' + (val === 'ปานกลาง' ? ' active-med'  : '');
-  document.getElementById('sev-high').className = 'sev-chip' + (val === 'มาก'     ? ' active-high' : '');
   render();
 }
 
@@ -645,14 +626,14 @@ function renderTable(rows) {
       <td class="py-2 pr-3 text-slate-600">${r.senderName || '—'}</td>
       <td class="py-2 pr-3">${r.pestType || '—'}</td>
       <td class="py-2 pr-3 max-w-[100px] truncate" title="${r.location || ''}">${r.location || '—'}</td>
-      <td class="py-2 pr-3">${severityBadge(r.severity)}</td>
+      <td class="py-2 pr-3 text-slate-500 whitespace-nowrap">${r.floor || '—'}</td>
       <td class="py-2 pr-3">${statusBadge(r.status)}</td>
       <td class="py-2 pr-3"><span class="sla-badge ${sla.cls}">${sla.label}</span></td>
       <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
       <td class="py-2 pr-3 text-slate-500 max-w-[140px] truncate" title="${cleanMethod}">${cleanMethod || '—'}</td>
       <td class="py-2 pr-3 text-center">${photoUrls.length > 0 ? photoUrls.map((u, i) => `<button onclick="openPhotoModal('${u}')" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูปที่ ${i+1}">📷</button>`).join('') : '<span class="text-slate-300">—</span>'}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="12" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+  }).join('') || '<tr><td colspan="11" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
 
   // Pagination
   renderPagination(total, pages);
