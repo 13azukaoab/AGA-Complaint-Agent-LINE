@@ -21,18 +21,24 @@ async function getSheetClient() {
   return { sheets: google.sheets({ version: 'v4', auth: authClient }), authClient };
 }
 
-// สร้าง WO ID ถัดไป เช่น W001, W002
+// สร้าง WO ID ถัดไป — อ่าน WO ID สูงสุดจาก column N แล้ว +1
+// (ไม่นับ row เพราะ ghost rows ทำให้นับผิด)
 async function getNextWorkOrderId() {
   try {
     const { sheets } = await getSheetClient();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:A`,
+      range: `${SHEET_NAME}!N2:N`,
     });
     const rows = res.data.values || [];
-    const dataRows = rows.length - 1; // หักหัวตาราง row 1
-    const nextNum = Math.max(dataRows, 0) + 1;
-    return 'W' + String(nextNum).padStart(3, '0');
+    let maxNum = 0;
+    rows.forEach(r => {
+      if (r && r[0]) {
+        const m = String(r[0]).match(/W(\d+)/i);
+        if (m) maxNum = Math.max(maxNum, parseInt(m[1]));
+      }
+    });
+    return 'W' + String(maxNum + 1).padStart(3, '0');
   } catch (err) {
     console.error('   ❌ getNextWorkOrderId error:', err.message);
     return 'W' + Date.now();
