@@ -41,11 +41,11 @@ function parseThaiTimestamp(ts) {
   }
 }
 
-// ตรวจงานค้าง >30 นาที ยังไม่มีคนรับทราบ
+// ตรวจงานค้าง >4 ชั่วโมง ยังไม่ปิด (เปิด หรือ รับทราบ)
 async function checkPendingWorkOrders() {
   const openWOs = await getOpenWorkOrders();
   const now = Date.now();
-  const thirtyMin = 30 * 60 * 1000;
+  const fourHours = 4 * 60 * 60 * 1000;
 
   // จัดกลุ่มตาม groupId — รวมทั้ง เปิด และ รับทราบ (ยังไม่ปิด)
   const byGroup = {};
@@ -53,7 +53,7 @@ async function checkPendingWorkOrders() {
     const createdAt = parseThaiTimestamp(wo.timestamp);
     if (!createdAt) continue;
     const elapsed = now - createdAt.getTime();
-    if (elapsed < thirtyMin) continue; // ยังไม่ถึง 30 นาที
+    if (elapsed < fourHours) continue; // ยังไม่ถึง 4 ชั่วโมง
 
     if (!byGroup[wo.groupId]) byGroup[wo.groupId] = [];
     byGroup[wo.groupId].push(wo);
@@ -62,7 +62,14 @@ async function checkPendingWorkOrders() {
   let sent = 0;
   for (const [groupId, wos] of Object.entries(byGroup)) {
     const list = wos.map(w => `• ${w.workOrderId} — ${w.pestType} ${w.location}`).join('\n');
-    const msg = `⚠️ งานค้างเกิน 30 นาที (${wos.length} งาน):\n${list}\n\nพิมพ์ "ปิดงาน WXXX [วิธี]" เมื่อทำเสร็จ`;
+    const example = wos[0] ? `ปิดงาน ${wos[0].workOrderId} [วิธีที่ใช้กำจัด]` : 'ปิดงาน WXXX [วิธีที่ใช้กำจัด]';
+    const msg = [
+      `⚠️ งานค้างเกิน 4 ชั่วโมง (${wos.length} งาน):`,
+      list,
+      '',
+      'วิธีปิดงาน: พิมพ์ใน LINE กลุ่มนี้',
+      `ตัวอย่าง: ${example}`,
+    ].join('\n');
     await pushMessage(groupId, msg);
     sent++;
   }
