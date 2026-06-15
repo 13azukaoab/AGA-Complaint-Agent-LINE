@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ขั้นตอนการแจ้งปัญหาแมลงรบกวน — AGA Complaint Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Noto Sans Thai',sans-serif;}
+body{background:#f0f4f8;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:32px 16px;}
+.page{background:#fff;width:800px;border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.10);}
+
+/* Header */
+.header{background:linear-gradient(135deg,#1a3a5c 0%,#1e5fa8 100%);padding:32px 40px 28px;position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05);}
+.brand{font-size:11px;font-weight:500;letter-spacing:2px;color:rgba(255,255,255,.6);text-transform:uppercase;margin-bottom:8px;}
+.title{font-size:26px;font-weight:700;color:#fff;line-height:1.3;}
+.subtitle{font-size:13px;color:rgba(255,255,255,.7);margin-top:6px;font-weight:400;}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 12px;font-size:11px;color:rgba(255,255,255,.85);margin-top:14px;}
+
+/* Body */
+.body{padding:36px 40px;}
+
+/* Flow */
+.flow{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;align-items:flex-start;gap:20px;position:relative;}
+.step:not(:last-child)::after{content:'';position:absolute;left:23px;top:52px;width:2px;height:calc(100% - 16px);background:#e2e8f0;z-index:0;}
+
+.step-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;position:relative;z-index:1;box-shadow:0 2px 8px rgba(0,0,0,.10);}
+.step-content{flex:1;padding-bottom:28px;}
+.step-num{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.step-title{font-size:15px;font-weight:700;color:#1a2940;margin-bottom:5px;line-height:1.4;}
+.step-desc{font-size:13px;color:#5a7080;line-height:1.7;font-weight:400;}
+
+/* Colors */
+.s1 .step-icon{background:#e8f4fd;color:#1a7bc4;}
+.s1 .step-num{color:#1a7bc4;}
+.s2 .step-icon{background:#e8f4fd;color:#1a7bc4;}
+.s2 .step-num{color:#1a7bc4;}
+.s3 .step-icon{background:#fff3e0;color:#e07b00;}
+.s3 .step-num{color:#e07b00;}
+.s4 .step-icon{background:#e8f7ee;color:#1a9950;}
+.s4 .step-num{color:#1a9950;}
+.s5 .step-icon{background:#e8f7ee;color:#1a9950;}
+.s5 .step-num{color:#1a9950;}
+.s6 .step-icon{background:#ede9fe;color:#6d41d4;}
+.s6 .step-num{color:#6d41d4;}
+.s7 .step-icon{background:#fce8e8;color:#d43f3f;}
+.s7 .step-num{color:#d43f3f;}
+
+/* Branch */
+.branch-box{display:flex;gap:12px;margin-top:10px;}
+.branch{flex:1;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.6;}
+.branch-yes{background:#e8f7ee;border:1.5px solid #b2e0c0;}
+.branch-yes .branch-label{font-weight:700;color:#1a9950;font-size:11px;letter-spacing:.5px;margin-bottom:3px;}
+.branch-no{background:#fef3f3;border:1.5px solid #f5c0c0;}
+.branch-no .branch-label{font-weight:700;color:#d43f3f;font-size:11px;letter-spacing:.5px;margin-bottom:3px;}
+.branch-text{color:#3a5060;font-size:12.5px;}
+
+/* Tag chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#f0f4f8;border:1px solid #d8e3ea;border-radius:20px;padding:3px 10px;font-size:11.5px;color:#3a5a70;font-weight:500;}
+
+/* Legend */
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:28px;padding:16px 18px;background:#f8fafc;border-radius:12px;border:1px solid #e8edf2;}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:#4a6070;}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+
+/* Footer */
+.footer{background:#f8fafc;border-top:1px solid #e8edf2;padding:18px 40px;display:flex;align-items:center;justify-content:space-between;}
+.footer-brand{font-size:12px;font-weight:600;color:#1a3a5c;}
+.footer-note{font-size:11px;color:#8a9fb0;}
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">Advance Group Asia · AGA</div>
+    <div class="title">ขั้นตอนการแจ้งปัญหาแมลงรบกวน</div>
+    <div class="subtitle">ระบบรับเรื่องอัตโนมัติผ่าน LINE — Complaint Agent System</div>
+    <div class="badge">📋 Work Order Management Flow</div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#1a7bc4"></div>ผู้ใช้งาน / LINE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e07b00"></div>AI วิเคราะห์</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1a9950"></div>บันทึก & ดำเนินการ</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#6d41d4"></div>ระบบแจ้งเตือน</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#d43f3f"></div>ติดตาม / Dashboard</div>
+    </div>
+
+    <div class="flow">
+
+      <!-- Step 1 -->
+      <div class="step s1">
+        <div class="step-icon">💬</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 1 · ผู้แจ้งปัญหา</div>
+          <div class="step-title">พิมพ์แจ้งปัญหาในกลุ่ม LINE</div>
+          <div class="step-desc">สมาชิกในกลุ่ม LINE พิมพ์ข้อความแจ้งปัญหาตามปกติ ไม่ต้องกรอกฟอร์ม ไม่ต้องโทรแจ้ง เช่น <em>"พบปลวกที่ห้องประชุมชั้น 3 ตึก A ติดต่อคุณสมชาย 0812345678"</em></div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step s2">
+        <div class="step-icon">🤖</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 2 · BOT รับข้อความ</div>
+          <div class="step-title">ระบบรับข้อความอัตโนมัติตลอด 24 ชั่วโมง</div>
+          <div class="step-desc">AGA Complaint Agent รับทุกข้อความในกลุ่มโดยอัตโนมัติ ไม่ต้องแจ้งเจ้าหน้าที่เพิ่มเติม ข้อความสนทนาทั่วไป Bot จะไม่ตอบ ไม่รบกวนกลุ่ม</div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step s3">
+        <div class="step-icon">🧠</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 3 · AI วิเคราะห์</div>
+          <div class="step-title">Google Gemini AI วิเคราะห์ข้อความ</div>
+          <div class="step-desc">AI อ่านข้อความและสกัดข้อมูลสำคัญออกมาโดยอัตโนมัติ</div>
+          <div class="chips" style="margin-top:10px;">
+            <div class="chip">🐛 ชนิดแมลง</div>
+            <div class="chip">🏢 พื้นที่/อาคาร</div>
+            <div class="chip">🔢 ชั้น</div>
+            <div class="chip">👤 ผู้ติดต่อ</div>
+            <div class="chip">📞 เบอร์โทร</div>
+          </div>
+          <div class="branch-box">
+            <div class="branch branch-yes">
+              <div class="branch-label">✅ ใช่ — เป็นการแจ้งปัญหา</div>
+              <div class="branch-text">ดำเนินการออก Work Order และบันทึกข้อมูล</div>
+            </div>
+            <div class="branch branch-no">
+              <div class="branch-label">❌ ไม่ใช่ — ข้อความสนทนาทั่วไป</div>
+              <div class="branch-text">Bot ไม่ตอบ ไม่บันทึก ผ่านไปเงียบๆ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step s4">
+        <div class="step-icon">📋</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 4 · ออก Work Order</div>
+          <div class="step-title">สร้างรหัสงานอัตโนมัติ + บันทึกลง Google Sheet</div>
+          <div class="step-desc">ระบบออกรหัสงาน <strong>W001, W002, W003...</strong> และบันทึกข้อมูลทั้งหมดลง Google Sheet ทันที Bot แจ้งกลับในกลุ่ม LINE ว่า <em>"รับแจ้ง W001 — ปลวก ห้องประชุม ✅"</em></div>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="step s5">
+        <div class="step-icon">🔧</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 5 · ทีมงานดำเนินการ</div>
+          <div class="step-title">เจ้าหน้าที่เข้าจัดการและปิดงาน</div>
+          <div class="step-desc">เมื่อเจ้าหน้าที่ดำเนินการแล้วเสร็จ พิมพ์ปิดงานในกลุ่ม LINE ได้เลย</div>
+          <div class="chips">
+            <div class="chip">📝 <code style="font-size:11px">ปิดงาน W001 กำจัดด้วยยาปลวก</code></div>
+          </div>
+          <div class="step-desc" style="margin-top:8px;">แนบรูปถ่ายหลักฐานก่อนพิมพ์ได้ ระบบจะบันทึกรูปอัตโนมัติ (รองรับหลายรูป)</div>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="step s6">
+        <div class="step-icon">🔔</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 6 · แจ้งเตือนอัตโนมัติ</div>
+          <div class="step-title">ระบบแจ้งเตือนงานที่ยังค้างอยู่</div>
+          <div class="step-desc">ถ้างานไม่ได้รับการปิดภายใน <strong>4 ชั่วโมง</strong> ระบบจะส่งข้อความแจ้งเตือนกลับเข้ากลุ่มโดยอัตโนมัติ และส่ง <strong>สรุปรายวันทุก 17:00 น.</strong> ว่ามีงานปิดแล้วกี่งาน ยังค้างกี่งาน</div>
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="step s7">
+        <div class="step-icon">📊</div>
+        <div class="step-content">
+          <div class="step-num">ขั้นตอนที่ 7 · ติดตามงาน</div>
+          <div class="step-title">Dashboard แสดงภาพรวมทั้งหมด</div>
+          <div class="step-desc">ผู้จัดการและทีมงานดูภาพรวมงานทั้งหมดได้แบบ real-time ผ่าน Dashboard บนเว็บ ไม่ต้องเปิด Google Sheet</div>
+          <div class="chips">
+            <div class="chip">📈 กราฟแนวโน้มรายวัน</div>
+            <div class="chip">⏱ SLA เวลาตอบสนอง</div>
+            <div class="chip">🗂 Export CSV</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /flow -->
+  </div><!-- /body -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-brand">AGA Complaint Agent · LINE System</div>
+    <div class="footer-note">Powered by Google Gemini AI · Cloud Run · Google Sheets</div>
+  </div>
+</div>
+</body>
+</html>
