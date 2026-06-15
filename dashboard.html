@@ -165,6 +165,29 @@
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานแยกตามกลุ่ม LINE</h3><canvas id="chartGroup" height="200"></canvas></div>
     <div class="card p-4">
       <h3 class="text-sm font-semibold mb-3 text-slate-600">SLA — เวลาตอบสนอง</h3>
+
+      <!-- SLA คำอธิบาย -->
+      <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 mb-3 text-xs text-slate-500">
+        <p class="font-semibold text-slate-700 mb-1">SLA คืออะไร?</p>
+        <p class="leading-relaxed mb-2">
+          SLA <span class="text-slate-400">(Service Level Agreement)</span> คือ <strong class="text-slate-600">มาตรฐานเวลาที่ทีมงานต้องปิดงานให้เสร็จ</strong> นับจากเวลาที่ได้รับแจ้ง
+        </p>
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+            <span><strong class="text-emerald-700">ภายใน 4 ชม.</strong> — ปิดงานทันมาตรฐาน</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+            <span><strong class="text-amber-700">4–24 ชม.</strong> — ควรเร่งดำเนินการ</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></span>
+            <span><strong class="text-red-700">เกิน 24 ชม.</strong> — เกินมาตรฐาน ต้องติดตามด่วน</span>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-3 gap-3 mb-3">
         <div class="text-center p-3 bg-emerald-50 rounded-xl">
           <p class="text-xs text-slate-500">ภายใน 4 ชม.</p>
