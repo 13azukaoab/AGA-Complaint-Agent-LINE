@@ -8,6 +8,7 @@ const {
   findRowByWorkOrderId,
   getRowData,
   updateWorkOrderStatus,
+  getOpenWorkOrders,
 } = require('./sheets');
 
 const app = express();
@@ -49,7 +50,7 @@ async function getMemberName(groupId, userId) {
   }
 }
 
-// Push ข้อความเข้ากลุ่ม LINE (1 บรรทัด ไม่รบกวน)
+// Push ข้อความเข้ากลุ่ม LINE (กินโควต้า — ใช้เฉพาะ scheduler หรือกรณีตอบช้าเกิน 30 วิ)
 async function pushMessage(groupId, text) {
   try {
     await fetch('https://api.line.me/v2/bot/message/push', {
@@ -65,6 +66,25 @@ async function pushMessage(groupId, text) {
     });
   } catch (e) {
     console.error('   ❌ pushMessage error:', e.message);
+  }
+}
+
+// Reply ข้อความด้วย replyToken (ฟรี ไม่กินโควต้า — ใช้ตอบ event ที่คนพิมพ์เข้ามา ภายใน 30 วิ)
+async function replyMessage(replyToken, text) {
+  try {
+    await fetch('https://api.line.me/v2/bot/message/reply', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LINE_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        replyToken,
+        messages: [{ type: 'text', text }],
+      }),
+    });
+  } catch (e) {
+    console.error('   ❌ replyMessage error:', e.message);
   }
 }
 
@@ -111,35 +131,6 @@ async function uploadPhotoToDrive(messageId, woId, authClient) {
     console.error('   ❌ uploadPhotoToDrive error:', e.message);
     return null;
   }
-}
-
-// จัดการ "รับทราบ WXXX"
-async function handleAcknowledge(groupId, senderName, woId, timestamp) {
-  const rowNumber = await findRowByWorkOrderId(woId);
-  if (!rowNumber) {
-    await pushMessage(groupId, `ไม่พบ ${woId} — ตรวจสอบหมายเลขอีกครั้ง`);
-    return;
-  }
-
-  const rowData = await getRowData(rowNumber);
-  const currentStatus = rowData[14] || 'เปิด'; // column O
-
-  if (currentStatus === 'ปิด') {
-    await pushMessage(groupId, `${woId} ปิดแล้วก่อนหน้านี้`);
-    return;
-  }
-
-  await updateWorkOrderStatus(rowNumber, {
-    status: 'รับทราบ',
-    acknowledger: senderName,
-    ackTime: timestamp,
-    closer: rowData[17] || '',
-    closeTime: rowData[18] || '',
-    closeMethod: rowData[19] || '',
-  });
-
-  await pushMessage(groupId, `${woId} รับทราบแล้ว โดย ${senderName} ✅`);
-  console.log(`   ✅ ${woId} รับทราบ โดย ${senderName}`);
 }
 
 // จัดการ "ปิดงาน WXXX [วิธีปิด]"
@@ -215,11 +206,19 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       ? await getMemberName(groupId, event.source.userId)
       : 'ไม่ระบุ';
 
-    // ตรวจ command: "รับทราบ WXXX"
-    const ackMatch = text.match(/^รับทราบ\s+(W\d+)/i);
-    if (ackMatch) {
-      console.log(`\n📋 รับทราบ: ${ackMatch[1]} โดย ${senderName}`);
-      await handleAcknowledge(groupId, senderName, ackMatch[1].toUpperCase(), timestamp);
+    // ตรวจ command: "งานค้าง" — แสดงงานที่ยังไม่ปิดในกลุ่มนี้ (ใช้ replyToken ฟรี)
+    if (/^งานค้าง/i.test(text)) {
+      console.log(`\n📂 ขอดูงานค้าง โดย ${senderName}`);
+      const openWOs = await getOpenWorkOrders();
+      const groupWOs = openWOs.filter(w => w.groupId === groupId);
+      if (groupWOs.length === 0) {
+        await replyMessage(event.replyToken, 'ไม่มีงานค้าง ✅');
+      } else {
+        const list = groupWOs
+          .map(w => `${w.workOrderId} — ${w.pestType} ${w.location}`)
+          .join('\n');
+        await replyMessage(event.replyToken, `งานค้าง ${groupWOs.length} รายการ:\n${list}`);
+      }
       continue;
     }
 

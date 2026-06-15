@@ -63,7 +63,7 @@ async function checkPendingWorkOrders() {
   let sent = 0;
   for (const [groupId, wos] of Object.entries(byGroup)) {
     const list = wos.map(w => `• ${w.workOrderId} ${w.pestType} ${w.location}`).join('\n');
-    const msg = `⚠️ งานที่ยังไม่มีคนรับทราบ (>30 นาที):\n${list}\n\nพิมพ์ "รับทราบ WXXX" เพื่อรับงาน`;
+    const msg = `⚠️ งานค้างเกิน 30 นาที:\n${list}\n\nพิมพ์ "ปิดงาน WXXX [วิธี]" เมื่อทำเสร็จ`;
     await pushMessage(groupId, msg);
     sent++;
   }
