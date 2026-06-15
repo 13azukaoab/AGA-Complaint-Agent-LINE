@@ -258,40 +258,46 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     console.log(`\n📨 ข้อความ: "${text}"`);
 
     const groupName = await getGroupName(groupId);
-    const result = await analyzeComplaint(text);
+    const results = await analyzeComplaint(text);
 
-    if (!result) {
+    if (!results) {
       console.log('   ⚠️  Gemini วิเคราะห์ไม่ได้');
       continue;
     }
 
-    if (!result.is_complaint) {
+    const complaints = results.filter(r => r.is_complaint);
+    if (complaints.length === 0) {
       console.log('   ➡️  ไม่ใช่การแจ้งปัญหา — ข้าม');
       continue;
     }
 
-    const workOrderId = await getNextWorkOrderId();
-    console.log(`   ✅ พบการแจ้งปัญหา! [${workOrderId}]`);
+    const woIds = [];
+    for (const result of complaints) {
+      const workOrderId = await getNextWorkOrderId();
+      console.log(`   ✅ พบการแจ้งปัญหา! [${workOrderId}]`);
 
-    await appendComplaint({
-      timestamp,
-      groupId,
-      senderId: event.source.userId || 'ไม่ระบุ',
-      groupName,
-      senderName,
-      pestType: result.pest_type,
-      location: result.location,
-      floor: result.floor || 'ไม่ระบุ',
-      severity: result.severity,
-      contactName: result.contact_name || 'ไม่ระบุ',
-      contactPhone: result.contact_phone || 'ไม่ระบุ',
-      rawMessage: text,
-      summary: result.summary,
-      workOrderId,
-    });
+      await appendComplaint({
+        timestamp,
+        groupId,
+        senderId: event.source.userId || 'ไม่ระบุ',
+        groupName,
+        senderName,
+        pestType: result.pest_type,
+        location: result.location,
+        floor: result.floor || 'ไม่ระบุ',
+        severity: result.severity,
+        contactName: result.contact_name || 'ไม่ระบุ',
+        contactPhone: result.contact_phone || 'ไม่ระบุ',
+        rawMessage: text,
+        summary: result.summary,
+        workOrderId,
+      });
 
-    // Reply สั้น 1 บรรทัด
-    await pushMessage(groupId, `รับแจ้ง ${workOrderId} — ${result.pest_type} ${result.location} ✅`);
+      woIds.push(`${workOrderId} — ${result.pest_type} ${result.location}`);
+    }
+
+    // Reply รวมทุก WO ในบรรทัดเดียว
+    await pushMessage(groupId, `รับแจ้ง ${woIds.join(' | ')} ✅`);
 
     console.log('---');
   }
