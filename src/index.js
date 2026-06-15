@@ -137,12 +137,16 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     return;
   }
 
-  // อัปโหลดรูปขึ้น GCS ถ้ามี
+  // อัปโหลดรูปขึ้น GCS ทุกรูปที่รอไว้
   let finalMethod = closeMethod || 'ไม่ระบุ';
-  if (pendingPhotoMessageId) {
-    const gcsUrl = await uploadPhotoToGCS(pendingPhotoMessageId, woId);
-    if (gcsUrl) {
-      finalMethod = (closeMethod || '') + ` [รูป: ${gcsUrl}]`;
+  if (pendingPhotoMessageId && pendingPhotoMessageId.length > 0) {
+    const urls = [];
+    for (let i = 0; i < pendingPhotoMessageId.length; i++) {
+      const gcsUrl = await uploadPhotoToGCS(pendingPhotoMessageId[i], `${woId}_${i + 1}`);
+      if (gcsUrl) urls.push(gcsUrl);
+    }
+    if (urls.length > 0) {
+      finalMethod = (closeMethod || '') + ' ' + urls.map(u => `[รูป: ${u}]`).join(' ');
     }
   }
 
@@ -176,14 +180,20 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
     const timestamp = new Date(event.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
-    // เก็บรูปภาพล่าสุดไว้รอปิดงาน (TTL 5 นาที)
+    // เก็บรูปภาพไว้รอปิดงาน (รองรับหลายรูป, TTL 5 นาที)
     if (event.type === 'message' && event.message.type === 'image') {
-      pendingPhotos.set(groupId, {
-        messageId: event.message.id,
-        userId: event.source.userId,
-        time: Date.now(),
-      });
-      console.log('🖼️  เก็บรูปภาพรอปิดงาน:', groupId);
+      const existing = pendingPhotos.get(groupId);
+      const now = Date.now();
+      // ถ้ายังอยู่ในช่วง TTL เดิม → เพิ่มเข้า array, ถ้าหมด TTL → เริ่มใหม่
+      if (existing && (now - existing.time) < 5 * 60 * 1000) {
+        existing.messageIds.push(event.message.id);
+      } else {
+        pendingPhotos.set(groupId, {
+          messageIds: [event.message.id],
+          time: now,
+        });
+      }
+      console.log('🖼️  เก็บรูปภาพรอปิดงาน:', groupId, '(', pendingPhotos.get(groupId).messageIds.length, 'รูป)');
       continue;
     }
 
@@ -217,15 +227,15 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       const closeMethod = (closeMatch[2] || '').trim();
       console.log(`\n🔒 ปิดงาน: ${woId} โดย ${senderName} — วิธี: ${closeMethod || 'ไม่ระบุ'}`);
 
-      // เช็ครูปที่รอไว้ (ไม่เกิน 5 นาที)
+      // เช็ครูปที่รอไว้ (ไม่เกิน 5 นาที) — รองรับหลายรูป
       const pending = pendingPhotos.get(groupId);
-      let photoMessageId = null;
+      let photoMessageIds = null;
       if (pending && (Date.now() - pending.time) < 5 * 60 * 1000) {
-        photoMessageId = pending.messageId;
+        photoMessageIds = pending.messageIds;
         pendingPhotos.delete(groupId);
       }
 
-      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageId);
+      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageIds);
       continue;
     }
 

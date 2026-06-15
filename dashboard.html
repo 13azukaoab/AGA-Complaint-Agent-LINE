@@ -286,14 +286,16 @@ function showStatus(msg, type) {
   if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 2500);
 }
 
-function extractPhotoUrl(method) {
-  if (!method) return null;
-  // GCS URL
-  const gcs = method.match(/https:\/\/storage\.googleapis\.com\/[^\s\]]+/);
-  if (gcs) return gcs[0];
-  // Drive URL (legacy)
-  const drive = method.match(/https:\/\/drive\.google\.com\/file\/d\/[^\s\]]+/);
-  return drive ? drive[0] : null;
+function extractPhotoUrls(method) {
+  if (!method) return [];
+  const urls = [];
+  // GCS URLs (หลายรูป)
+  const gcsMatches = method.matchAll(/https:\/\/storage\.googleapis\.com\/[^\s\]]+/g);
+  for (const m of gcsMatches) urls.push(m[0]);
+  // Drive URLs (legacy)
+  const driveMatches = method.matchAll(/https:\/\/drive\.google\.com\/file\/d\/[^\s\]]+/g);
+  for (const m of driveMatches) urls.push(m[0]);
+  return urls;
 }
 
 function openPhotoModal(url) {
@@ -633,8 +635,8 @@ function renderTable(rows) {
     const o = parseThai(r.timestamp);
     const isOverdue = r.status !== 'ปิด' && o && (now - o.getTime()) > 3 * 86400000;
     const sla = getSlaInfo(r);
-    const driveUrl = extractPhotoUrl(r.closeMethod);
-    const cleanMethod = (r.closeMethod || '').replace(/\s*\[รูป:.*?\]/, '').trim();
+    const photoUrls = extractPhotoUrls(r.closeMethod);
+    const cleanMethod = (r.closeMethod || '').replace(/\s*\[รูป:.*?\]/g, '').trim();
 
     return `<tr class="border-b border-slate-50 hover:bg-blue-50/40 transition-colors ${isOverdue ? 'bg-red-50' : ''}">
       <td class="py-2 pr-3 font-semibold text-slate-800 whitespace-nowrap">${r.workOrderId}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}</td>
@@ -648,7 +650,7 @@ function renderTable(rows) {
       <td class="py-2 pr-3"><span class="sla-badge ${sla.cls}">${sla.label}</span></td>
       <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
       <td class="py-2 pr-3 text-slate-500 max-w-[140px] truncate" title="${cleanMethod}">${cleanMethod || '—'}</td>
-      <td class="py-2 pr-3 text-center">${driveUrl ? `<button onclick="openPhotoModal('${driveUrl}')" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูปปิดงาน">📷</button>` : '<span class="text-slate-300">—</span>'}</td>
+      <td class="py-2 pr-3 text-center">${photoUrls.length > 0 ? photoUrls.map((u, i) => `<button onclick="openPhotoModal('${u}')" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูปที่ ${i+1}">📷</button>`).join('') : '<span class="text-slate-300">—</span>'}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
 
