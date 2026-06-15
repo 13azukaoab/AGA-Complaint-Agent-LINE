@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getOpenWorkOrders, getTodaySummary } = require('./sheets');
+const { getOpenWorkOrders, getAllWorkOrders } = require('./sheets');
 
 const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
@@ -47,10 +47,9 @@ async function checkPendingWorkOrders() {
   const now = Date.now();
   const thirtyMin = 30 * 60 * 1000;
 
-  // จัดกลุ่มตาม groupId
+  // จัดกลุ่มตาม groupId — รวมทั้ง เปิด และ รับทราบ (ยังไม่ปิด)
   const byGroup = {};
   for (const wo of openWOs) {
-    if (wo.status !== 'เปิด') continue; // เฉพาะที่ยังไม่มีคนรับทราบ
     const createdAt = parseThaiTimestamp(wo.timestamp);
     if (!createdAt) continue;
     const elapsed = now - createdAt.getTime();
@@ -62,8 +61,8 @@ async function checkPendingWorkOrders() {
 
   let sent = 0;
   for (const [groupId, wos] of Object.entries(byGroup)) {
-    const list = wos.map(w => `• ${w.workOrderId} ${w.pestType} ${w.location}`).join('\n');
-    const msg = `⚠️ งานค้างเกิน 30 นาที:\n${list}\n\nพิมพ์ "ปิดงาน WXXX [วิธี]" เมื่อทำเสร็จ`;
+    const list = wos.map(w => `• ${w.workOrderId} — ${w.pestType} ${w.location}`).join('\n');
+    const msg = `⚠️ งานค้างเกิน 30 นาที (${wos.length} งาน):\n${list}\n\nพิมพ์ "ปิดงาน WXXX [วิธี]" เมื่อทำเสร็จ`;
     await pushMessage(groupId, msg);
     sent++;
   }
@@ -72,35 +71,65 @@ async function checkPendingWorkOrders() {
   return { checked: openWOs.length, alertsSent: sent };
 }
 
-// สรุปรายวัน
+// สรุปรายวัน — แสดงงานวันนี้ทั้งหมด แยก ปิดแล้ว / ยังไม่ปิด
 async function sendDailySummary() {
+  const allWOs = await getAllWorkOrders();
+
+  // วันนี้ในรูปแบบ "15/06/2026" (ค.ศ.) สำหรับเทียบ timestamp
+  const now = new Date();
+  const todayDay   = String(now.getDate()).padStart(2, '0');
+  const todayMonth = String(now.getMonth() + 1).padStart(2, '0');
+  const todayYearCE = now.getFullYear();
+  const todayYearBE = todayYearCE + 543; // timestamp ใน Sheet เป็น พ.ศ.
+
+  // กรองเฉพาะงานวันนี้ — timestamp format: "15/6/2569 11:47:13"
+  const todayWOs = allWOs.filter(wo => {
+    if (!wo.timestamp) return false;
+    const m = wo.timestamp.match(/^(\d+)\/(\d+)\/(\d+)/);
+    if (!m) return false;
+    const [, d, mo, y] = m;
+    return parseInt(d) === parseInt(todayDay) &&
+           parseInt(mo) === parseInt(todayMonth) &&
+           parseInt(y) === todayYearBE;
+  });
+
+  if (todayWOs.length === 0) return { groupsNotified: 0 };
+
+  // จัดกลุ่มตาม groupId (ดึง groupId จาก getAllWorkOrders ไม่มี → ต้องใช้ getOpenWorkOrders เพิ่ม)
+  // ใช้ groupId จาก openWOs map เทียบกับ workOrderId
   const openWOs = await getOpenWorkOrders();
+  const woGroupMap = {};
+  openWOs.forEach(wo => { woGroupMap[wo.workOrderId] = wo.groupId; });
 
   // จัดกลุ่มตาม groupId
   const byGroup = {};
-  for (const wo of openWOs) {
-    if (!byGroup[wo.groupId]) {
-      byGroup[wo.groupId] = { groupName: wo.groupName, open: [], acknowledged: [] };
-    }
-    if (wo.status === 'เปิด') byGroup[wo.groupId].open.push(wo);
-    else if (wo.status === 'รับทราบ') byGroup[wo.groupId].acknowledged.push(wo);
+  for (const wo of todayWOs) {
+    const groupId = woGroupMap[wo.workOrderId];
+    if (!groupId) continue;
+    if (!byGroup[groupId]) byGroup[groupId] = { closed: [], notClosed: [] };
+    if (wo.status === 'ปิด') byGroup[groupId].closed.push(wo);
+    else byGroup[groupId].notClosed.push(wo);
   }
+
+  // วันที่สำหรับแสดงใน header (ค.ศ.)
+  const dateLabel = `${todayDay}/${todayMonth}/${todayYearCE}`;
 
   let sent = 0;
   for (const [groupId, data] of Object.entries(byGroup)) {
-    if (data.open.length === 0 && data.acknowledged.length === 0) continue;
-
+    const total = data.closed.length + data.notClosed.length;
     const lines = [];
-    lines.push(`📋 สรุปงานคงค้าง — ${new Date().toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })}`);
+    lines.push(`📋 สรุปงานประจำวัน — ${dateLabel}`);
+    lines.push('━━━━━━━━━━━━━━━━━━━');
+    lines.push(`\nรวมวันนี้ทั้งหมด: ${total} งาน`);
 
-    if (data.open.length > 0) {
-      lines.push(`\n🔴 ยังไม่มีคนรับ (${data.open.length} งาน):`);
-      data.open.forEach(w => lines.push(`  • ${w.workOrderId} ${w.pestType} ${w.location}`));
+    if (data.closed.length > 0) {
+      lines.push(`\n✅ ปิดแล้ว (${data.closed.length} งาน):`);
+      data.closed.forEach(w => lines.push(`• ${w.workOrderId} — ${w.pestType} ${w.location}`));
     }
 
-    if (data.acknowledged.length > 0) {
-      lines.push(`\n🟡 รับทราบแล้ว รอปิด (${data.acknowledged.length} งาน):`);
-      data.acknowledged.forEach(w => lines.push(`  • ${w.workOrderId} ${w.pestType} ${w.location} (${w.acknowledger})`));
+    if (data.notClosed.length > 0) {
+      lines.push(`\n⏳ ยังไม่ปิด (${data.notClosed.length} งาน):`);
+      data.notClosed.forEach(w => lines.push(`• ${w.workOrderId} — ${w.pestType} ${w.location}`));
     }
 
     await pushMessage(groupId, lines.join('\n'));
