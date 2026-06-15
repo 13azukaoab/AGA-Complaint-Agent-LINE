@@ -19,32 +19,43 @@
   ::-webkit-scrollbar { height:6px; width:6px; }
   ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
 
-  /* Sort header */
   .th-sort { cursor:pointer; user-select:none; white-space:nowrap; }
   .th-sort:hover { color:#3b82f6; }
-  .sort-arrow { display:inline-block; margin-left:4px; opacity:.35; font-size:10px; }
+  .sort-arrow { display:inline-block; margin-left:3px; opacity:.35; font-size:10px; }
   .sort-arrow.active { opacity:1; color:#3b82f6; }
 
-  /* Status chips */
   .chip {
     display:inline-flex; align-items:center; gap:4px;
     padding:4px 12px; border-radius:999px; font-size:12px; font-weight:500;
     border:1.5px solid transparent; cursor:pointer; transition:all .15s;
   }
   .chip-all  { border-color:#cbd5e1; color:#475569; }
-  .chip-all.active, .chip-all:hover  { background:#f1f5f9; border-color:#94a3b8; color:#1e293b; }
+  .chip-all.active  { background:#f1f5f9; border-color:#94a3b8; color:#1e293b; }
   .chip-open { border-color:#fcd34d; color:#b45309; }
-  .chip-open.active, .chip-open:hover { background:#fef9c3; border-color:#f59e0b; color:#92400e; }
+  .chip-open.active { background:#fef9c3; border-color:#f59e0b; color:#92400e; }
   .chip-close { border-color:#6ee7b7; color:#065f46; }
-  .chip-close.active, .chip-close:hover { background:#d1fae5; border-color:#10b981; color:#065f46; }
+  .chip-close.active { background:#d1fae5; border-color:#10b981; color:#065f46; }
 
-  /* Severity chips */
   .sev-chip { padding:3px 10px; border-radius:999px; font-size:11px; border:1.5px solid #e2e8f0; cursor:pointer; color:#64748b; transition:all .15s; }
-  .sev-chip:hover { background:#f8fafc; }
   .sev-chip.active-all  { background:#1e293b; color:#fff; border-color:#1e293b; }
   .sev-chip.active-low  { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
   .sev-chip.active-med  { background:#fef9c3; color:#92400e; border-color:#fcd34d; }
   .sev-chip.active-high { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+
+  .page-btn {
+    min-width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:8px; font-size:13px; border:1px solid #e2e8f0; color:#64748b;
+    cursor:pointer; transition:all .15s;
+  }
+  .page-btn:hover { background:#f1f5f9; }
+  .page-btn.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+  .page-btn:disabled { opacity:.4; cursor:default; }
+
+  .sla-badge { padding:2px 8px; border-radius:999px; font-size:11px; font-weight:500; white-space:nowrap; }
+  .sla-ok    { background:#d1fae5; color:#065f46; }
+  .sla-warn  { background:#fef9c3; color:#92400e; }
+  .sla-over  { background:#fee2e2; color:#991b1b; }
+  .sla-done  { background:#e2e8f0; color:#64748b; }
 </style>
 </head>
 
@@ -52,7 +63,7 @@
 
 <!-- Header -->
 <header class="bg-gradient-to-r from-slate-800 to-slate-700 text-white shadow-lg sticky top-0 z-20">
-  <div class="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between flex-wrap gap-3">
+  <div class="max-w-[1400px] mx-auto px-5 py-3 flex items-center justify-between flex-wrap gap-3">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-lg font-bold tracking-tight">A</div>
       <div>
@@ -70,26 +81,23 @@
   </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-5 py-5">
+<main class="max-w-[1400px] mx-auto px-5 py-5">
 
   <div id="statusBar" class="hidden mb-4 px-4 py-3 rounded-lg text-sm"></div>
 
   <!-- Filter Panel -->
   <div class="card p-4 mb-5">
-    <!-- Row 1: Status chips + Search -->
     <div class="flex flex-wrap items-center gap-3 mb-3">
       <div class="flex gap-2">
-        <button class="chip chip-all active"  id="chip-all"   onclick="setStatus('')">ทั้งหมด</button>
-        <button class="chip chip-open"        id="chip-open"  onclick="setStatus('เปิด')">🔴 เปิด</button>
-        <button class="chip chip-close"       id="chip-close" onclick="setStatus('ปิด')">✅ ปิด</button>
+        <button class="chip chip-all active" id="chip-all" onclick="setStatus('')">ทั้งหมด</button>
+        <button class="chip chip-open" id="chip-open" onclick="setStatus('เปิด')">🔴 เปิด</button>
+        <button class="chip chip-close" id="chip-close" onclick="setStatus('ปิด')">✅ ปิด</button>
       </div>
       <div class="flex-1 min-w-[200px] relative">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="searchBox" type="text" placeholder="ค้นหา WO / พื้นที่ / ชนิด..." class="w-full border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <input id="searchBox" type="text" placeholder="ค้นหา WO / พื้นที่ / ชนิด / ชื่อผู้แจ้ง..." class="w-full border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
       </div>
     </div>
-
-    <!-- Row 2: Date + Pest + Severity + Buttons -->
     <div class="flex flex-wrap items-end gap-3">
       <div>
         <label class="block text-xs text-slate-400 mb-1">ตั้งแต่วันที่</label>
@@ -98,6 +106,12 @@
       <div>
         <label class="block text-xs text-slate-400 mb-1">ถึงวันที่</label>
         <input id="dateTo" type="date" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">กลุ่ม LINE</label>
+        <select id="groupFilter" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <option value="">ทั้งหมด</option>
+        </select>
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">ชนิด</label>
@@ -149,79 +163,102 @@
     </div>
   </div>
 
-  <!-- Charts -->
+  <!-- Charts — 3 rows -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานตามชนิดสัตว์/แมลง</h3><canvas id="chartPest" height="180"></canvas></div>
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานตามพื้นที่/อาคาร (Top 10)</h3><canvas id="chartLocation" height="180"></canvas></div>
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานตามความรุนแรง</h3><canvas id="chartSeverity" height="180"></canvas></div>
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">แนวโน้มงานรายวัน (14 วันล่าสุด)</h3><canvas id="chartTrend" height="180"></canvas></div>
   </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+    <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานแยกตามกลุ่ม LINE</h3><canvas id="chartGroup" height="200"></canvas></div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-3 text-slate-600">SLA — เวลาตอบสนอง</h3>
+      <div class="grid grid-cols-3 gap-3 mb-3">
+        <div class="text-center p-3 bg-emerald-50 rounded-xl">
+          <p class="text-xs text-slate-500">ภายใน 4 ชม.</p>
+          <p id="slaOk" class="text-xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="text-center p-3 bg-amber-50 rounded-xl">
+          <p class="text-xs text-slate-500">4–24 ชม.</p>
+          <p id="slaWarn" class="text-xl font-bold text-amber-600">0</p>
+        </div>
+        <div class="text-center p-3 bg-red-50 rounded-xl">
+          <p class="text-xs text-slate-500">เกิน 24 ชม.</p>
+          <p id="slaOver" class="text-xl font-bold text-red-600">0</p>
+        </div>
+      </div>
+      <canvas id="chartSLA" height="120"></canvas>
+    </div>
+  </div>
 
   <!-- Table -->
   <div class="card p-4">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
       <h3 class="text-sm font-semibold text-slate-700">
         รายการงาน <span id="tableCount" class="text-slate-400 font-normal text-xs"></span>
       </h3>
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <label>แสดง</label>
+        <select id="pageSize" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="0">ทั้งหมด</option>
+        </select>
+        <label>รายการ/หน้า</label>
+      </div>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="text-left text-xs text-slate-500 border-b-2 border-slate-100">
-            <th class="th-sort py-2.5 pr-3" data-col="workOrderId">
-              WO <span class="sort-arrow" data-col="workOrderId">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="timestamp">
-              วันที่แจ้ง <span class="sort-arrow" data-col="timestamp">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="pestType">
-              ชนิด <span class="sort-arrow" data-col="pestType">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="location">
-              พื้นที่ <span class="sort-arrow" data-col="location">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="floor">
-              ชั้น <span class="sort-arrow" data-col="floor">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="severity">
-              ความรุนแรง <span class="sort-arrow" data-col="severity">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="status">
-              สถานะ <span class="sort-arrow" data-col="status">↕</span>
-            </th>
-            <th class="th-sort py-2.5 pr-3" data-col="closer">
-              ผู้ปิดงาน <span class="sort-arrow" data-col="closer">↕</span>
-            </th>
-            <th class="py-2.5 pr-3 text-slate-500">วิธีปิด</th>
+            <th class="th-sort py-2.5 pr-3" data-col="workOrderId">WO <span class="sort-arrow" data-col="workOrderId">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="timestamp">วันที่แจ้ง <span class="sort-arrow" data-col="timestamp">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="groupName">กลุ่ม LINE <span class="sort-arrow" data-col="groupName">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="senderName">ผู้แจ้ง <span class="sort-arrow" data-col="senderName">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="pestType">ชนิด <span class="sort-arrow" data-col="pestType">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="location">พื้นที่ <span class="sort-arrow" data-col="location">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="severity">ความรุนแรง <span class="sort-arrow" data-col="severity">↕</span></th>
+            <th class="th-sort py-2.5 pr-3" data-col="status">สถานะ <span class="sort-arrow" data-col="status">↕</span></th>
+            <th class="py-2.5 pr-3">SLA</th>
+            <th class="th-sort py-2.5 pr-3" data-col="closer">ผู้ปิดงาน <span class="sort-arrow" data-col="closer">↕</span></th>
+            <th class="py-2.5 pr-3">วิธีปิด</th>
+            <th class="py-2.5 pr-3">รูป</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
+    <!-- Pagination -->
+    <div id="pagination" class="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+      <p id="pageInfo" class="text-xs text-slate-400"></p>
+      <div id="pageButtons" class="flex gap-1"></div>
+    </div>
   </div>
 
-  <p class="text-center text-xs text-slate-400 mt-5">
-    AGA Complaint Agent · อัปเดตอัตโนมัติทุก 30 นาที
-  </p>
+  <p class="text-center text-xs text-slate-400 mt-5">AGA Complaint Agent · อัปเดตอัตโนมัติทุก 30 นาที</p>
 </main>
 
 <script>
 /* ============================================================
-   ⚙️ Config
+   Config
 ============================================================ */
 const BACKEND_URL   = 'https://aga-complaint-agent-396358198178.asia-southeast1.run.app/api/dashboard';
 const DASHBOARD_KEY = '418667f4821721f56caf9116';
 const REFRESH_MS    = 1800000;
+const SLA_HOURS     = { ok: 4, warn: 24 };
 
 /* ============================================================
    State
 ============================================================ */
-let allRecords  = [];
-let sortCol     = 'timestamp';
-let sortDir     = 'desc';
+let allRecords   = [];
+let sortCol      = 'timestamp';
+let sortDir      = 'desc';
 let filterStatus = '';
 let filterSev    = '';
-const charts    = {};
+let currentPage  = 1;
+const charts     = {};
 
 /* ---- helpers ---- */
 function parseThai(ts) {
@@ -232,7 +269,13 @@ function parseThai(ts) {
 }
 function fmtDate(d) {
   if (!d) return '—';
-  return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
+  return d.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'2-digit' });
+}
+function fmtHours(ms) {
+  const h = ms / 3600000;
+  if (h < 1) return Math.round(h * 60) + ' นาที';
+  if (h < 48) return h.toFixed(1) + ' ชม.';
+  return Math.round(h / 24) + ' วัน';
 }
 function showStatus(msg, type) {
   const bar = document.getElementById('statusBar');
@@ -241,6 +284,33 @@ function showStatus(msg, type) {
   bar.textContent = msg;
   bar.classList.remove('hidden');
   if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 2500);
+}
+
+function extractDriveUrl(method) {
+  if (!method) return null;
+  const m = method.match(/https:\/\/drive\.google\.com\/file\/d\/[^\s\]]+/);
+  return m ? m[0] : null;
+}
+
+function getSlaInfo(r) {
+  const open = parseThai(r.timestamp);
+  if (!open) return { label: '—', cls: '' };
+  if (r.status === 'ปิด') {
+    const close = parseThai(r.closeTime);
+    if (!close) return { label: 'ปิดแล้ว', cls: 'sla-done' };
+    const ms = close - open;
+    const h = ms / 3600000;
+    return {
+      label: fmtHours(ms),
+      cls: h <= SLA_HOURS.ok ? 'sla-ok' : h <= SLA_HOURS.warn ? 'sla-warn' : 'sla-over'
+    };
+  }
+  const ms = Date.now() - open.getTime();
+  const h = ms / 3600000;
+  return {
+    label: fmtHours(ms),
+    cls: h <= SLA_HOURS.ok ? 'sla-ok' : h <= SLA_HOURS.warn ? 'sla-warn' : 'sla-over'
+  };
 }
 
 /* ---- fetch ---- */
@@ -256,7 +326,7 @@ async function fetchData() {
     allRecords = json.data || [];
     document.getElementById('updatedAt').textContent =
       'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
-    populatePestFilter();
+    populateDropdowns();
     render();
   } catch (e) {
     showStatus('เชื่อมต่อข้อมูลไม่สำเร็จ: ' + e.message, 'error');
@@ -265,14 +335,17 @@ async function fetchData() {
   }
 }
 
-/* ---- populate pest dropdown ---- */
-function populatePestFilter() {
-  const sel = document.getElementById('pestFilter');
-  const current = sel.value;
-  const types = [...new Set(allRecords.map(r => r.pestType).filter(Boolean))].sort();
+function populateDropdowns() {
+  populateSelect('pestFilter',  allRecords.map(r => r.pestType));
+  populateSelect('groupFilter', allRecords.map(r => r.groupName));
+}
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  const uniq = [...new Set(values.filter(Boolean))].sort();
   sel.innerHTML = '<option value="">ทั้งหมด</option>' +
-    types.map(t => `<option value="${t}">${t}</option>`).join('');
-  if (types.includes(current)) sel.value = current;
+    uniq.map(t => `<option value="${t}">${t}</option>`).join('');
+  if (uniq.includes(cur)) sel.value = cur;
 }
 
 /* ---- filter ---- */
@@ -280,6 +353,7 @@ function getFiltered() {
   const from  = document.getElementById('dateFrom').value;
   const to    = document.getElementById('dateTo').value;
   const pest  = document.getElementById('pestFilter').value;
+  const group = document.getElementById('groupFilter').value;
   const q     = document.getElementById('searchBox').value.trim().toLowerCase();
   const fromD = from ? new Date(from + 'T00:00:00') : null;
   const toD   = to   ? new Date(to   + 'T23:59:59') : null;
@@ -288,11 +362,13 @@ function getFiltered() {
     const d = parseThai(r.timestamp);
     if (fromD && d && d < fromD) return false;
     if (toD   && d && d > toD)   return false;
-    if (filterStatus && r.status   !== filterStatus) return false;
-    if (filterSev    && r.severity !== filterSev)    return false;
-    if (pest         && r.pestType !== pest)          return false;
+    if (filterStatus && r.status    !== filterStatus) return false;
+    if (filterSev    && r.severity  !== filterSev)    return false;
+    if (pest         && r.pestType  !== pest)          return false;
+    if (group        && r.groupName !== group)         return false;
     if (q) {
-      const hay = (r.workOrderId + ' ' + r.pestType + ' ' + r.location + ' ' + r.floor).toLowerCase();
+      const hay = [r.workOrderId, r.pestType, r.location, r.floor, r.groupName, r.senderName]
+        .join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -301,7 +377,7 @@ function getFiltered() {
 
 /* ---- sort ---- */
 function sortRows(rows) {
-  const SEV_ORDER = { 'มาก': 3, 'ปานกลาง': 2, 'น้อย': 1 };
+  const SEV_ORDER = { 'มาก':3, 'ปานกลาง':2, 'น้อย':1 };
   return [...rows].sort((a, b) => {
     let va, vb;
     if (sortCol === 'timestamp') {
@@ -322,8 +398,7 @@ function sortRows(rows) {
 
 function updateSortUI() {
   document.querySelectorAll('.sort-arrow').forEach(el => {
-    const col = el.dataset.col;
-    if (col === sortCol) {
+    if (el.dataset.col === sortCol) {
       el.textContent = sortDir === 'asc' ? '↑' : '↓';
       el.classList.add('active');
     } else {
@@ -333,9 +408,10 @@ function updateSortUI() {
   });
 }
 
-/* ---- status chip helpers ---- */
+/* ---- chips ---- */
 function setStatus(val) {
   filterStatus = val;
+  currentPage = 1;
   document.getElementById('chip-all').classList.toggle('active', val === '');
   document.getElementById('chip-open').classList.toggle('active', val === 'เปิด');
   document.getElementById('chip-close').classList.toggle('active', val === 'ปิด');
@@ -343,10 +419,11 @@ function setStatus(val) {
 }
 function setSev(val) {
   filterSev = val;
-  document.getElementById('sev-all').className  = 'sev-chip' + (val === ''       ? ' active-all'  : '');
-  document.getElementById('sev-low').className  = 'sev-chip' + (val === 'น้อย'   ? ' active-low'  : '');
-  document.getElementById('sev-med').className  = 'sev-chip' + (val === 'ปานกลาง'? ' active-med'  : '');
-  document.getElementById('sev-high').className = 'sev-chip' + (val === 'มาก'    ? ' active-high' : '');
+  currentPage = 1;
+  document.getElementById('sev-all').className  = 'sev-chip' + (val === ''        ? ' active-all'  : '');
+  document.getElementById('sev-low').className  = 'sev-chip' + (val === 'น้อย'    ? ' active-low'  : '');
+  document.getElementById('sev-med').className  = 'sev-chip' + (val === 'ปานกลาง' ? ' active-med'  : '');
+  document.getElementById('sev-high').className = 'sev-chip' + (val === 'มาก'     ? ' active-high' : '');
   render();
 }
 
@@ -380,13 +457,27 @@ function render() {
   }).length;
   document.getElementById('kpiOverdue').textContent = overdue;
 
-  // charts
-  renderPie('chartPest',      countBy(rows, 'pestType'));
-  renderBar('chartLocation',  topN(countBy(rows, 'location'), 10));
-  renderPie('chartSeverity',  countBy(rows, 'severity'), ['#ef4444', '#f59e0b', '#22c55e', '#94a3b8']);
-  renderTrend(rows);
+  // SLA summary
+  let slaOk = 0, slaWarn = 0, slaOver = 0;
+  rows.forEach(r => {
+    const info = getSlaInfo(r);
+    if (info.cls === 'sla-ok') slaOk++;
+    else if (info.cls === 'sla-warn') slaWarn++;
+    else if (info.cls === 'sla-over') slaOver++;
+  });
+  document.getElementById('slaOk').textContent   = slaOk;
+  document.getElementById('slaWarn').textContent  = slaWarn;
+  document.getElementById('slaOver').textContent  = slaOver;
 
-  // table
+  // Charts
+  renderPie('chartPest',     countBy(rows, 'pestType'));
+  renderBar('chartLocation', topN(countBy(rows, 'location'), 10));
+  renderPie('chartSeverity', countBy(rows, 'severity'), ['#ef4444','#f59e0b','#22c55e','#94a3b8']);
+  renderTrend(rows);
+  renderGroupChart(rows);
+  renderSLAChart(rows);
+
+  // Table
   renderTable(rows);
 }
 
@@ -410,7 +501,7 @@ function renderPie(id, data, colors) {
       labels: Object.keys(data),
       datasets: [{ data: Object.values(data), backgroundColor: colors || PALETTE, borderWidth: 2, borderColor: '#fff' }]
     },
-    options: { plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+    options: { plugins: { legend: { position:'right', labels: { font:{ size:11 }, boxWidth:12 } } } }
   });
 }
 function renderBar(id, data) {
@@ -420,12 +511,12 @@ function renderBar(id, data) {
     type: 'bar',
     data: {
       labels: Object.keys(data),
-      datasets: [{ data: Object.values(data), backgroundColor: '#3b82f6', borderRadius: 4 }]
+      datasets: [{ data: Object.values(data), backgroundColor:'#3b82f6', borderRadius:4 }]
     },
     options: {
       indexAxis: 'y',
-      plugins: { legend: { display: false } },
-      scales: { x: { ticks: { precision: 0 } } }
+      plugins: { legend:{ display:false } },
+      scales: { x:{ ticks:{ precision:0 } } }
     }
   });
 }
@@ -433,12 +524,12 @@ function renderTrend(rows) {
   const days = [];
   for (let i = 13; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    days.push({ key: d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit' }), count: 0 });
+    days.push({ key: d.toLocaleDateString('th-TH',{ day:'2-digit', month:'2-digit' }), count:0 });
   }
   rows.forEach(r => {
     const o = parseThai(r.timestamp);
     if (!o) return;
-    const k = o.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit' });
+    const k = o.toLocaleDateString('th-TH',{ day:'2-digit', month:'2-digit' });
     const slot = days.find(x => x.key === k);
     if (slot) slot.count++;
   });
@@ -448,14 +539,59 @@ function renderTrend(rows) {
     type: 'line',
     data: {
       labels: days.map(d => d.key),
-      datasets: [{ data: days.map(d => d.count), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', fill: true, tension: .3, pointRadius: 3 }]
+      datasets: [{ data: days.map(d => d.count), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)', fill:true, tension:.3, pointRadius:3 }]
     },
-    options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+    options: { plugins:{ legend:{ display:false } }, scales:{ y:{ ticks:{ precision:0 } } } }
+  });
+}
+
+function renderGroupChart(rows) {
+  const data = countBy(rows, 'groupName');
+  const sorted = Object.fromEntries(Object.entries(data).sort((a, b) => b[1] - a[1]));
+  const ctx = document.getElementById('chartGroup');
+  if (charts.chartGroup) charts.chartGroup.destroy();
+  charts.chartGroup = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(sorted),
+      datasets: [{ data: Object.values(sorted), backgroundColor: PALETTE, borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { precision: 0 } } }
+    }
+  });
+}
+
+function renderSLAChart(rows) {
+  const closedRows = rows.filter(r => r.status === 'ปิด');
+  let ok = 0, warn = 0, over = 0;
+  closedRows.forEach(r => {
+    const o = parseThai(r.timestamp), c = parseThai(r.closeTime);
+    if (!o || !c) return;
+    const h = (c - o) / 3600000;
+    if (h <= SLA_HOURS.ok) ok++;
+    else if (h <= SLA_HOURS.warn) warn++;
+    else over++;
+  });
+  const ctx = document.getElementById('chartSLA');
+  if (charts.chartSLA) charts.chartSLA.destroy();
+  charts.chartSLA = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['≤4 ชม.', '4–24 ชม.', '>24 ชม.'],
+      datasets: [{ data: [ok, warn, over], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderRadius: 4 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { precision: 0 } } }
+    }
   });
 }
 
 function severityBadge(s) {
-  const map = { 'มาก': 'bg-red-100 text-red-700', 'ปานกลาง': 'bg-amber-100 text-amber-700', 'น้อย': 'bg-emerald-100 text-emerald-700' };
+  const map = { 'มาก':'bg-red-100 text-red-700', 'ปานกลาง':'bg-amber-100 text-amber-700', 'น้อย':'bg-emerald-100 text-emerald-700' };
   return `<span class="px-2 py-0.5 rounded-full text-xs ${map[s] || 'bg-slate-100 text-slate-500'}">${s || '—'}</span>`;
 }
 function statusBadge(s) {
@@ -465,65 +601,117 @@ function statusBadge(s) {
 }
 
 function renderTable(rows) {
-  const now    = Date.now();
-  const sorted = sortRows(rows);
+  const now     = Date.now();
+  const sorted  = sortRows(rows);
+  const size    = parseInt(document.getElementById('pageSize').value) || 0;
+  const total   = sorted.length;
+  const pages   = size > 0 ? Math.ceil(total / size) : 1;
+  if (currentPage > pages) currentPage = pages || 1;
+  const start   = size > 0 ? (currentPage - 1) * size : 0;
+  const pageRows = size > 0 ? sorted.slice(start, start + size) : sorted;
+
   updateSortUI();
-  document.getElementById('tableCount').textContent = `(${rows.length} รายการ)`;
+  document.getElementById('tableCount').textContent = `(${total} รายการ)`;
+
   const body = document.getElementById('tableBody');
-  body.innerHTML = sorted.map(r => {
+  body.innerHTML = pageRows.map(r => {
     const o = parseThai(r.timestamp);
     const isOverdue = r.status !== 'ปิด' && o && (now - o.getTime()) > 3 * 86400000;
+    const sla = getSlaInfo(r);
+    const driveUrl = extractDriveUrl(r.closeMethod);
+    const cleanMethod = (r.closeMethod || '').replace(/\s*\[รูป:.*?\]/, '').trim();
+
     return `<tr class="border-b border-slate-50 hover:bg-blue-50/40 transition-colors ${isOverdue ? 'bg-red-50' : ''}">
-      <td class="py-2 pr-3 font-semibold text-slate-800">${r.workOrderId}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}</td>
+      <td class="py-2 pr-3 font-semibold text-slate-800 whitespace-nowrap">${r.workOrderId}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}</td>
       <td class="py-2 pr-3 text-slate-500 whitespace-nowrap">${fmtDate(o)}</td>
+      <td class="py-2 pr-3 text-slate-600 max-w-[120px] truncate" title="${r.groupName || ''}">${r.groupName || '—'}</td>
+      <td class="py-2 pr-3 text-slate-600">${r.senderName || '—'}</td>
       <td class="py-2 pr-3">${r.pestType || '—'}</td>
-      <td class="py-2 pr-3">${r.location || '—'}</td>
-      <td class="py-2 pr-3 text-slate-500">${r.floor || '—'}</td>
+      <td class="py-2 pr-3 max-w-[100px] truncate" title="${r.location || ''}">${r.location || '—'}</td>
       <td class="py-2 pr-3">${severityBadge(r.severity)}</td>
       <td class="py-2 pr-3">${statusBadge(r.status)}</td>
+      <td class="py-2 pr-3"><span class="sla-badge ${sla.cls}">${sla.label}</span></td>
       <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
-      <td class="py-2 pr-3 text-slate-500 max-w-[180px] truncate" title="${(r.closeMethod || '').replace(/"/g, '')}">${r.closeMethod || '—'}</td>
+      <td class="py-2 pr-3 text-slate-500 max-w-[140px] truncate" title="${cleanMethod}">${cleanMethod || '—'}</td>
+      <td class="py-2 pr-3 text-center">${driveUrl ? `<a href="${driveUrl}" target="_blank" rel="noopener" class="text-blue-500 hover:text-blue-700" title="ดูรูปปิดงาน">📷</a>` : '<span class="text-slate-300">—</span>'}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="9" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+  }).join('') || '<tr><td colspan="12" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+
+  // Pagination
+  renderPagination(total, pages);
+}
+
+function renderPagination(total, pages) {
+  const size = parseInt(document.getElementById('pageSize').value) || 0;
+  const info = document.getElementById('pageInfo');
+  const btns = document.getElementById('pageButtons');
+
+  if (pages <= 1) {
+    info.textContent = `แสดง ${total} รายการ`;
+    btns.innerHTML = '';
+    return;
+  }
+
+  const start = (currentPage - 1) * size + 1;
+  const end   = Math.min(currentPage * size, total);
+  info.textContent = `แสดง ${start}–${end} จาก ${total} รายการ`;
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  for (let p = 1; p <= pages; p++) {
+    if (pages > 7 && p > 2 && p < pages - 1 && Math.abs(p - currentPage) > 1) {
+      if (p === 3 || p === pages - 2) html += '<span class="text-slate-400 px-1">…</span>';
+      continue;
+    }
+    html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === pages ? 'disabled' : ''}>›</button>`;
+  btns.innerHTML = html;
+}
+
+function goPage(p) {
+  const size  = parseInt(document.getElementById('pageSize').value) || 0;
+  const pages = size > 0 ? Math.ceil(getFiltered().length / size) : 1;
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderTable(getFiltered());
 }
 
 /* ---- export CSV ---- */
 function exportCSV() {
   const rows = getFiltered();
-  const head = ['WO','วันที่แจ้ง','ชนิด','พื้นที่','ชั้น','ความรุนแรง','สถานะ','ผู้แจ้ง','ผู้ติดต่อ','เบอร์','ผู้ปิดงาน','เวลาปิด','วิธีปิด'];
+  const head = ['WO','วันที่แจ้ง','กลุ่ม LINE','ผู้แจ้ง','ชนิด','พื้นที่','ชั้น','ความรุนแรง','สถานะ','ผู้ติดต่อ','เบอร์','ผู้ปิดงาน','เวลาปิด','วิธีปิด'];
   const lines = rows.map(r => [
-    r.workOrderId, r.timestamp, r.pestType, r.location, r.floor, r.severity,
-    r.status, r.senderName, r.contactName, r.contactPhone, r.closer, r.closeTime, r.closeMethod
-  ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+    r.workOrderId, r.timestamp, r.groupName, r.senderName, r.pestType, r.location, r.floor, r.severity,
+    r.status, r.contactName, r.contactPhone, r.closer, r.closeTime, r.closeMethod
+  ].map(v => `"${String(v || '').replace(/"/g,'""')}"`).join(','));
   const csv = '﻿' + [head.join(','), ...lines].join('\n');
   const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
-    download: `AGA_WorkOrders_${new Date().toISOString().slice(0, 10)}.csv`
+    href: URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8;' })),
+    download: `AGA_WorkOrders_${new Date().toISOString().slice(0,10)}.csv`
   });
   a.click();
 }
 
 /* ---- events ---- */
-// Sort headers
 document.querySelectorAll('.th-sort').forEach(th => {
   th.addEventListener('click', () => {
     const col = th.dataset.col;
-    if (sortCol === col) {
-      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      sortCol = col;
-      sortDir = 'asc';
-    }
+    if (sortCol === col) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+    else { sortCol = col; sortDir = 'asc'; }
     renderTable(getFiltered());
   });
 });
 
-['dateFrom', 'dateTo', 'pestFilter', 'searchBox'].forEach(id =>
-  document.getElementById(id).addEventListener('input', render));
+['dateFrom','dateTo','pestFilter','groupFilter','searchBox'].forEach(id =>
+  document.getElementById(id).addEventListener('input', () => { currentPage = 1; render(); }));
+
+document.getElementById('pageSize').addEventListener('change', () => { currentPage = 1; renderTable(getFiltered()); });
 
 document.getElementById('clearFilter').addEventListener('click', () => {
-  ['dateFrom', 'dateTo', 'searchBox'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('pestFilter').value = '';
+  ['dateFrom','dateTo','searchBox'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pestFilter').value  = '';
+  document.getElementById('groupFilter').value = '';
+  currentPage = 1;
   setStatus('');
   setSev('');
 });

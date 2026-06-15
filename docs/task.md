@@ -22,11 +22,22 @@
 - แก้ Drive upload: อัปโหลดเข้า folder `AGA-Complaint-Photos`
 - แก้ regex: รองรับ `ปิดงานW001` (ไม่มี space) และ `ปิดงาน W001` (มี space)
 
+### Dashboard — Real-time (เสร็จ 100%)
+- `dashboard.html` — single-file HTML เชื่อม `/api/dashboard` endpoint
+- KPI cards: งานทั้งหมด / เปิด / ปิด / % ปิด / เฉลี่ยปิด / ค้างเกิน 3 วัน
+- กราฟ 6 ชุด: ชนิดแมลง, พื้นที่ Top10, ความรุนแรง, แนวโน้ม 14 วัน, กลุ่ม LINE, SLA
+- ตาราง: sort ทุก column, pagination, filter (สถานะ/ชนิด/กลุ่ม/ความรุนแรง/วันที่/ค้นหา)
+- คอลัมน์: กลุ่ม LINE, ชื่อผู้แจ้ง, SLA badge, ลิงก์รูป Drive 📷
+- Export CSV
+- DASHBOARD_KEY ป้องกัน unauthorized access
+- Deploy บน Netlify (เชื่อม GitHub auto-deploy) ✅
+- URL: `https://aga-complaint-agent-line.netlify.app/dashboard.html`
+
 ---
 
 ## 🔴 งานค้าง — ต้องทำก่อน
 
-### 1. Deploy โค้ดล่าสุด (ยังไม่ได้ deploy หลังแก้ Drive + regex)
+### 1. Deploy โค้ดล่าสุด ไปยัง Cloud Run (ยังไม่ได้ deploy)
 
 รันใน **Cloud Shell**:
 
@@ -38,7 +49,8 @@ gcloud builds submit \
 gcloud run deploy aga-complaint-agent \
   --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest \
   --platform managed \
-  --region asia-southeast1
+  --region asia-southeast1 \
+  --update-env-vars DASHBOARD_KEY=418667f4821721f56caf9116
 ```
 
 ### 2. ทดสอบ Drive Upload หลัง Deploy
@@ -48,6 +60,10 @@ gcloud run deploy aga-complaint-agent \
 | ส่งรูปในกลุ่ม LINE | แนบรูป แล้วพิมพ์ `ปิดงาน WXXX` ภายใน 5 นาที | Bot ตอบยืนยัน |
 | เช็ค Google Sheet | ดู column T | ต้องมี Drive URL ของรูป |
 | เช็ค Google Drive | เปิด [AGA-Complaint-Photos](https://drive.google.com/drive/folders/1HcY1doc7d4G_z5tUo3VPDc_sXZvyxeHq) | รูปต้องขึ้นใน folder |
+
+### 3. ทดสอบ Dashboard
+- เข้า `https://aga-complaint-agent-line.netlify.app/dashboard.html`
+- ตรวจว่าข้อมูลโหลดได้ (ต้องตั้ง `DASHBOARD_KEY` ใน Cloud Run ก่อน)
 
 ---
 
