@@ -89,11 +89,17 @@ async function replyMessage(replyToken, text) {
   }
 }
 
-// ดาวน์โหลดรูปจาก LINE แล้วอัปโหลดขึ้น Google Drive
-async function uploadPhotoToDrive(messageId, woId, authClient) {
+// ดาวน์โหลดรูปจาก LINE แล้วอัปโหลดขึ้น Google Cloud Storage
+async function uploadPhotoToGCS(messageId, woId) {
   try {
-    const { google } = require('googleapis');
-    const drive = google.drive({ version: 'v3', auth: authClient });
+    const { Storage } = require('@google-cloud/storage');
+    const storageOptions = {};
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      const path = require('path');
+      storageOptions.keyFilename = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
+    }
+    const storage = new Storage(storageOptions);
+    const bucket = storage.bucket('aga-complaint-photos');
 
     // ดาวน์โหลดรูปจาก LINE
     const lineRes = await fetch(`https://api-data.line.me/v2/bot/message/${messageId}/content`, {
@@ -103,39 +109,20 @@ async function uploadPhotoToDrive(messageId, woId, authClient) {
 
     const buffer = Buffer.from(await lineRes.arrayBuffer());
 
-    // อัปโหลดขึ้น Google Drive
-    const { Readable } = require('stream');
-    const stream = Readable.from(buffer);
+    // อัปโหลดขึ้น GCS
+    const filename = `${woId}_${Date.now()}.jpg`;
+    const file = bucket.file(filename);
+    await file.save(buffer, { contentType: 'image/jpeg' });
 
-    const driveRes = await drive.files.create({
-      requestBody: {
-        name: `${woId}_close_photo.jpg`,
-        mimeType: 'image/jpeg',
-        parents: ['1HcY1doc7d4G_z5tUo3VPDc_sXZvyxeHq'],
-      },
-      media: {
-        mimeType: 'image/jpeg',
-        body: stream,
-      },
-    });
-
-    const fileId = driveRes.data.id;
-
-    // ให้สิทธิ์อ่านแบบ public
-    await drive.permissions.create({
-      fileId,
-      requestBody: { role: 'reader', type: 'anyone' },
-    });
-
-    return `https://drive.google.com/file/d/${fileId}/view`;
+    return `https://storage.googleapis.com/aga-complaint-photos/${filename}`;
   } catch (e) {
-    console.error('   ❌ uploadPhotoToDrive error:', e.message);
+    console.error('   ❌ uploadPhotoToGCS error:', e.message);
     return null;
   }
 }
 
 // จัดการ "ปิดงาน WXXX [วิธีปิด]"
-async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pendingPhotoMessageId, authClient) {
+async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pendingPhotoMessageId) {
   const rowNumber = await findRowByWorkOrderId(woId);
   if (!rowNumber) {
     await pushMessage(groupId, `ไม่พบ ${woId} — ตรวจสอบหมายเลขอีกครั้ง`);
@@ -150,12 +137,12 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     return;
   }
 
-  // อัปโหลดรูปถ้ามี
+  // อัปโหลดรูปขึ้น GCS ถ้ามี
   let finalMethod = closeMethod || 'ไม่ระบุ';
-  if (pendingPhotoMessageId && authClient) {
-    const driveUrl = await uploadPhotoToDrive(pendingPhotoMessageId, woId, authClient);
-    if (driveUrl) {
-      finalMethod = (closeMethod || '') + ` [รูป: ${driveUrl}]`;
+  if (pendingPhotoMessageId) {
+    const gcsUrl = await uploadPhotoToGCS(pendingPhotoMessageId, woId);
+    if (gcsUrl) {
+      finalMethod = (closeMethod || '') + ` [รูป: ${gcsUrl}]`;
     }
   }
 
@@ -233,24 +220,12 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       // เช็ครูปที่รอไว้ (ไม่เกิน 5 นาที)
       const pending = pendingPhotos.get(groupId);
       let photoMessageId = null;
-      let authForDrive = null;
       if (pending && (Date.now() - pending.time) < 5 * 60 * 1000) {
         photoMessageId = pending.messageId;
-        // ดึง authClient สำหรับ Drive upload
-        const { google } = require('googleapis');
-        const authOptions = {
-          scopes: ['https://www.googleapis.com/auth/drive.file'],
-        };
-        if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-          const path = require('path');
-          authOptions.keyFile = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
-        }
-        const auth = new google.auth.GoogleAuth(authOptions);
-        authForDrive = await auth.getClient();
         pendingPhotos.delete(groupId);
       }
 
-      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageId, authForDrive);
+      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageId);
       continue;
     }
 
