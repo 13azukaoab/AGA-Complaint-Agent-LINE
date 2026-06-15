@@ -35,52 +35,9 @@
 
 ---
 
-## 🔴 งานค้าง — ต้องทำก่อน
+## ✅ ระบบพร้อม Production แล้ว (15 มิ.ย. 2569)
 
-### 1. Deploy โค้ดล่าสุด ไปยัง Cloud Run (ยังไม่ได้ deploy)
-
-รันใน **Cloud Shell**:
-
-```bash
-cd ~/aga-agent
-git pull origin main
-gcloud builds submit \
-  --tag asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest
-gcloud run deploy aga-complaint-agent \
-  --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest \
-  --platform managed \
-  --region asia-southeast1 \
-  --update-env-vars DASHBOARD_KEY=418667f4821721f56caf9116
-```
-
-### 2. ทดสอบ Drive Upload หลัง Deploy
-
-| ขั้น | วิธีทดสอบ | ผลที่คาดหวัง |
-|------|-----------|------------|
-| ส่งรูปในกลุ่ม LINE | แนบรูป แล้วพิมพ์ `ปิดงาน WXXX` ภายใน 5 นาที | Bot ตอบยืนยัน |
-| เช็ค Google Sheet | ดู column T | ต้องมี Drive URL ของรูป |
-| เช็ค Google Drive | เปิด [AGA-Complaint-Photos](https://drive.google.com/drive/folders/1HcY1doc7d4G_z5tUo3VPDc_sXZvyxeHq) | รูปต้องขึ้นใน folder |
-
-### 3. ทดสอบ Dashboard
-- เข้า `https://aga-complaint-agent-line.netlify.app/dashboard.html`
-- ตรวจว่าข้อมูลโหลดได้ (ต้องตั้ง `DASHBOARD_KEY` ใน Cloud Run ก่อน)
-
----
-
-## 🔵 Phase ที่ยังไม่ได้เริ่ม
-
-### Phase 5 — Vision AI วิเคราะห์รูปภาพแมลง
-
-**เป้าหมาย:** ให้ Gemini อ่านรูปที่ลูกค้าส่งมา แล้ววิเคราะห์ว่าเป็นแมลงอะไร / ความรุนแรงระดับไหน
-
-**สถานะ:** Gemini model รองรับรูปภาพอยู่แล้ว (`gemini-1.5-flash`) — รอเริ่ม
-
-**งานที่ต้องทำใน Phase 5:**
-- [ ] รับรูปจาก LINE Webhook (message type = `image`)
-- [ ] ดึง binary content จาก LINE API
-- [ ] ส่งรูปให้ Gemini วิเคราะห์พร้อม prompt
-- [ ] บันทึกผลการวิเคราะห์ลง Sheets (คอลัมน์ใหม่)
-- [ ] ทดสอบ end-to-end
+ทุก feature หลักทำงานได้ครบแล้ว — ไม่มีงานค้างเร่งด่วน
 
 ---
 
