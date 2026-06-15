@@ -9,6 +9,7 @@ const {
   getRowData,
   updateWorkOrderStatus,
   getOpenWorkOrders,
+  getAllWorkOrders,
 } = require('./sheets');
 
 const app = express();
@@ -304,6 +305,22 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
 app.get('/webhook', (req, res) => res.status(200).send('OK'));
 app.get('/', (req, res) => res.send('AGA Complaint Agent is running ✅'));
+
+// API สำหรับ Dashboard — คืนข้อมูล Work Order ทั้งหมดเป็น JSON
+// ป้องกันด้วย DASHBOARD_KEY (ถ้าตั้ง env ไว้) — ?key=xxx
+app.get('/api/dashboard', async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  const key = process.env.DASHBOARD_KEY;
+  if (key && req.query.key !== key) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
+  try {
+    const data = await getAllWorkOrders();
+    res.json({ ok: true, count: data.length, updatedAt: new Date().toISOString(), data });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 // Mount notify endpoint
 app.use('/notify', require('./notify'));

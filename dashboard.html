@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AGA Pest Control — Dashboard ระบบแจ้งปัญหา</title>
+
+<!-- ============================================================
+  AGA Complaint Agent — Dashboard (Single-file HTML)
+  เชื่อมข้อมูลแบบ real-time จาก Google Sheet ผ่าน Backend (Cloud Run)
+  Endpoint: GET /api/dashboard  → คืน JSON ของ Work Order ทั้งหมด
+  Auto-refresh ทุก 60 วินาที
+
+  ⚙️ ตั้งค่า: แก้ค่า BACKEND_URL / DASHBOARD_KEY ด้านล่าง (ใน <script>)
+============================================================ -->
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+  * { font-family: 'Noto Sans Thai', sans-serif; }
+  body { background: #f1f5f9; }
+  .card { background:#fff; border-radius:1rem; box-shadow:0 1px 3px rgba(15,23,42,.08); }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  ::-webkit-scrollbar { height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+</style>
+</head>
+
+<body class="text-slate-700">
+
+<!-- Header -->
+<header class="bg-gradient-to-r from-slate-800 to-slate-700 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-blue-500 flex items-center justify-center text-xl font-bold">A</div>
+      <div>
+        <h1 class="text-lg font-bold leading-tight">AGA Pest Control — Dashboard</h1>
+        <p class="text-xs text-slate-300">ระบบแจ้งปัญหาแมลง/สัตว์รบกวน · Advance Group Asia</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 text-sm">
+      <span id="updatedAt" class="text-slate-300 text-xs">—</span>
+      <button id="refreshBtn" class="bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg flex items-center gap-2 transition">
+        <svg id="refreshIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        รีเฟรช
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-5 py-6">
+
+  <!-- สถานะการเชื่อมต่อ / error -->
+  <div id="statusBar" class="hidden mb-4 px-4 py-3 rounded-lg text-sm"></div>
+
+  <!-- ตัวกรอง -->
+  <div class="card p-4 mb-5 flex flex-wrap items-end gap-3">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">ตั้งแต่วันที่</label>
+      <input id="dateFrom" type="date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">ถึงวันที่</label>
+      <input id="dateTo" type="date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm" />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">สถานะ</label>
+      <select id="statusFilter" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+        <option value="">ทั้งหมด</option>
+        <option value="เปิด">เปิด</option>
+        <option value="ปิด">ปิด</option>
+      </select>
+    </div>
+    <div class="flex-1 min-w-[180px]">
+      <label class="block text-xs text-slate-500 mb-1">ค้นหา (WO / พื้นที่ / ชนิด)</label>
+      <input id="searchBox" type="text" placeholder="พิมพ์เพื่อค้นหา..." class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" />
+    </div>
+    <button id="clearFilter" class="text-sm text-slate-500 hover:text-slate-700 underline py-1.5">ล้างตัวกรอง</button>
+    <button id="exportBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm transition">⬇ Export Excel</button>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+    <div class="card p-4"><p class="text-xs text-slate-500">งานทั้งหมด</p><p id="kpiTotal" class="text-2xl font-bold text-slate-800">0</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">งานเปิด</p><p id="kpiOpen" class="text-2xl font-bold text-amber-500">0</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">งานปิด</p><p id="kpiClosed" class="text-2xl font-bold text-emerald-500">0</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">% ปิดงาน</p><p id="kpiRate" class="text-2xl font-bold text-blue-500">0%</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">เฉลี่ยปิดงาน (ชม.)</p><p id="kpiAvg" class="text-2xl font-bold text-indigo-500">—</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500">ค้างเกิน 3 วัน</p><p id="kpiOverdue" class="text-2xl font-bold text-red-500">0</p></div>
+  </div>
+
+  <!-- กราฟ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+    <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-700">งานตามชนิดสัตว์/แมลง</h3><canvas id="chartPest" height="180"></canvas></div>
+    <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-700">งานตามพื้นที่/อาคาร (Top 10)</h3><canvas id="chartLocation" height="180"></canvas></div>
+    <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-700">งานตามความรุนแรง</h3><canvas id="chartSeverity" height="180"></canvas></div>
+    <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-700">แนวโน้มงานรายวัน (14 วันล่าสุด)</h3><canvas id="chartTrend" height="180"></canvas></div>
+  </div>
+
+  <!-- ตาราง -->
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-slate-700">รายการงาน <span id="tableCount" class="text-slate-400 font-normal"></span></h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-slate-500 border-b border-slate-200">
+            <th class="py-2 pr-3">WO</th>
+            <th class="py-2 pr-3">วันที่แจ้ง</th>
+            <th class="py-2 pr-3">ชนิด</th>
+            <th class="py-2 pr-3">พื้นที่</th>
+            <th class="py-2 pr-3">ชั้น</th>
+            <th class="py-2 pr-3">ความรุนแรง</th>
+            <th class="py-2 pr-3">สถานะ</th>
+            <th class="py-2 pr-3">ผู้ปิดงาน</th>
+            <th class="py-2 pr-3">วิธีปิด</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="text-center text-xs text-slate-400 mt-6">AGA Complaint Agent · ข้อมูลอัปเดตอัตโนมัติทุก 60 วินาที</p>
+</main>
+
+<script>
+/* ============================================================
+   ⚙️ ตั้งค่าการเชื่อมต่อ
+============================================================ */
+const BACKEND_URL = 'https://aga-complaint-agent-396358198178.asia-southeast1.run.app/api/dashboard';
+const DASHBOARD_KEY = ''; // ถ้าตั้ง DASHBOARD_KEY ใน Cloud Run ให้ใส่ค่าตรงนี้
+const REFRESH_MS = 60000;
+
+/* ============================================================
+   State
+============================================================ */
+let allRecords = [];
+const charts = {};
+
+/* ---------- helpers ---------- */
+// แปลงเวลาไทย พ.ศ. "13/6/2569 18:20:55" → Date
+function parseThai(ts) {
+  if (!ts) return null;
+  const m = ts.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
+  if (!m) return null;
+  return new Date(+m[3] - 543, +m[2] - 1, +m[1], +m[4], +m[5], +m[6]);
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+function showStatus(msg, type) {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'mb-4 px-4 py-3 rounded-lg text-sm ' +
+    (type === 'error' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700');
+  bar.textContent = msg;
+  bar.classList.remove('hidden');
+  if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 2500);
+}
+
+/* ---------- fetch ---------- */
+async function fetchData() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spin');
+  try {
+    const url = DASHBOARD_KEY ? `${BACKEND_URL}?key=${encodeURIComponent(DASHBOARD_KEY)}` : BACKEND_URL;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'unknown');
+    allRecords = json.data || [];
+    document.getElementById('updatedAt').textContent =
+      'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+    render();
+  } catch (e) {
+    showStatus('เชื่อมต่อข้อมูลไม่สำเร็จ: ' + e.message + ' — ตรวจสอบ BACKEND_URL/Key', 'error');
+  } finally {
+    icon.classList.remove('spin');
+  }
+}
+
+/* ---------- filter ---------- */
+function getFiltered() {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  const status = document.getElementById('statusFilter').value;
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const fromD = from ? new Date(from + 'T00:00:00') : null;
+  const toD = to ? new Date(to + 'T23:59:59') : null;
+
+  return allRecords.filter(r => {
+    const d = parseThai(r.timestamp);
+    if (fromD && d && d < fromD) return false;
+    if (toD && d && d > toD) return false;
+    if (status && r.status !== status) return false;
+    if (q) {
+      const hay = (r.workOrderId + ' ' + r.pestType + ' ' + r.location + ' ' + r.floor).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/* ---------- render ---------- */
+function render() {
+  const rows = getFiltered();
+
+  // KPI
+  const total = rows.length;
+  const closed = rows.filter(r => r.status === 'ปิด').length;
+  const open = total - closed;
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiOpen').textContent = open;
+  document.getElementById('kpiClosed').textContent = closed;
+  document.getElementById('kpiRate').textContent = total ? Math.round(closed / total * 100) + '%' : '0%';
+
+  // เวลาเฉลี่ยปิดงาน (ชม.)
+  let sumH = 0, cntH = 0;
+  rows.forEach(r => {
+    if (r.status === 'ปิด') {
+      const o = parseThai(r.timestamp), c = parseThai(r.closeTime);
+      if (o && c && c > o) { sumH += (c - o) / 3600000; cntH++; }
+    }
+  });
+  document.getElementById('kpiAvg').textContent = cntH ? (sumH / cntH).toFixed(1) : '—';
+
+  // ค้างเกิน 3 วัน
+  const now = Date.now();
+  const overdue = rows.filter(r => {
+    if (r.status === 'ปิด') return false;
+    const o = parseThai(r.timestamp);
+    return o && (now - o.getTime()) > 3 * 86400000;
+  }).length;
+  document.getElementById('kpiOverdue').textContent = overdue;
+
+  // charts
+  renderPie('chartPest', countBy(rows, 'pestType'));
+  renderBar('chartLocation', topN(countBy(rows, 'location'), 10));
+  renderPie('chartSeverity', countBy(rows, 'severity'), ['#ef4444', '#f59e0b', '#22c55e', '#94a3b8']);
+  renderTrend(rows);
+
+  // table
+  renderTable(rows);
+}
+
+function countBy(rows, field) {
+  const m = {};
+  rows.forEach(r => { const k = r[field] || 'ไม่ระบุ'; m[k] = (m[k] || 0) + 1; });
+  return m;
+}
+function topN(obj, n) {
+  const e = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
+  return Object.fromEntries(e);
+}
+
+const PALETTE = ['#3b82f6', '#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
+function renderPie(id, data, colors) {
+  const ctx = document.getElementById(id);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(data),
+      datasets: [{ data: Object.values(data), backgroundColor: colors || PALETTE, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+  });
+}
+function renderBar(id, data) {
+  const ctx = document.getElementById(id);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(data),
+      datasets: [{ data: Object.values(data), backgroundColor: '#3b82f6', borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { precision: 0 } } }
+    }
+  });
+}
+function renderTrend(rows) {
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push({ key: d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit' }), date: d, count: 0 });
+  }
+  rows.forEach(r => {
+    const o = parseThai(r.timestamp);
+    if (!o) return;
+    const k = o.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit' });
+    const slot = days.find(x => x.key === k);
+    if (slot) slot.count++;
+  });
+  const ctx = document.getElementById('chartTrend');
+  if (charts.chartTrend) charts.chartTrend.destroy();
+  charts.chartTrend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: days.map(d => d.key),
+      datasets: [{ data: days.map(d => d.count), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', fill: true, tension: .3, pointRadius: 3 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+  });
+}
+
+function severityBadge(s) {
+  const map = { 'มาก': 'bg-red-100 text-red-700', 'ปานกลาง': 'bg-amber-100 text-amber-700', 'น้อย': 'bg-emerald-100 text-emerald-700' };
+  return `<span class="px-2 py-0.5 rounded-full text-xs ${map[s] || 'bg-slate-100 text-slate-600'}">${s || '—'}</span>`;
+}
+function statusBadge(s) {
+  return s === 'ปิด'
+    ? '<span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">ปิด</span>'
+    : '<span class="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">เปิด</span>';
+}
+
+function renderTable(rows) {
+  const now = Date.now();
+  const sorted = [...rows].sort((a, b) => (parseThai(b.timestamp) || 0) - (parseThai(a.timestamp) || 0));
+  document.getElementById('tableCount').textContent = `(${rows.length} รายการ)`;
+  const body = document.getElementById('tableBody');
+  body.innerHTML = sorted.map(r => {
+    const o = parseThai(r.timestamp);
+    const isOverdue = r.status !== 'ปิด' && o && (now - o.getTime()) > 3 * 86400000;
+    return `<tr class="border-b border-slate-100 hover:bg-slate-50 ${isOverdue ? 'bg-red-50' : ''}">
+      <td class="py-2 pr-3 font-medium text-slate-800">${r.workOrderId}${isOverdue ? ' 🔴' : ''}</td>
+      <td class="py-2 pr-3 text-slate-500">${fmtDate(o)}</td>
+      <td class="py-2 pr-3">${r.pestType}</td>
+      <td class="py-2 pr-3">${r.location}</td>
+      <td class="py-2 pr-3 text-slate-500">${r.floor}</td>
+      <td class="py-2 pr-3">${severityBadge(r.severity)}</td>
+      <td class="py-2 pr-3">${statusBadge(r.status)}</td>
+      <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
+      <td class="py-2 pr-3 text-slate-500 max-w-[200px] truncate" title="${(r.closeMethod || '').replace(/"/g, '')}">${r.closeMethod || '—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" class="py-6 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+}
+
+/* ---------- export CSV (เปิดด้วย Excel ได้) ---------- */
+function exportCSV() {
+  const rows = getFiltered();
+  const head = ['WO', 'วันที่แจ้ง', 'ชนิด', 'พื้นที่', 'ชั้น', 'ความรุนแรง', 'สถานะ', 'ผู้แจ้ง', 'ผู้ติดต่อ', 'เบอร์', 'ผู้ปิดงาน', 'เวลาปิด', 'วิธีปิด'];
+  const lines = rows.map(r => [
+    r.workOrderId, r.timestamp, r.pestType, r.location, r.floor, r.severity,
+    r.status, r.senderName, r.contactName, r.contactPhone, r.closer, r.closeTime, r.closeMethod
+  ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+  const csv = '﻿' + [head.join(','), ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `AGA_WorkOrders_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
+
+/* ---------- events ---------- */
+['dateFrom', 'dateTo', 'statusFilter', 'searchBox'].forEach(id =>
+  document.getElementById(id).addEventListener('input', render));
+document.getElementById('clearFilter').addEventListener('click', () => {
+  ['dateFrom', 'dateTo', 'searchBox'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('statusFilter').value = '';
+  render();
+});
+document.getElementById('refreshBtn').addEventListener('click', fetchData);
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+
+/* ---------- init ---------- */
+fetchData();
+setInterval(fetchData, REFRESH_MS);
+</script>
+</body>
+</html>

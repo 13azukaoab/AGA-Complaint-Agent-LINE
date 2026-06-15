@@ -211,6 +211,40 @@ async function appendComplaint(data) {
   }
 }
 
+// ดึง Work Order ทั้งหมด (สำหรับ Dashboard) — คืน array ของ object
+async function getAllWorkOrders() {
+  try {
+    const { sheets } = await getSheetClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A2:T`,
+    });
+    const rows = res.data.values || [];
+    return rows
+      .filter(r => r && r[13]) // ต้องมี WO ID (column N)
+      .map(r => ({
+        timestamp: r[0] || '',
+        groupName: r[3] || 'ไม่ระบุ',
+        senderName: r[4] || 'ไม่ระบุ',
+        pestType: r[5] || 'ไม่ระบุ',
+        location: r[6] || 'ไม่ระบุ',
+        floor: r[7] || 'ไม่ระบุ',
+        severity: r[8] || 'ไม่ระบุ',
+        contactName: r[9] || '',
+        contactPhone: r[10] || '',
+        summary: r[12] || '',
+        workOrderId: r[13] || '',
+        status: r[14] || 'เปิด',
+        closer: r[17] || '',
+        closeTime: r[18] || '',
+        closeMethod: r[19] || '',
+      }));
+  } catch (err) {
+    console.error('   ❌ getAllWorkOrders error:', err.message);
+    return [];
+  }
+}
+
 module.exports = {
   appendComplaint,
   getNextWorkOrderId,
@@ -219,4 +253,5 @@ module.exports = {
   updateWorkOrderStatus,
   getOpenWorkOrders,
   getTodaySummary,
+  getAllWorkOrders,
 };
