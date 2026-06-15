@@ -208,7 +208,7 @@ async function appendComplaint(data) {
       data.floor,        // H
       data.severity,     // I
       data.contactName,  // J
-      data.contactPhone, // K
+      data.contactPhone ? `'${data.contactPhone}` : '', // K — ' นำหน้าบังคับ text ไม่ตัด 0
       data.rawMessage,   // L
       data.summary,      // M
       data.workOrderId,  // N
