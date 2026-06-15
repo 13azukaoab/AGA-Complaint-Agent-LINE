@@ -286,10 +286,25 @@ function showStatus(msg, type) {
   if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 2500);
 }
 
-function extractDriveUrl(method) {
+function extractPhotoUrl(method) {
   if (!method) return null;
-  const m = method.match(/https:\/\/drive\.google\.com\/file\/d\/[^\s\]]+/);
-  return m ? m[0] : null;
+  // GCS URL
+  const gcs = method.match(/https:\/\/storage\.googleapis\.com\/[^\s\]]+/);
+  if (gcs) return gcs[0];
+  // Drive URL (legacy)
+  const drive = method.match(/https:\/\/drive\.google\.com\/file\/d\/[^\s\]]+/);
+  return drive ? drive[0] : null;
+}
+
+function openPhotoModal(url) {
+  const overlay = document.getElementById('photoModal');
+  const img = document.getElementById('photoModalImg');
+  img.src = url;
+  overlay.classList.remove('hidden');
+}
+function closePhotoModal() {
+  document.getElementById('photoModal').classList.add('hidden');
+  document.getElementById('photoModalImg').src = '';
 }
 
 function getSlaInfo(r) {
@@ -618,7 +633,7 @@ function renderTable(rows) {
     const o = parseThai(r.timestamp);
     const isOverdue = r.status !== 'ปิด' && o && (now - o.getTime()) > 3 * 86400000;
     const sla = getSlaInfo(r);
-    const driveUrl = extractDriveUrl(r.closeMethod);
+    const driveUrl = extractPhotoUrl(r.closeMethod);
     const cleanMethod = (r.closeMethod || '').replace(/\s*\[รูป:.*?\]/, '').trim();
 
     return `<tr class="border-b border-slate-50 hover:bg-blue-50/40 transition-colors ${isOverdue ? 'bg-red-50' : ''}">
@@ -633,7 +648,7 @@ function renderTable(rows) {
       <td class="py-2 pr-3"><span class="sla-badge ${sla.cls}">${sla.label}</span></td>
       <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
       <td class="py-2 pr-3 text-slate-500 max-w-[140px] truncate" title="${cleanMethod}">${cleanMethod || '—'}</td>
-      <td class="py-2 pr-3 text-center">${driveUrl ? `<a href="${driveUrl}" target="_blank" rel="noopener" class="text-blue-500 hover:text-blue-700" title="ดูรูปปิดงาน">📷</a>` : '<span class="text-slate-300">—</span>'}</td>
+      <td class="py-2 pr-3 text-center">${driveUrl ? `<button onclick="openPhotoModal('${driveUrl}')" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูปปิดงาน">📷</button>` : '<span class="text-slate-300">—</span>'}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
 
@@ -723,5 +738,13 @@ document.getElementById('exportBtn').addEventListener('click', exportCSV);
 fetchData();
 setInterval(fetchData, REFRESH_MS);
 </script>
+
+<!-- Photo Modal -->
+<div id="photoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closePhotoModal()">
+  <div class="relative max-w-3xl max-h-[90vh] p-2" onclick="event.stopPropagation()">
+    <button onclick="closePhotoModal()" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-slate-600 hover:text-red-500 font-bold text-lg z-10">✕</button>
+    <img id="photoModalImg" src="" alt="รูปปิดงาน" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain" />
+  </div>
+</div>
 </body>
 </html>
