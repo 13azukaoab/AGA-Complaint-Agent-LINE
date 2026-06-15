@@ -177,9 +177,26 @@ async function getTodaySummary() {
 }
 
 // เพิ่ม complaint ใหม่ลง Sheet (columns A-T)
+// ใช้ .update() แทน .append() เพื่อหลีกเลี่ยง ghost rows ทำให้ข้อมูลไปผิด row
 async function appendComplaint(data) {
   try {
     const { sheets } = await getSheetClient();
+
+    // หา last row ที่มี WO ID จริงๆ ใน column N แล้วเขียนต่อ
+    const checkRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!N:N`,
+    });
+    const nRows = checkRes.data.values || [];
+    let lastDataRow = 1; // row 1 = header
+    for (let i = nRows.length - 1; i >= 1; i--) {
+      if (nRows[i] && nRows[i][0]) {
+        lastDataRow = i + 1; // sheet row (1-based)
+        break;
+      }
+    }
+    const nextRow = lastDataRow + 1;
+
     const row = [
       data.timestamp,    // A
       data.groupId,      // B
@@ -203,15 +220,14 @@ async function appendComplaint(data) {
       '',                // T — วิธีปิดงาน
     ];
 
-    await sheets.spreadsheets.values.append({
+    await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A1:T1`,
+      range: `${SHEET_NAME}!A${nextRow}:T${nextRow}`,
       valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [row] },
     });
 
-    console.log(`   📊 บันทึกลง Google Sheet [${data.workOrderId}] ✅`);
+    console.log(`   📊 บันทึกลง Google Sheet [${data.workOrderId}] row ${nextRow} ✅`);
   } catch (err) {
     console.error('   ❌ บันทึก Sheet ไม่สำเร็จ:', err.message);
   }
