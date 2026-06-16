@@ -1070,6 +1070,47 @@ document.getElementById('vsDim').addEventListener('change', () => { populateVS()
 document.getElementById('vsA').addEventListener('change', renderVS);
 document.getElementById('vsB').addEventListener('change', renderVS);
 
+/* ---- Keyboard Shortcuts ---- */
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  const typing = ['INPUT','TEXTAREA','SELECT'].includes(tag);
+
+  // ESC — ปิด modal หรือ help panel ก่อน
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('photoModal');
+    const help  = document.getElementById('shortcutHelp');
+    if (!modal.classList.contains('hidden')) { closePhotoModal(); return; }
+    if (!help.classList.contains('hidden'))  { help.classList.add('hidden'); return; }
+  }
+
+  // ปุ่มอื่นๆ — ไม่ทำงานตอนกำลังพิมพ์ใน input
+  if (typing) return;
+
+  if (e.key === '1') { e.preventDefault(); setTab('overview'); }
+  if (e.key === '2') { e.preventDefault(); setTab('vs'); }
+
+  if (e.key === '/' ) {
+    e.preventDefault();
+    document.getElementById('searchBox').focus();
+    document.getElementById('searchBox').select();
+  }
+
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); goPage(currentPage - 1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); goPage(currentPage + 1); }
+
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); fetchData(); }
+
+  if (e.key === 'c' || e.key === 'C') {
+    e.preventDefault();
+    document.getElementById('clearFilter').click();
+  }
+
+  if (e.key === '?') {
+    e.preventDefault();
+    document.getElementById('shortcutHelp').classList.toggle('hidden');
+  }
+});
+
 /* ---- init ---- */
 fetchData();
 setInterval(fetchData, REFRESH_MS);
@@ -1082,5 +1123,59 @@ setInterval(fetchData, REFRESH_MS);
     <img id="photoModalImg" src="" alt="รูปปิดงาน" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain" />
   </div>
 </div>
+
+<!-- Shortcut Help Panel -->
+<div id="shortcutHelp" class="hidden fixed bottom-16 right-5 z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-5 w-72 no-print">
+  <div class="flex items-center justify-between mb-3">
+    <span class="font-semibold text-slate-700 text-sm">⌨️ Keyboard Shortcuts</span>
+    <button onclick="document.getElementById('shortcutHelp').classList.add('hidden')"
+            class="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+  </div>
+  <div class="space-y-2 text-sm">
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">ปิด modal / help</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">ESC</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">Tab ภาพรวม</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">1</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">Tab เปรียบเทียบ (VS)</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">2</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">ค้นหา</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">/</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">เปลี่ยนหน้า</span>
+      <span class="flex gap-1">
+        <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">←</kbd>
+        <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">→</kbd>
+      </span>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">Refresh ข้อมูล</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">R</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">ล้าง filter</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">C</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1">
+      <span class="text-slate-500">แสดง shortcut นี้</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">?</kbd>
+    </div>
+  </div>
+</div>
+
+<!-- Floating shortcut hint button -->
+<button onclick="document.getElementById('shortcutHelp').classList.toggle('hidden')"
+        class="fixed bottom-5 right-5 z-40 bg-white border border-slate-200 shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-slate-500 hover:text-blue-500 hover:border-blue-300 transition-all no-print"
+        title="Keyboard shortcuts (?)">
+  <span class="font-bold text-base">?</span>
+</button>
+
 </body>
 </html>
