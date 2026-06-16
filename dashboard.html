@@ -56,6 +56,28 @@
   .sla-warn  { background:#fef9c3; color:#92400e; }
   .sla-over  { background:#fee2e2; color:#991b1b; }
   .sla-done  { background:#e2e8f0; color:#64748b; }
+
+  /* Tabs */
+  .tab-btn {
+    padding:8px 18px; border-radius:10px; font-size:14px; font-weight:600;
+    color:#64748b; cursor:pointer; transition:all .15s; border:1.5px solid transparent;
+  }
+  .tab-btn:hover { color:#3b82f6; }
+  .tab-btn.active { background:#3b82f6; color:#fff; box-shadow:0 2px 6px rgba(59,130,246,.35); }
+
+  /* หัวรายงานเฉพาะตอน print */
+  #printHeader { display:none; }
+
+  @media print {
+    body { background:#fff; }
+    header, #statusBar, .card.filter-panel, #tabBar,
+    #refreshBtn, #exportBtn, #exportPdfBtn, #clearFilter, #pagination { display:none !important; }
+    #printHeader { display:block !important; margin-bottom:16px; }
+    .card { box-shadow:none; border:1px solid #e2e8f0; break-inside:avoid; }
+    main { max-width:100% !important; padding:0 !important; }
+    canvas { max-height:240px; }
+    .no-print { display:none !important; }
+  }
 </style>
 </head>
 
@@ -85,8 +107,14 @@
 
   <div id="statusBar" class="hidden mb-4 px-4 py-3 rounded-lg text-sm"></div>
 
+  <!-- หัวรายงาน (เฉพาะตอน print/PDF) -->
+  <div id="printHeader" class="text-center">
+    <h1 class="text-xl font-bold text-slate-800">AGA Pest Control — รายงานระบบแจ้งปัญหา</h1>
+    <p id="printDate" class="text-sm text-slate-500"></p>
+  </div>
+
   <!-- Filter Panel -->
-  <div class="card p-4 mb-5">
+  <div class="card filter-panel p-4 mb-5">
     <div class="flex flex-wrap items-center gap-3 mb-3">
       <div class="flex gap-2">
         <button class="chip chip-all active" id="chip-all" onclick="setStatus('')">ทั้งหมด</button>
@@ -122,9 +150,19 @@
       <div class="flex gap-2 ml-auto">
         <button id="clearFilter" class="text-sm text-slate-400 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg transition">ล้าง</button>
         <button id="exportBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm transition font-medium">⬇ Export CSV</button>
+        <button id="exportPdfBtn" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-1.5 rounded-lg text-sm transition font-medium">⬇ Export PDF</button>
       </div>
     </div>
   </div>
+
+  <!-- แถบสลับโหมด -->
+  <div id="tabBar" class="flex gap-2 mb-5">
+    <button class="tab-btn active" id="tab-overview" onclick="setTab('overview')">📊 ภาพรวม</button>
+    <button class="tab-btn" id="tab-vs" onclick="setTab('vs')">⚖️ เปรียบเทียบ (VS)</button>
+  </div>
+
+  <!-- ========== โหมดภาพรวม ========== -->
+  <div id="tabOverview">
 
   <!-- KPI -->
   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
@@ -206,6 +244,27 @@
     </div>
   </div>
 
+  <!-- แถววิเคราะห์เพิ่ม: จำนวนที่จับได้ + แนวโน้มรายเดือน -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-1 text-slate-600">จำนวนที่จับได้ แยกตามอาคาร (Top 10)</h3>
+      <p class="text-xs text-slate-400 mb-3">รวมจำนวนสัตว์/แมลงที่จับได้จากข้อความปิดงาน — อาคารที่จับได้เยอะ = จุดที่ควรเฝ้าระวัง</p>
+      <canvas id="chartCatch" height="180"></canvas>
+    </div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-1 text-slate-600">แนวโน้มงานรายเดือน (6 เดือนล่าสุด)</h3>
+      <p class="text-xs text-slate-400 mb-3">ดูภาพรวมระยะยาวว่าจำนวนงานแจ้งเพิ่มขึ้นหรือลดลง</p>
+      <canvas id="chartMonthly" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- อาคารปัญหาซ้ำ -->
+  <div class="card p-4 mb-5">
+    <h3 class="text-sm font-semibold mb-1 text-slate-600">อาคารที่พบปัญหาซ้ำ (แจ้ง ≥ 2 ครั้ง)</h3>
+    <p class="text-xs text-slate-400 mb-3">อาคารที่ถูกแจ้งซ้ำหลายครั้ง ควรตรวจสอบต้นเหตุเชิงลึก</p>
+    <div id="repeatList" class="flex flex-col gap-2"></div>
+  </div>
+
   <!-- Table -->
   <div class="card p-4">
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -251,6 +310,51 @@
       <div id="pageButtons" class="flex gap-1"></div>
     </div>
   </div>
+
+  </div><!-- /tabOverview -->
+
+  <!-- ========== โหมดเปรียบเทียบ (VS) ========== -->
+  <div id="tabVS" class="hidden">
+    <div class="card p-4 mb-5">
+      <div class="flex flex-wrap items-end gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">เปรียบเทียบแบบ</label>
+          <select id="vsDim" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <option value="month">เดือน vs เดือน</option>
+            <option value="location">อาคาร vs อาคาร</option>
+            <option value="groupName">กลุ่ม LINE vs กลุ่ม LINE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ฝั่ง A</label>
+          <select id="vsA" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm min-w-[160px] focus:outline-none focus:ring-2 focus:ring-blue-300"></select>
+        </div>
+        <div class="text-slate-400 font-bold pb-2">VS</div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ฝั่ง B</label>
+          <select id="vsB" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm min-w-[160px] focus:outline-none focus:ring-2 focus:ring-blue-300"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- การ์ดเมตริกเปรียบเทียบ -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+      <div class="card p-4">
+        <p id="vsLabelA" class="text-sm font-semibold text-blue-600 mb-3 truncate">ฝั่ง A</p>
+        <div id="vsMetricA" class="grid grid-cols-2 gap-3"></div>
+      </div>
+      <div class="card p-4">
+        <p id="vsLabelB" class="text-sm font-semibold text-indigo-600 mb-3 truncate">ฝั่ง B</p>
+        <div id="vsMetricB" class="grid grid-cols-2 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- กราฟเปรียบเทียบ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+      <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">เปรียบเทียบตัวเลขหลัก</h3><canvas id="chartVSMetric" height="200"></canvas></div>
+      <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">ชนิดสัตว์ที่พบ (A vs B)</h3><canvas id="chartVSPest" height="200"></canvas></div>
+    </div>
+  </div><!-- /tabVS -->
 
   <p class="text-center text-xs text-slate-400 mt-5">AGA Complaint Agent · อัปเดตอัตโนมัติทุก 30 นาที</p>
 </main>
@@ -510,6 +614,9 @@ function render() {
   renderTrend(rows);
   renderGroupChart(rows);
   renderSLAChart(rows);
+  renderCatchChart(rows);
+  renderMonthlyTrend(rows);
+  renderRepeatOffenders(rows);
 
   // Table
   renderTable(rows);
@@ -622,6 +729,209 @@ function renderSLAChart(rows) {
       scales: { y: { ticks: { precision: 0 } } }
     }
   });
+}
+
+/* ---- กราฟจำนวนที่จับได้ แยกตามอาคาร ---- */
+function sumCatchBy(rows, field) {
+  const m = {};
+  rows.forEach(r => {
+    const c = Number(r.catchCount);
+    if (!c || c <= 0) return;          // นับเฉพาะที่มีจำนวนจริง
+    const k = r[field] || 'ไม่ระบุ';
+    m[k] = (m[k] || 0) + c;
+  });
+  return m;
+}
+function renderCatchChart(rows) {
+  const data = topN(sumCatchBy(rows, 'location'), 10);
+  const ctx = document.getElementById('chartCatch');
+  if (charts.chartCatch) charts.chartCatch.destroy();
+  if (Object.keys(data).length === 0) {
+    const c = ctx.getContext('2d');
+    c.clearRect(0, 0, ctx.width, ctx.height);
+    c.font = '13px "Noto Sans Thai"'; c.fillStyle = '#94a3b8'; c.textAlign = 'center';
+    c.fillText('ยังไม่มีข้อมูลจำนวนที่จับได้', ctx.width / 2, 60);
+    return;
+  }
+  charts.chartCatch = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor:'#0ea5e9', borderRadius:4 }] },
+    options: { indexAxis:'y', plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ precision:0 } } } }
+  });
+}
+
+/* ---- แนวโน้มรายเดือน (6 เดือนล่าสุด) ---- */
+function renderMonthlyTrend(rows) {
+  const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const months = [];
+  const base = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: `${TH_MONTH[d.getMonth()]} ${String((d.getFullYear()+543)%100).padStart(2,'0')}`, count: 0 });
+  }
+  rows.forEach(r => {
+    const o = parseThai(r.timestamp);
+    if (!o) return;
+    const k = `${o.getFullYear()}-${o.getMonth()}`;
+    const slot = months.find(x => x.key === k);
+    if (slot) slot.count++;
+  });
+  const ctx = document.getElementById('chartMonthly');
+  if (charts.chartMonthly) charts.chartMonthly.destroy();
+  charts.chartMonthly = new Chart(ctx, {
+    type: 'line',
+    data: { labels: months.map(m => m.label), datasets: [{ data: months.map(m => m.count), borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.1)', fill:true, tension:.3, pointRadius:3 }] },
+    options: { plugins:{ legend:{ display:false } }, scales:{ y:{ ticks:{ precision:0 } } } }
+  });
+}
+
+/* ---- อาคารปัญหาซ้ำ (แจ้ง ≥ 2 ครั้ง) ---- */
+function renderRepeatOffenders(rows) {
+  const counts = Object.entries(countBy(rows, 'location'))
+    .filter(([k, v]) => v >= 2 && k !== 'ไม่ระบุ')
+    .sort((a, b) => b[1] - a[1]);
+  const box = document.getElementById('repeatList');
+  if (counts.length === 0) {
+    box.innerHTML = '<p class="text-sm text-slate-400">ยังไม่มีอาคารที่ถูกแจ้งซ้ำ ✅</p>';
+    return;
+  }
+  const max = counts[0][1];
+  box.innerHTML = counts.map(([loc, n]) => {
+    const pct = Math.round(n / max * 100);
+    const hot = n >= 5;
+    return `<div class="flex items-center gap-3">
+      <span class="text-sm text-slate-600 w-40 truncate" title="${loc}">${loc}</span>
+      <div class="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">
+        <div class="h-full rounded-full ${hot ? 'bg-red-400' : 'bg-blue-400'}" style="width:${pct}%"></div>
+      </div>
+      <span class="text-sm font-semibold ${hot ? 'text-red-600' : 'text-slate-700'} w-16 text-right">${n} ครั้ง</span>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   VS Mode — เปรียบเทียบ A vs B
+============================================================ */
+let vsMode = 'overview';
+
+function setTab(name) {
+  vsMode = name;
+  document.getElementById('tab-overview').classList.toggle('active', name === 'overview');
+  document.getElementById('tab-vs').classList.toggle('active', name === 'vs');
+  document.getElementById('tabOverview').classList.toggle('hidden', name !== 'overview');
+  document.getElementById('tabVS').classList.toggle('hidden', name !== 'vs');
+  if (name === 'vs') { populateVS(); renderVS(); }
+}
+
+// คืน key สำหรับ dimension ของ record (เดือน = "ปี-เดือน", อื่นๆ = ค่าฟิลด์)
+function vsKeyOf(r, dim) {
+  if (dim === 'month') {
+    const o = parseThai(r.timestamp);
+    return o ? `${o.getFullYear()}-${o.getMonth()}` : null;
+  }
+  return r[dim] || null;
+}
+function vsLabelOf(key, dim) {
+  if (dim !== 'month') return key;
+  const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const [y, m] = key.split('-').map(Number);
+  return `${TH_MONTH[m]} ${y + 543}`;
+}
+
+function populateVS() {
+  const dim = document.getElementById('vsDim').value;
+  const keys = [...new Set(allRecords.map(r => vsKeyOf(r, dim)).filter(Boolean))];
+  if (dim === 'month') keys.sort();
+  else keys.sort();
+  const opts = keys.map(k => `<option value="${k}">${vsLabelOf(k, dim)}</option>`).join('');
+  const selA = document.getElementById('vsA'), selB = document.getElementById('vsB');
+  const a = selA.value, b = selB.value;
+  selA.innerHTML = opts; selB.innerHTML = opts;
+  // ตั้งค่าเริ่มต้น: A = ก่อนสุดท้าย, B = ล่าสุด (ถ้ามี ≥2)
+  if (keys.includes(a)) selA.value = a; else selA.value = keys[keys.length - 2] || keys[0] || '';
+  if (keys.includes(b)) selB.value = b; else selB.value = keys[keys.length - 1] || '';
+}
+
+function vsSubset(dim, value) {
+  return allRecords.filter(r => vsKeyOf(r, dim) === value);
+}
+
+function computeMetrics(rows) {
+  const total = rows.length;
+  const closed = rows.filter(r => r.status === 'ปิด').length;
+  const catchSum = rows.reduce((s, r) => s + (Number(r.catchCount) > 0 ? Number(r.catchCount) : 0), 0);
+  let sumH = 0, cntH = 0;
+  rows.forEach(r => {
+    if (r.status === 'ปิด') {
+      const o = parseThai(r.timestamp), c = parseThai(r.closeTime);
+      if (o && c && c > o) { sumH += (c - o) / 3600000; cntH++; }
+    }
+  });
+  return {
+    total, catchSum,
+    closeRate: total ? Math.round(closed / total * 100) : 0,
+    avgSlaH: cntH ? +(sumH / cntH).toFixed(1) : null,
+    pestBreakdown: countBy(rows, 'pestType'),
+  };
+}
+
+function metricCardsHTML(m) {
+  const item = (label, val) => `<div class="text-center p-3 bg-slate-50 rounded-xl"><p class="text-xs text-slate-500 mb-1">${label}</p><p class="text-xl font-bold text-slate-800">${val}</p></div>`;
+  return [
+    item('งานแจ้ง', m.total),
+    item('จับได้ (ตัว)', m.catchSum),
+    item('% ปิดงาน', m.closeRate + '%'),
+    item('SLA เฉลี่ย', m.avgSlaH != null ? m.avgSlaH + ' ชม.' : '—'),
+  ].join('');
+}
+
+function renderVS() {
+  const dim = document.getElementById('vsDim').value;
+  const valA = document.getElementById('vsA').value;
+  const valB = document.getElementById('vsB').value;
+  const rowsA = vsSubset(dim, valA), rowsB = vsSubset(dim, valB);
+  const mA = computeMetrics(rowsA), mB = computeMetrics(rowsB);
+
+  document.getElementById('vsLabelA').textContent = vsLabelOf(valA, dim) || 'ฝั่ง A';
+  document.getElementById('vsLabelB').textContent = vsLabelOf(valB, dim) || 'ฝั่ง B';
+  document.getElementById('vsMetricA').innerHTML = metricCardsHTML(mA);
+  document.getElementById('vsMetricB').innerHTML = metricCardsHTML(mB);
+
+  // กราฟตัวเลขหลัก (grouped bar)
+  if (charts.chartVSMetric) charts.chartVSMetric.destroy();
+  charts.chartVSMetric = new Chart(document.getElementById('chartVSMetric'), {
+    type: 'bar',
+    data: {
+      labels: ['งานแจ้ง', 'จับได้ (ตัว)', '% ปิดงาน', 'SLA เฉลี่ย (ชม.)'],
+      datasets: [
+        { label: vsLabelOf(valA, dim), data: [mA.total, mA.catchSum, mA.closeRate, mA.avgSlaH || 0], backgroundColor:'#3b82f6', borderRadius:4 },
+        { label: vsLabelOf(valB, dim), data: [mB.total, mB.catchSum, mB.closeRate, mB.avgSlaH || 0], backgroundColor:'#6366f1', borderRadius:4 },
+      ]
+    },
+    options: { plugins:{ legend:{ position:'top', labels:{ font:{ size:11 }, boxWidth:12 } } }, scales:{ y:{ ticks:{ precision:0 } } } }
+  });
+
+  // กราฟชนิดสัตว์ (grouped bar รวมทุกชนิดจาก 2 ฝั่ง)
+  const allPests = [...new Set([...Object.keys(mA.pestBreakdown), ...Object.keys(mB.pestBreakdown)])];
+  if (charts.chartVSPest) charts.chartVSPest.destroy();
+  charts.chartVSPest = new Chart(document.getElementById('chartVSPest'), {
+    type: 'bar',
+    data: {
+      labels: allPests,
+      datasets: [
+        { label: vsLabelOf(valA, dim), data: allPests.map(p => mA.pestBreakdown[p] || 0), backgroundColor:'#3b82f6', borderRadius:4 },
+        { label: vsLabelOf(valB, dim), data: allPests.map(p => mB.pestBreakdown[p] || 0), backgroundColor:'#6366f1', borderRadius:4 },
+      ]
+    },
+    options: { plugins:{ legend:{ position:'top', labels:{ font:{ size:11 }, boxWidth:12 } } }, scales:{ y:{ ticks:{ precision:0 } } } }
+  });
+}
+
+/* ---- Export PDF ---- */
+function exportPDF() {
+  document.getElementById('printDate').textContent =
+    'พิมพ์เมื่อ ' + new Date().toLocaleString('th-TH');
+  window.print();
 }
 
 function severityBadge(s) {
@@ -753,6 +1063,12 @@ document.getElementById('clearFilter').addEventListener('click', () => {
 
 document.getElementById('refreshBtn').addEventListener('click', fetchData);
 document.getElementById('exportBtn').addEventListener('click', exportCSV);
+document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+
+/* ---- VS Mode events ---- */
+document.getElementById('vsDim').addEventListener('change', () => { populateVS(); renderVS(); });
+document.getElementById('vsA').addEventListener('change', renderVS);
+document.getElementById('vsB').addEventListener('change', renderVS);
 
 /* ---- init ---- */
 fetchData();
