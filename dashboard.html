@@ -446,6 +446,22 @@ function closePhotoModal() {
   document.getElementById('photoModalImg').src = '';
   modalUrls = []; modalIdx = 0;
 }
+async function downloadPhoto() {
+  const url = modalUrls[modalIdx];
+  if (!url) return;
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = url.split('/').pop() || 'photo.jpg';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    // fallback: เปิด tab ใหม่ให้ user กด save เอง
+    window.open(url, '_blank');
+  }
+}
 
 function getSlaInfo(r) {
   const open = parseThai(r.timestamp);
@@ -1143,7 +1159,13 @@ fetchData();
 
     <!-- รูปหลัก -->
     <div class="relative">
-      <button onclick="closePhotoModal()" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-slate-600 hover:text-red-500 font-bold text-lg z-10">✕</button>
+      <!-- ปุ่มบนขวา: ปิด + download -->
+      <div class="absolute -top-3 -right-3 flex gap-1 z-10">
+        <button id="photoDownloadBtn" onclick="downloadPhoto()" title="ดาวน์โหลดรูป"
+          class="bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-slate-600 hover:text-blue-500 text-base">⬇</button>
+        <button onclick="closePhotoModal()"
+          class="bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-slate-600 hover:text-red-500 font-bold text-lg">✕</button>
+      </div>
       <img id="photoModalImg" src="" alt="รูปปิดงาน" class="max-w-[80vw] max-h-[85vh] rounded-xl shadow-2xl object-contain" />
       <!-- counter -->
       <div id="photoCounter" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm"></div>
