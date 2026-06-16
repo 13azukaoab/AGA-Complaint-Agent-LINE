@@ -365,7 +365,7 @@
 ============================================================ */
 const BACKEND_URL   = 'https://aga-complaint-agent-396358198178.asia-southeast1.run.app/api/dashboard';
 const DASHBOARD_KEY = '418667f4821721f56caf9116';
-const REFRESH_MS    = 1800000;
+// Auto-refresh ถูกปิด — user กด Refresh หรือ R เอง เพื่อลด API read quota
 const SLA_HOURS     = { ok: 4, warn: 24 };
 
 /* ============================================================
@@ -1131,7 +1131,6 @@ document.addEventListener('keydown', e => {
 
 /* ---- init ---- */
 fetchData();
-setInterval(fetchData, REFRESH_MS);
 </script>
 
 <!-- Photo Modal -->
