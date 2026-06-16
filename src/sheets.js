@@ -72,7 +72,7 @@ async function getRowData(rowNumber) {
     const { sheets } = await getSheetClient();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${rowNumber}:T${rowNumber}`,
+      range: `${SHEET_NAME}!A${rowNumber}:U${rowNumber}`,
     });
     return (res.data.values || [[]])[0];
   } catch (err) {
@@ -82,10 +82,10 @@ async function getRowData(rowNumber) {
 }
 
 // อัปเดต status ของ WO (รับทราบ หรือ ปิด)
+// column O=สถานะ, P=ผู้รับทราบ, Q=เวลารับทราบ, R=ผู้ปิด, S=เวลาปิด, T=วิธีปิด, U=จำนวนที่ติด
 async function updateWorkOrderStatus(rowNumber, fields) {
   try {
     const { sheets } = await getSheetClient();
-    // column O = สถานะ, P = ผู้รับทราบ, Q = เวลารับทราบ, R = ผู้ปิด, S = เวลาปิด, T = วิธีปิด
     const row = [
       fields.status || '',
       fields.acknowledger || '',
@@ -93,10 +93,11 @@ async function updateWorkOrderStatus(rowNumber, fields) {
       fields.closer || '',
       fields.closeTime || '',
       fields.closeMethod || '',
+      fields.catchCount !== undefined ? fields.catchCount : '',
     ];
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!O${rowNumber}:T${rowNumber}`,
+      range: `${SHEET_NAME}!O${rowNumber}:U${rowNumber}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [row] },
     });
@@ -112,7 +113,7 @@ async function getOpenWorkOrders() {
     const { sheets } = await getSheetClient();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:T`,
+      range: `${SHEET_NAME}!A:U`,
     });
     const rows = res.data.values || [];
     const open = [];
@@ -218,11 +219,12 @@ async function appendComplaint(data) {
       '',                // R — ผู้ปิดงาน
       '',                // S — เวลาปิด
       '',                // T — วิธีปิดงาน
+      '',                // U — จำนวนที่ติด
     ];
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${nextRow}:T${nextRow}`,
+      range: `${SHEET_NAME}!A${nextRow}:U${nextRow}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [row] },
     });
@@ -239,7 +241,7 @@ async function getAllWorkOrders() {
     const { sheets } = await getSheetClient();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:T`,
+      range: `${SHEET_NAME}!A2:U`,
     });
     const rows = res.data.values || [];
     return rows
@@ -260,6 +262,7 @@ async function getAllWorkOrders() {
         closer: r[17] || '',
         closeTime: r[18] || '',
         closeMethod: r[19] || '',
+        catchCount: r[20] ? parseInt(r[20]) : null,
       }));
   } catch (err) {
     console.error('   ❌ getAllWorkOrders error:', err.message);

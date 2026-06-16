@@ -150,6 +150,10 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     }
   }
 
+  // ดึงจำนวนที่ติดจากข้อความ เช่น "หนูติดแผ่นกาว 2ตัว" → 2
+  const catchMatch = finalMethod.match(/(\d+)\s*ตัว/);
+  const catchCount = catchMatch ? parseInt(catchMatch[1]) : null;
+
   await updateWorkOrderStatus(rowNumber, {
     status: 'ปิด',
     acknowledger: rowData[15] || '',
@@ -157,10 +161,12 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     closer: senderName,
     closeTime: timestamp,
     closeMethod: finalMethod,
+    catchCount,
   });
 
-  await pushMessage(groupId, `${woId} ปิดแล้ว โดย ${senderName} ✅`);
-  console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}`);
+  const catchMsg = catchCount !== null ? ` — จับได้ ${catchCount} ตัว` : '';
+  await pushMessage(groupId, `${woId} ปิดแล้ว โดย ${senderName}${catchMsg} ✅`);
+  console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchMsg}`);
 }
 
 const allowedGroups = process.env.ALLOWED_GROUP_IDS
