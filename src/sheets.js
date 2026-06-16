@@ -248,6 +248,7 @@ async function getAllWorkOrders() {
       .filter(r => r && r[13]) // ต้องมี WO ID (column N)
       .map(r => ({
         timestamp: r[0] || '',
+        groupId: r[1] || '',
         groupName: r[3] || 'ไม่ระบุ',
         senderName: r[4] || 'ไม่ระบุ',
         pestType: r[5] || 'ไม่ระบุ',

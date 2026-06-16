@@ -1,6 +1,6 @@
 // notify.js — endpoint สำหรับ Cloud Scheduler
-// GET /notify?type=morning → รายงานงานค้างข้ามวัน (8:30) — ส่งทุกกลุ่มเสมอ
-// GET /notify?type=check   → รายงาน WO วันนี้ที่ยังเปิดอยู่ (12:00, 16:00)
+// GET /notify?type=morning → รายงานงานค้างจากวันก่อน (8:30) — ส่งทุกกลุ่มใน ALLOWED_GROUP_IDS
+// GET /notify?type=check   → งานเปิดวันนี้เท่านั้น (12:00, 16:00) — ส่งเฉพาะกลุ่มที่มีค้าง
 // GET /notify?type=daily   → สรุปรายวัน (17:30)
 
 const express = require('express');
@@ -8,6 +8,10 @@ const router = express.Router();
 const { getOpenWorkOrders, getAllWorkOrders } = require('./sheets');
 
 const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+
+const allowedGroups = process.env.ALLOWED_GROUP_IDS
+  ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
+  : [];
 
 async function pushMessage(groupId, text) {
   try {
@@ -27,11 +31,10 @@ async function pushMessage(groupId, text) {
   }
 }
 
-// แปลง timestamp ไทย → Date object (สำหรับคำนวณเวลาผ่านไป)
+// แปลง timestamp ไทย (พ.ศ.) → Date object (ค.ศ.)
 function parseThaiTimestamp(ts) {
   if (!ts) return null;
   try {
-    // format: "13/6/2569 11:47:13" → แปลงปี พ.ศ. เป็น ค.ศ.
     const parts = ts.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
     if (!parts) return null;
     const [, day, month, yearBE, hour, min, sec] = parts;
@@ -42,103 +45,101 @@ function parseThaiTimestamp(ts) {
   }
 }
 
-// แปลง Date → "DD/MM/YYYY" พ.ศ.
+// format วันที่เป็น DD/MM/YYYY พ.ศ.
 function formatThaiDate(date) {
-  if (!date) return '-';
   const d = String(date.getDate()).padStart(2, '0');
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const y = date.getFullYear() + 543;
   return `${d}/${m}/${y}`;
 }
 
-// วันนี้ในรูปแบบ "DD/MM/YYYY" พ.ศ.
 function todayThaiDate() {
   return formatThaiDate(new Date());
 }
 
-// เริ่มต้นของวันนี้ (midnight) — ใช้เปรียบเทียบ
-function todayMidnight() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+// ตรวจว่า timestamp เป็นก่อนวันนี้หรือไม่
+function isBeforeToday(timestamp) {
+  const d = parseThaiTimestamp(timestamp);
+  if (!d) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d < today;
 }
 
-// รายงานงานค้างข้ามวัน (8:30) — ส่งทุกกลุ่มใน ALLOWED_GROUP_IDS เสมอ
-// 🔴 ถ้ามีงานค้าง / 🟢 ถ้าไม่มี
+// ตรวจว่า timestamp เป็นวันนี้หรือไม่
+function isToday(timestamp) {
+  const d = parseThaiTimestamp(timestamp);
+  if (!d) return false;
+  const now = new Date();
+  return d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+}
+
+// 8:30 — รายงานงานค้างจากวันก่อน ส่งทุกกลุ่มใน ALLOWED_GROUP_IDS เสมอ
 async function checkMorningOverdue() {
   const openWOs = await getOpenWorkOrders();
-  const midnight = todayMidnight();
 
-  // กรองเฉพาะ WO ที่สร้างก่อนวันนี้ (ค้างข้ามวัน)
-  const overdueWOs = openWOs.filter(wo => {
-    const d = parseThaiTimestamp(wo.timestamp);
-    return d && d < midnight;
-  });
-
-  // จัดกลุ่มตาม groupId
+  // จัดกลุ่มงานค้างข้ามวัน (สร้างก่อนวันนี้)
   const byGroup = {};
-  for (const wo of overdueWOs) {
+
+  // เตรียม entry สำหรับทุก group ที่ configured (สำหรับส่ง 🟢 ถ้าไม่มีค้าง)
+  for (const gid of allowedGroups) {
+    byGroup[gid] = [];
+  }
+
+  // เพิ่ม group จาก WO ที่ค้างข้ามวัน (อาจไม่อยู่ใน allowedGroups)
+  for (const wo of openWOs) {
+    if (!isBeforeToday(wo.timestamp)) continue;
     if (!byGroup[wo.groupId]) byGroup[wo.groupId] = [];
     byGroup[wo.groupId].push(wo);
   }
 
-  // กลุ่มที่ต้องส่ง: จาก ALLOWED_GROUP_IDS (ส่งทุกกลุ่มไม่ว่าจะมีงานค้างหรือไม่)
-  const allowedGroupIds = process.env.ALLOWED_GROUP_IDS
-    ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim()).filter(Boolean)
-    : Object.keys(byGroup); // fallback: ส่งเฉพาะกลุ่มที่มีงานค้าง
-
-  const dateStr = todayThaiDate();
+  const dateLabel = todayThaiDate();
   let sent = 0;
 
-  for (const groupId of allowedGroupIds) {
-    const wos = byGroup[groupId] || [];
+  for (const [groupId, wos] of Object.entries(byGroup)) {
     let msg;
-
-    if (wos.length > 0) {
+    if (wos.length === 0) {
+      msg = `วันที่ ${dateLabel}\n🟢 ไม่มีงานค้างในระบบก่อนหน้า`;
+    } else {
       const list = wos.map(w => {
-        const d = parseThaiTimestamp(w.timestamp);
-        return `• ${w.workOrderId} — ${w.pestType} ${w.location} (แจ้งเมื่อ ${formatThaiDate(d)}) [${w.status}]`;
+        const dateStr = w.timestamp ? w.timestamp.split(' ')[0] : '?';
+        return `• ${w.workOrderId} — ${w.pestType} ${w.location} (แจ้งเมื่อ ${dateStr}) [${w.status}]`;
       }).join('\n');
       const example = `ปิดงาน ${wos[0].workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`;
       msg = [
-        `วันที่ ${dateStr}`,
+        `วันที่ ${dateLabel}`,
         `🔴 งานค้างจากวันก่อน (${wos.length} งาน):`,
         list,
         '',
         'กรุณาปิดงานค้างโดยเร็ว',
         `ตัวอย่าง: ${example}`,
       ].join('\n');
-    } else {
-      msg = `วันที่ ${dateStr}\n🟢 ไม่มีงานค้างในระบบก่อนหน้า`;
     }
-
     await pushMessage(groupId, msg);
     sent++;
   }
 
-  console.log(`[notify/morning] ส่ง ${sent} กลุ่ม (ค้างข้ามวัน: ${overdueWOs.length} รายการ)`);
-  return { checked: openWOs.length, overdue: overdueWOs.length, sent };
+  console.log(`[notify/morning] ส่ง ${sent} กลุ่ม`);
+  return { sent };
 }
 
-// รายงานงานค้างวันนี้ (12:00, 16:00) — ส่งเฉพาะกลุ่มที่มีงานค้าง
+// 12:00 / 16:00 — งานเปิดวันนี้เท่านั้น ส่งเฉพาะกลุ่มที่มีค้าง
 async function checkPendingWorkOrders() {
   const openWOs = await getOpenWorkOrders();
-  const midnight = todayMidnight();
 
-  // กรองเฉพาะ WO ที่สร้างวันนี้
-  const todayWOs = openWOs.filter(wo => {
-    const d = parseThaiTimestamp(wo.timestamp);
-    return d && d >= midnight;
-  });
+  // เฉพาะงานที่สร้างวันนี้และยังไม่ปิด
+  const todayOpen = openWOs.filter(wo => isToday(wo.timestamp));
 
-  // จัดกลุ่มตาม groupId
   const byGroup = {};
-  for (const wo of todayWOs) {
+  for (const wo of todayOpen) {
     if (!byGroup[wo.groupId]) byGroup[wo.groupId] = [];
     byGroup[wo.groupId].push(wo);
   }
 
   if (Object.keys(byGroup).length === 0) {
-    console.log('[notify/check] ไม่มีงานค้างวันนี้ — ไม่ส่งแจ้งเตือน');
+    console.log('[notify/check] ไม่มีงานค้างวันนี้ — ไม่ส่ง');
     return { checked: 0, alertsSent: 0 };
   }
 
@@ -158,44 +159,26 @@ async function checkPendingWorkOrders() {
   }
 
   console.log(`[notify/check] ส่งแจ้งเตือน ${sent} กลุ่ม`);
-  return { checked: todayWOs.length, alertsSent: sent };
+  return { checked: todayOpen.length, alertsSent: sent };
 }
 
-// สรุปรายวัน 17:30 — แสดงงานวันนี้ทั้งหมด แยก ปิดแล้ว / ยังไม่ปิด
+// 17:30 — สรุปรายวัน: งานวันนี้ทั้งหมด แยก ปิดแล้ว/ยังไม่ปิด
 async function sendDailySummary() {
-  const allWOs = await getAllWorkOrders();
+  const allWOs = await getAllWorkOrders(); // มี groupId แล้ว (หลังแก้ sheets.js)
 
-  const now = new Date();
-  const todayDay   = String(now.getDate()).padStart(2, '0');
-  const todayMonth = String(now.getMonth() + 1).padStart(2, '0');
-  const todayYearBE = now.getFullYear() + 543;
+  const todayWOs = allWOs.filter(wo => isToday(wo.timestamp));
+  if (todayWOs.length === 0) {
+    console.log('[notify/daily] ไม่มีงานวันนี้');
+    return { groupsNotified: 0 };
+  }
 
-  // กรองเฉพาะงานวันนี้ — timestamp format: "16/6/2569 11:47:13"
-  const todayWOs = allWOs.filter(wo => {
-    if (!wo.timestamp) return false;
-    const m = wo.timestamp.match(/^(\d+)\/(\d+)\/(\d+)/);
-    if (!m) return false;
-    const [, d, mo, y] = m;
-    return parseInt(d) === parseInt(todayDay) &&
-           parseInt(mo) === parseInt(todayMonth) &&
-           parseInt(y) === todayYearBE;
-  });
-
-  if (todayWOs.length === 0) return { groupsNotified: 0 };
-
-  // ดึง groupId จาก openWOs เทียบกับ workOrderId
-  const openWOs = await getOpenWorkOrders();
-  const woGroupMap = {};
-  openWOs.forEach(wo => { woGroupMap[wo.workOrderId] = wo.groupId; });
-
-  // จัดกลุ่มตาม groupId
+  // จัดกลุ่มตาม groupId — ใช้ groupId จาก getAllWorkOrders โดยตรง (ไม่ต้องพึ่ง openWOs)
   const byGroup = {};
   for (const wo of todayWOs) {
-    const groupId = woGroupMap[wo.workOrderId];
-    if (!groupId) continue;
-    if (!byGroup[groupId]) byGroup[groupId] = { closed: [], notClosed: [] };
-    if (wo.status === 'ปิด') byGroup[groupId].closed.push(wo);
-    else byGroup[groupId].notClosed.push(wo);
+    if (!wo.groupId) continue;
+    if (!byGroup[wo.groupId]) byGroup[wo.groupId] = { closed: [], notClosed: [] };
+    if (wo.status === 'ปิด') byGroup[wo.groupId].closed.push(wo);
+    else byGroup[wo.groupId].notClosed.push(wo);
   }
 
   const dateLabel = todayThaiDate();
