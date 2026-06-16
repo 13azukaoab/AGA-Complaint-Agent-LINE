@@ -209,6 +209,15 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       ? await getMemberName(groupId, event.source.userId)
       : 'ไม่ระบุ';
 
+    // ตรวจ command: "ขอลิงค์ dashboard" / "ดู dashboard" / คำใกล้เคียง
+    if (/dashboard|แดชบอร์ด|ขอลิงค์|ลิงค์ดู/i.test(text)) {
+      console.log(`\n📊 ขอลิงค์ dashboard โดย ${senderName}`);
+      await replyMessage(event.replyToken,
+        '📊 Dashboard AGA Complaint Agent\nhttps://aga-complaint-agent-line.netlify.app/dashboard.html'
+      );
+      continue;
+    }
+
     // ตรวจ command: "งานค้าง" — แสดงงานที่ยังไม่ปิดในกลุ่มนี้ (ใช้ replyToken ฟรี)
     if (/^งานค้าง/i.test(text)) {
       console.log(`\n📂 ขอดูงานค้าง โดย ${senderName}`);
