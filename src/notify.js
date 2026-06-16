@@ -1,6 +1,6 @@
 // notify.js — endpoint สำหรับ Cloud Scheduler
-// GET /notify?type=check  → ตรวจ WO ค้างนาน >30 นาที
-// GET /notify?type=daily  → สรุปรายวัน 17:00
+// GET /notify?type=check  → รายงาน WO ที่ยังเปิดอยู่ทั้งหมด (8:00, 12:00, 16:00)
+// GET /notify?type=daily  → สรุปรายวัน 17:30
 
 const express = require('express');
 const router = express.Router();
@@ -41,30 +41,29 @@ function parseThaiTimestamp(ts) {
   }
 }
 
-// ตรวจงานค้าง >4 ชั่วโมง ยังไม่ปิด (เปิด หรือ รับทราบ)
+// รายงานงานที่ยังเปิดอยู่ทั้งหมด (เปิด หรือ รับทราบ) — ไม่มี threshold เวลา
 async function checkPendingWorkOrders() {
   const openWOs = await getOpenWorkOrders();
-  const now = Date.now();
-  const fourHours = 4 * 60 * 60 * 1000;
 
-  // จัดกลุ่มตาม groupId — รวมทั้ง เปิด และ รับทราบ (ยังไม่ปิด)
+  // จัดกลุ่มตาม groupId
   const byGroup = {};
   for (const wo of openWOs) {
-    const createdAt = parseThaiTimestamp(wo.timestamp);
-    if (!createdAt) continue;
-    const elapsed = now - createdAt.getTime();
-    if (elapsed < fourHours) continue; // ยังไม่ถึง 4 ชั่วโมง
-
     if (!byGroup[wo.groupId]) byGroup[wo.groupId] = [];
     byGroup[wo.groupId].push(wo);
   }
 
+  // ไม่มีงานค้าง → ไม่ส่ง
+  if (Object.keys(byGroup).length === 0) {
+    console.log('[notify/check] ไม่มีงานค้าง — ไม่ส่งแจ้งเตือน');
+    return { checked: 0, alertsSent: 0 };
+  }
+
   let sent = 0;
   for (const [groupId, wos] of Object.entries(byGroup)) {
-    const list = wos.map(w => `• ${w.workOrderId} — ${w.pestType} ${w.location}`).join('\n');
+    const list = wos.map(w => `• ${w.workOrderId} — ${w.pestType} ${w.location} [${w.status}]`).join('\n');
     const example = wos[0] ? `ปิดงาน ${wos[0].workOrderId} [วิธีที่ใช้กำจัด]` : 'ปิดงาน WXXX [วิธีที่ใช้กำจัด]';
     const msg = [
-      `⚠️ งานค้างเกิน 4 ชั่วโมง (${wos.length} งาน):`,
+      `📋 งานที่ยังค้างอยู่ (${wos.length} งาน):`,
       list,
       '',
       'วิธีปิดงาน: พิมพ์ใน LINE กลุ่มนี้',
