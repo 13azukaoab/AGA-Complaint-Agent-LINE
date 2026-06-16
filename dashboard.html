@@ -238,6 +238,7 @@
             <th class="th-sort py-2.5 pr-3" data-col="sla">SLA <span class="sort-arrow" data-col="sla">↕</span></th>
             <th class="th-sort py-2.5 pr-3" data-col="closer">ผู้ปิดงาน <span class="sort-arrow" data-col="closer">↕</span></th>
             <th class="py-2.5 pr-3">วิธีปิด</th>
+            <th class="th-sort py-2.5 pr-3" data-col="catchCount">จำนวนที่ติด <span class="sort-arrow" data-col="catchCount">↕</span></th>
             <th class="py-2.5 pr-3">รูป</th>
           </tr>
         </thead>
@@ -422,6 +423,9 @@ function sortRows(rows) {
       };
       va = slaMs(a);
       vb = slaMs(b);
+    } else if (sortCol === 'catchCount') {
+      va = a.catchCount ?? -1;
+      vb = b.catchCount ?? -1;
     } else {
       va = (a[sortCol] || '').toLowerCase();
       vb = (b[sortCol] || '').toLowerCase();
@@ -663,9 +667,10 @@ function renderTable(rows) {
       <td class="py-2 pr-3"><span class="sla-badge ${sla.cls}">${sla.label}</span></td>
       <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
       <td class="py-2 pr-3 text-slate-500 max-w-[140px] truncate" title="${cleanMethod}">${cleanMethod || '—'}</td>
+      <td class="py-2 pr-3 text-center font-semibold ${r.catchCount ? 'text-blue-600' : 'text-slate-300'}">${r.catchCount ? r.catchCount + ' ตัว' : '—'}</td>
       <td class="py-2 pr-3 text-center">${photoUrls.length > 0 ? photoUrls.map((u, i) => `<button onclick="openPhotoModal('${u}')" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูปที่ ${i+1}">📷</button>`).join('') : '<span class="text-slate-300">—</span>'}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="11" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+  }).join('') || '<tr><td colspan="12" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
 
   // Pagination
   renderPagination(total, pages);
@@ -709,10 +714,10 @@ function goPage(p) {
 /* ---- export CSV ---- */
 function exportCSV() {
   const rows = getFiltered();
-  const head = ['WO','วันที่แจ้ง','กลุ่ม LINE','ผู้แจ้ง','ชนิด','พื้นที่','ชั้น','ความรุนแรง','สถานะ','ผู้ติดต่อ','เบอร์','ผู้ปิดงาน','เวลาปิด','วิธีปิด'];
+  const head = ['WO','วันที่แจ้ง','กลุ่ม LINE','ผู้แจ้ง','ชนิด','พื้นที่','ชั้น','ความรุนแรง','สถานะ','ผู้ติดต่อ','เบอร์','ผู้ปิดงาน','เวลาปิด','วิธีปิด','จำนวนที่ติด'];
   const lines = rows.map(r => [
     r.workOrderId, r.timestamp, r.groupName, r.senderName, r.pestType, r.location, r.floor, r.severity,
-    r.status, r.contactName, r.contactPhone, r.closer, r.closeTime, r.closeMethod
+    r.status, r.contactName, r.contactPhone, r.closer, r.closeTime, r.closeMethod, r.catchCount ?? ''
   ].map(v => `"${String(v || '').replace(/"/g,'""')}"`).join(','));
   const csv = '﻿' + [head.join(','), ...lines].join('\n');
   const a = Object.assign(document.createElement('a'), {
