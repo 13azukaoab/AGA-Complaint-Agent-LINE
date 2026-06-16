@@ -164,9 +164,8 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     catchCount,
   });
 
-  const catchMsg = catchCount !== null ? ` — จับได้ ${catchCount} ตัว` : '';
-  await pushMessage(groupId, `${woId} ปิดแล้ว โดย ${senderName}${catchMsg} ✅`);
-  console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchMsg}`);
+  await pushMessage(groupId, `${woId} ปิดแล้ว โดย ${senderName} ✅`);
+  console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchCount !== null ? ` (จับได้ ${catchCount} ตัว)` : ''}`);
 }
 
 const allowedGroups = process.env.ALLOWED_GROUP_IDS
