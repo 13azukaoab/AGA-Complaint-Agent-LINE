@@ -418,15 +418,33 @@ function extractPhotoUrls(method) {
   return urls;
 }
 
-function openPhotoModal(url) {
-  const overlay = document.getElementById('photoModal');
-  const img = document.getElementById('photoModalImg');
-  img.src = url;
-  overlay.classList.remove('hidden');
+let modalUrls = [];
+let modalIdx  = 0;
+
+function openPhotoModal(urls, idx) {
+  modalUrls = Array.isArray(urls) ? urls : [urls];
+  modalIdx  = idx || 0;
+  _updateModal();
+  document.getElementById('photoModal').classList.remove('hidden');
+}
+function _updateModal() {
+  document.getElementById('photoModalImg').src = modalUrls[modalIdx];
+  const counter = document.getElementById('photoCounter');
+  const prev    = document.getElementById('photoPrev');
+  const next    = document.getElementById('photoNext');
+  const multi   = modalUrls.length > 1;
+  counter.textContent = multi ? `${modalIdx + 1} / ${modalUrls.length}` : '';
+  prev.classList.toggle('hidden', !multi);
+  next.classList.toggle('hidden', !multi);
+}
+function photoNav(dir) {
+  modalIdx = (modalIdx + dir + modalUrls.length) % modalUrls.length;
+  _updateModal();
 }
 function closePhotoModal() {
   document.getElementById('photoModal').classList.add('hidden');
   document.getElementById('photoModalImg').src = '';
+  modalUrls = []; modalIdx = 0;
 }
 
 function getSlaInfo(r) {
@@ -978,7 +996,7 @@ function renderTable(rows) {
       <td class="py-2 pr-3 text-slate-500">${r.closer || '—'}</td>
       <td class="py-2 pr-3 text-slate-500 max-w-[140px] truncate" title="${cleanMethod}">${cleanMethod || '—'}</td>
       <td class="py-2 pr-3 text-center font-semibold ${r.catchCount ? 'text-blue-600' : 'text-slate-300'}">${r.catchCount ? r.catchCount + ' ตัว' : '—'}</td>
-      <td class="py-2 pr-3 text-center">${photoUrls.length > 0 ? photoUrls.map((u, i) => `<button onclick="openPhotoModal('${u}')" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูปที่ ${i+1}">📷</button>`).join('') : '<span class="text-slate-300">—</span>'}</td>
+      <td class="py-2 pr-3 text-center">${photoUrls.length > 0 ? `<button onclick="openPhotoModal(${JSON.stringify(photoUrls)}, 0)" class="text-blue-500 hover:text-blue-700 text-lg" title="ดูรูป (${photoUrls.length} รูป)">📷${photoUrls.length > 1 ? `<span class='text-xs font-semibold text-blue-400 ml-0.5'>${photoUrls.length}</span>` : ''}</button>` : '<span class="text-slate-300">—</span>'}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" class="py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
 
@@ -1095,8 +1113,8 @@ document.addEventListener('keydown', e => {
     document.getElementById('searchBox').select();
   }
 
-  if (e.key === 'ArrowLeft')  { e.preventDefault(); goPage(currentPage - 1); }
-  if (e.key === 'ArrowRight') { e.preventDefault(); goPage(currentPage + 1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); document.getElementById('photoModal').classList.contains('hidden') ? goPage(currentPage - 1) : photoNav(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('photoModal').classList.contains('hidden') ? goPage(currentPage + 1) : photoNav(1); }
 
   if (e.key === 'r' || e.key === 'R') { e.preventDefault(); fetchData(); }
 
@@ -1117,10 +1135,25 @@ setInterval(fetchData, REFRESH_MS);
 </script>
 
 <!-- Photo Modal -->
-<div id="photoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closePhotoModal()">
-  <div class="relative max-w-3xl max-h-[90vh] p-2" onclick="event.stopPropagation()">
-    <button onclick="closePhotoModal()" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-slate-600 hover:text-red-500 font-bold text-lg z-10">✕</button>
-    <img id="photoModalImg" src="" alt="รูปปิดงาน" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain" />
+<div id="photoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75" onclick="closePhotoModal()">
+  <div class="relative flex items-center gap-3 px-2" onclick="event.stopPropagation()">
+
+    <!-- ปุ่ม prev -->
+    <button id="photoPrev" onclick="photoNav(-1)"
+      class="hidden w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 text-white text-2xl flex items-center justify-center transition-all shrink-0 backdrop-blur-sm">‹</button>
+
+    <!-- รูปหลัก -->
+    <div class="relative">
+      <button onclick="closePhotoModal()" class="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-slate-600 hover:text-red-500 font-bold text-lg z-10">✕</button>
+      <img id="photoModalImg" src="" alt="รูปปิดงาน" class="max-w-[80vw] max-h-[85vh] rounded-xl shadow-2xl object-contain" />
+      <!-- counter -->
+      <div id="photoCounter" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm"></div>
+    </div>
+
+    <!-- ปุ่ม next -->
+    <button id="photoNext" onclick="photoNav(1)"
+      class="hidden w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 text-white text-2xl flex items-center justify-center transition-all shrink-0 backdrop-blur-sm">›</button>
+
   </div>
 </div>
 
