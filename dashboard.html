@@ -65,6 +65,52 @@
   .tab-btn:hover { color:#3b82f6; }
   .tab-btn.active { background:#3b82f6; color:#fff; box-shadow:0 2px 6px rgba(59,130,246,.35); }
 
+  /* Quick date preset buttons */
+  .preset-btn {
+    padding:4px 12px; border-radius:999px; font-size:12px; font-weight:500;
+    border:1.5px solid #cbd5e1; color:#64748b; cursor:pointer; transition:all .15s;
+  }
+  .preset-btn:hover { border-color:#93c5fd; color:#3b82f6; }
+  .preset-btn.active { background:#eff6ff; border-color:#93c5fd; color:#2563eb; }
+
+  /* Heatmap */
+  .hm-cell { min-width:52px; text-align:center; border-radius:6px; padding:4px 2px; font-size:11px; }
+
+  /* Dark Mode */
+  body.dark { background:#0f172a; color:#cbd5e1; }
+  body.dark .card { background:#1e293b; box-shadow:0 1px 3px rgba(0,0,0,.4); }
+  body.dark header { background: linear-gradient(to right,#020617,#0f172a) !important; }
+  body.dark input, body.dark select { background:#0f172a; border-color:#334155 !important; color:#cbd5e1; }
+  body.dark .bg-white { background:#1e293b !important; }
+  body.dark .bg-slate-50 { background:#1e293b !important; }
+  body.dark .bg-slate-100 { background:#334155 !important; }
+  body.dark [class*="border-slate-1"], body.dark [class*="border-slate-2"] { border-color:#334155 !important; }
+  body.dark .text-slate-800 { color:#f1f5f9 !important; }
+  body.dark .text-slate-700 { color:#e2e8f0 !important; }
+  body.dark .text-slate-600 { color:#cbd5e1 !important; }
+  body.dark .text-slate-500 { color:#94a3b8 !important; }
+  body.dark .text-slate-400 { color:#64748b !important; }
+  body.dark .bg-emerald-50  { background:rgba(6,78,59,.25) !important; }
+  body.dark .bg-amber-50    { background:rgba(92,46,5,.25) !important; }
+  body.dark .bg-red-50      { background:rgba(80,7,7,.25) !important; }
+  body.dark .tab-btn        { color:#94a3b8; }
+  body.dark .tab-btn.active { color:#fff; }
+  body.dark .chip-all       { border-color:#475569 !important; color:#94a3b8; }
+  body.dark .chip-all.active { background:#1e293b !important; border-color:#64748b !important; color:#e2e8f0; }
+  body.dark .preset-btn     { border-color:#334155; color:#64748b; }
+  body.dark .preset-btn.active { background:#1e3a5f; border-color:#3b82f6; color:#93c5fd; }
+  body.dark .page-btn       { background:#1e293b; border-color:#334155; color:#94a3b8; }
+  body.dark .page-btn:hover { background:#334155; }
+  body.dark #shortcutHelp   { background:#1e293b !important; border-color:#334155 !important; }
+  body.dark kbd             { background:#334155 !important; color:#94a3b8 !important; }
+  body.dark .sev-chip       { border-color:#475569; color:#94a3b8; }
+  body.dark .rounded-xl.border { border-color:#334155 !important; background:#0f172a !important; }
+  body.dark #repeatList .bg-slate-100 { background:#334155 !important; }
+  body.dark tr:hover { background:rgba(59,130,246,.12) !important; }
+  body.dark .border-b { border-color:#334155 !important; }
+  body.dark .border-t { border-color:#334155 !important; }
+  body.dark .border-b-2 { border-color:#334155 !important; }
+
   /* หัวรายงานเฉพาะตอน print */
   #printHeader { display:none; }
 
@@ -95,6 +141,8 @@
     </div>
     <div class="flex items-center gap-3">
       <span id="updatedAt" class="text-slate-300 text-xs">—</span>
+      <button id="darkToggle" onclick="toggleDarkMode()" title="สลับ Dark/Light Mode"
+        class="w-9 h-9 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-lg transition">🌙</button>
       <button id="refreshBtn" class="bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm transition">
         <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
         รีเฟรช
@@ -152,6 +200,15 @@
         <button id="exportBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm transition font-medium">⬇ Export CSV</button>
         <button id="exportPdfBtn" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-1.5 rounded-lg text-sm transition font-medium">⬇ Export PDF</button>
       </div>
+    </div>
+    <!-- Quick Date Presets -->
+    <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+      <span class="text-xs text-slate-400">ช่วงเวลา:</span>
+      <button class="preset-btn active" id="preset-all"      onclick="setDatePreset('all')">ทั้งหมด</button>
+      <button class="preset-btn"         id="preset-today"   onclick="setDatePreset('today')">วันนี้</button>
+      <button class="preset-btn"         id="preset-week"    onclick="setDatePreset('week')">สัปดาห์นี้</button>
+      <button class="preset-btn"         id="preset-month"   onclick="setDatePreset('month')">เดือนนี้</button>
+      <button class="preset-btn"         id="preset-last"    onclick="setDatePreset('last')">เดือนที่แล้ว</button>
     </div>
   </div>
 
@@ -263,6 +320,13 @@
     <h3 class="text-sm font-semibold mb-1 text-slate-600">อาคารที่พบปัญหาซ้ำ (แจ้ง ≥ 2 ครั้ง)</h3>
     <p class="text-xs text-slate-400 mb-3">อาคารที่ถูกแจ้งซ้ำหลายครั้ง ควรตรวจสอบต้นเหตุเชิงลึก</p>
     <div id="repeatList" class="flex flex-col gap-2"></div>
+  </div>
+
+  <!-- Heatmap อาคาร × เดือน -->
+  <div class="card p-4 mb-5">
+    <h3 class="text-sm font-semibold mb-1 text-slate-600">Heatmap อาคาร — แยกตามเดือน (6 เดือนล่าสุด)</h3>
+    <p class="text-xs text-slate-400 mb-3">ความหนาแน่นของงานแจ้งในแต่ละอาคาร เข้มขึ้น = พบมากขึ้น — ใช้เปรียบเทียบว่าอาคารไหนมีปัญหาซ้ำในช่วงเวลาไหน</p>
+    <div id="heatmapContainer" class="overflow-x-auto"></div>
   </div>
 
   <!-- Table -->
@@ -651,6 +715,7 @@ function render() {
   renderCatchChart(rows);
   renderMonthlyTrend(rows);
   renderRepeatOffenders(rows);
+  renderHeatmap(rows);
 
   // Table
   renderTable(rows);
@@ -841,6 +906,112 @@ function renderRepeatOffenders(rows) {
       <span class="text-sm font-semibold ${hot ? 'text-red-600' : 'text-slate-700'} w-16 text-right">${n} ครั้ง</span>
     </div>`;
   }).join('');
+}
+
+/* ---- Heatmap อาคาร × เดือน ---- */
+function renderHeatmap(rows) {
+  const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const base = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: `${TH_MONTH[d.getMonth()]} ${String((d.getFullYear()+543)%100).padStart(2,'0')}` });
+  }
+
+  const locMonthMap = {};
+  const locTotals  = {};
+  rows.forEach(r => {
+    const o = parseThai(r.timestamp);
+    if (!o) return;
+    const loc      = r.location || 'ไม่ระบุ';
+    const monthKey = `${o.getFullYear()}-${o.getMonth()}`;
+    if (!locMonthMap[loc]) locMonthMap[loc] = {};
+    locMonthMap[loc][monthKey] = (locMonthMap[loc][monthKey] || 0) + 1;
+    locTotals[loc] = (locTotals[loc] || 0) + 1;
+  });
+
+  const topLocs = Object.entries(locTotals)
+    .filter(([k]) => k !== 'ไม่ระบุ')
+    .sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k]) => k);
+
+  const container = document.getElementById('heatmapContainer');
+  if (topLocs.length === 0) {
+    container.innerHTML = '<p class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>';
+    return;
+  }
+
+  let maxCount = 0;
+  topLocs.forEach(loc => months.forEach(m => {
+    maxCount = Math.max(maxCount, (locMonthMap[loc]?.[m.key] || 0));
+  }));
+
+  function cellStyle(count) {
+    if (!count) return 'background:#f8fafc;color:#cbd5e1;';
+    const t = count / maxCount;
+    const r = Math.round(219 + (29 - 219) * t);
+    const g = Math.round(234 + (78 - 234) * t);
+    const b = Math.round(254 + (216 - 254) * t);
+    return `background:rgb(${r},${g},${b});color:${t > .5 ? '#fff' : '#1e40af'};font-weight:600;`;
+  }
+
+  let html = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:480px">';
+  html += '<thead><tr>';
+  html += '<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:#94a3b8;font-weight:500;width:140px">อาคาร</th>';
+  months.forEach(m => { html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:#94a3b8;font-weight:500">${m.label}</th>`; });
+  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500">รวม</th></tr></thead>';
+  html += '<tbody>';
+  topLocs.forEach(loc => {
+    html += '<tr>';
+    html += `<td style="padding:2px 8px 2px 0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px" title="${loc}">${loc}</td>`;
+    months.forEach(m => {
+      const c = locMonthMap[loc]?.[m.key] || 0;
+      html += `<td class="hm-cell" style="${cellStyle(c)}">${c || ''}</td>`;
+    });
+    html += `<td style="text-align:center;font-size:12px;font-weight:700;color:#1d4ed8;padding:2px 6px">${locTotals[loc]}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* ---- Quick Date Preset ---- */
+const PRESET_IDS = ['preset-all','preset-today','preset-week','preset-month','preset-last'];
+function setDatePreset(preset) {
+  PRESET_IDS.forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('preset-' + preset).classList.add('active');
+
+  const now   = new Date();
+  const toISO = d => d.toISOString().slice(0, 10);
+  let from = '', to = '';
+
+  if (preset === 'today') {
+    from = to = toISO(now);
+  } else if (preset === 'week') {
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    from = toISO(mon); to = toISO(now);
+  } else if (preset === 'month') {
+    from = toISO(new Date(now.getFullYear(), now.getMonth(), 1));
+    to   = toISO(now);
+  } else if (preset === 'last') {
+    const f = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const t = new Date(now.getFullYear(), now.getMonth(), 0);
+    from = toISO(f); to = toISO(t);
+  }
+
+  document.getElementById('dateFrom').value = from;
+  document.getElementById('dateTo').value   = to;
+  currentPage = 1;
+  render();
+}
+
+/* ---- Dark Mode ---- */
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('darkMode', isDark ? '1' : '0');
+  document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
+  Chart.defaults.color       = isDark ? '#94a3b8' : '#64748b';
+  Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0';
+  render();
 }
 
 /* ============================================================
@@ -1146,6 +1317,12 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---- init ---- */
+if (localStorage.getItem('darkMode') === '1') {
+  document.body.classList.add('dark');
+  document.getElementById('darkToggle').textContent = '☀️';
+  Chart.defaults.color       = '#94a3b8';
+  Chart.defaults.borderColor = '#334155';
+}
 fetchData();
 </script>
 
