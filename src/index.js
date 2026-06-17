@@ -291,10 +291,14 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       continue;
     }
 
-    const woIds = [];
+    const woMessages = [];
     for (const result of complaints) {
       const workOrderId = await getNextWorkOrderId();
       console.log(`   ✅ พบการแจ้งปัญหา! [${workOrderId}]`);
+
+      const floor = result.floor && result.floor !== 'ไม่ระบุ' ? ` ${result.floor}` : '';
+      const contact = [result.contact_name, result.contact_phone]
+        .filter(v => v && v !== 'ไม่ระบุ').join(' ');
 
       await appendComplaint({
         timestamp,
@@ -313,11 +317,26 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
         workOrderId,
       });
 
-      woIds.push(`${workOrderId} — ${result.pest_type} ${result.location}`);
+      const lines = [
+        '📋 แจ้งเตือน Work Order เปิดแล้ว',
+        '━━━━━━━━━━━━━━━',
+        `หมายเลข: ${workOrderId}`,
+        `สัตว์: ${result.pest_type}`,
+        `พื้นที่: ${result.location}${floor}`,
+        `ผู้แจ้ง: ${senderName}`,
+      ];
+      if (contact) lines.push(`ติดต่อ: ${contact}`);
+      lines.push('', 'กรุณาดำเนินการและปิดงาน:');
+      lines.push(`ตัวอย่าง: ปิดงาน ${workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`);
+
+      woMessages.push(lines.join('\n'));
     }
 
-    // Reply รวมทุก WO — ลอง reply ก่อน (ฟรี), ถ้าเกิน 30 วิ → fallback push
-    await safeReply(event.replyToken, groupId, `รับแจ้ง ${woIds.join(' | ')} ✅`);
+    // Reply WO แรกด้วย replyToken (ฟรี), WO ถัดไป (ถ้ามี) ใช้ push
+    await safeReply(event.replyToken, groupId, woMessages[0]);
+    for (let i = 1; i < woMessages.length; i++) {
+      await pushMessage(groupId, woMessages[i]);
+    }
 
     console.log('---');
   }
