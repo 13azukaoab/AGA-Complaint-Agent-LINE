@@ -342,7 +342,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
       const lines = [
         '📋 แจ้งเตือน Work Order เปิดแล้ว',
-        '━━━━━━━━━━━━',
+        '━━━━━━━━━━',
         `หมายเลข: ${workOrderId}`,
         `สัตว์: ${result.pest_type}`,
         `พื้นที่: ${result.location}${floor}`,
