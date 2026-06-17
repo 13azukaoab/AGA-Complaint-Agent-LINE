@@ -209,7 +209,16 @@ async function sendDailySummary() {
   return { groupsNotified: sent };
 }
 
-router.get('/', async (req, res) => {
+// handler เดียว ใช้ได้ทั้ง GET และ POST (Cloud Scheduler บาง job ตั้งเป็น POST)
+async function handleNotify(req, res) {
+  // ป้องกัน bot ภายนอก: ต้องมี header X-Notify-Key ตรงกับ env NOTIFY_KEY
+  // (ถ้าไม่ตั้ง NOTIFY_KEY ไว้ = ข้ามการตรวจ เพื่อ backward-compat ตอน dev)
+  const requiredKey = process.env.NOTIFY_KEY;
+  if (requiredKey && req.get('X-Notify-Key') !== requiredKey) {
+    console.warn(`[notify] ปฏิเสธ request ไม่มี key ที่ถูกต้อง — IP: ${req.ip}`);
+    return res.status(403).json({ ok: false, error: 'forbidden' });
+  }
+
   const type = req.query.type || 'check';
 
   try {
@@ -227,6 +236,9 @@ router.get('/', async (req, res) => {
     console.error('[notify] error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
-});
+}
+
+router.get('/', handleNotify);
+router.post('/', handleNotify);
 
 module.exports = router;
