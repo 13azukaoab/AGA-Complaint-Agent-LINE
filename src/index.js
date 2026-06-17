@@ -54,7 +54,7 @@ async function getMemberName(groupId, userId) {
 // Push ข้อความเข้ากลุ่ม LINE (กินโควต้า — ใช้เฉพาะ scheduler หรือกรณีตอบช้าเกิน 30 วิ)
 async function pushMessage(groupId, text) {
   try {
-    await fetch('https://api.line.me/v2/bot/message/push', {
+    const res = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LINE_TOKEN}`,
@@ -65,15 +65,20 @@ async function pushMessage(groupId, text) {
         messages: [{ type: 'text', text }],
       }),
     });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`   ❌ pushMessage fail (${res.status}):`, body);
+    }
   } catch (e) {
     console.error('   ❌ pushMessage error:', e.message);
   }
 }
 
 // Reply ข้อความด้วย replyToken (ฟรี ไม่กินโควต้า — ใช้ตอบ event ที่คนพิมพ์เข้ามา ภายใน 30 วิ)
+// return true ถ้าสำเร็จ, false ถ้า fail (เพื่อให้ caller fallback ไป pushMessage)
 async function replyMessage(replyToken, text) {
   try {
-    await fetch('https://api.line.me/v2/bot/message/reply', {
+    const res = await fetch('https://api.line.me/v2/bot/message/reply', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LINE_TOKEN}`,
@@ -84,8 +89,24 @@ async function replyMessage(replyToken, text) {
         messages: [{ type: 'text', text }],
       }),
     });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`   ❌ replyMessage fail (${res.status}):`, body);
+      return false;
+    }
+    return true;
   } catch (e) {
     console.error('   ❌ replyMessage error:', e.message);
+    return false;
+  }
+}
+
+// ส่งข้อความ: ลอง reply ก่อน (ฟรี), ถ้า fail → fallback push (กิน quota แต่ไม่มี timeout 30 วิ)
+async function safeReply(replyToken, groupId, text) {
+  const ok = await replyMessage(replyToken, text);
+  if (!ok) {
+    console.log('   🔄 reply fail → fallback pushMessage');
+    await pushMessage(groupId, text);
   }
 }
 
@@ -295,8 +316,8 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       woIds.push(`${workOrderId} — ${result.pest_type} ${result.location}`);
     }
 
-    // Reply รวมทุก WO ในบรรทัดเดียว
-    await pushMessage(groupId, `รับแจ้ง ${woIds.join(' | ')} ✅`);
+    // Reply รวมทุก WO — ลอง reply ก่อน (ฟรี), ถ้าเกิน 30 วิ → fallback push
+    await safeReply(event.replyToken, groupId, `รับแจ้ง ${woIds.join(' | ')} ✅`);
 
     console.log('---');
   }
