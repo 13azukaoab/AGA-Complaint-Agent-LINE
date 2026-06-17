@@ -1,6 +1,6 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 16 มิถุนายน 2569
+อัปเดตล่าสุด: 17 มิถุนายน 2569
 
 ---
 
@@ -24,12 +24,14 @@
 | Type | เวลา | พฤติกรรม |
 |------|------|---------|
 | `?type=morning` | 08:30 | ส่งทุกกลุ่มใน `ALLOWED_GROUP_IDS`: 🔴 งานค้างข้ามวัน / 🟢 ไม่มีค้าง |
-| `?type=check` | 12:00, 16:00 | งานเปิดวันนี้เท่านั้น — ส่งเฉพาะกลุ่มที่มีค้าง |
+| `?type=check` | 12:00 | งานเปิดวันนี้เท่านั้น — ส่งเฉพาะกลุ่มที่มีค้าง |
 | `?type=daily` | 17:30 | สรุปรายวัน: งานวันนี้ทั้งหมด แยก ปิด/ยังไม่ปิด |
 
 - `src/sheets.js` — เพิ่ม `groupId` ใน `getAllWorkOrders()` (แก้ bug daily ไม่ส่ง)
 - Cloud Scheduler 3 jobs: `aga-notify-morning` / `aga-notify-check` / `aga-notify-daily`
 - `ALLOWED_GROUP_IDS=Cc0527ed1a845f03d9a01ab04b1835e56` set ใน Cloud Run env
+- Security: `/notify` ป้องกันด้วย `X-Notify-Key` header — บอทภายนอกโดนบล็อก 403
+- ลด 16:00 ออก (ทับซ้อนกับ 12:00) — `aga-notify-check` เหลือแค่ 12:00
 
 ### Phase 8 — Dashboard (เสร็จ 100%)
 - `dashboard.html` — single-file HTML เชื่อม `/api/dashboard`
@@ -48,16 +50,17 @@
 
 ---
 
-## 📋 สถานะระบบปัจจุบัน (16 มิ.ย. 2569)
+## 📋 สถานะระบบปัจจุบัน (17 มิ.ย. 2569)
 
 | Component | สถานะ |
 |-----------|-------|
-| Cloud Run Backend | ✅ revision 00037 |
+| Cloud Run Backend | ✅ revision 00038-fdq |
 | Netlify Dashboard | ✅ auto-deploy |
-| Cloud Scheduler morning | ✅ 08:30 ทดสอบผ่าน |
-| Cloud Scheduler check | ✅ 12:00, 16:00 |
-| Cloud Scheduler daily | ✅ 17:30 ทดสอบผ่าน |
+| Cloud Scheduler morning | ✅ 08:30 |
+| Cloud Scheduler check | ✅ 12:00 (ลด 16:00 ออกแล้ว) |
+| Cloud Scheduler daily | ✅ 17:30 |
 | LINE Notify กลุ่ม | ✅ ยืนยันรับข้อความแล้ว |
+| Security `/notify` | ✅ X-Notify-Key header — บอทภายนอก 403 |
 
 ---
 
