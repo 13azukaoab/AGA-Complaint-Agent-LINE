@@ -110,6 +110,19 @@ async function safeReply(replyToken, groupId, text) {
   }
 }
 
+// แปลง timestamp ไทย (พ.ศ.) → format สั้น เช่น "17/06/69 13:33"
+function formatShortTimestamp(ts) {
+  if (!ts) return '?';
+  try {
+    const parts = ts.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+)/);
+    if (!parts) return ts;
+    const [, day, month, yearBE, hour, min] = parts;
+    return `${day.padStart(2,'0')}/${month.padStart(2,'0')}/${String(yearBE).slice(-2)} ${hour.padStart(2,'0')}:${min.padStart(2,'0')}`;
+  } catch (e) {
+    return ts;
+  }
+}
+
 // ดาวน์โหลดรูปจาก LINE แล้วอัปโหลดขึ้น Google Cloud Storage
 async function uploadPhotoToGCS(messageId, woId) {
   try {
@@ -246,10 +259,21 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       if (groupWOs.length === 0) {
         await replyMessage(event.replyToken, 'ไม่มีงานค้าง ✅');
       } else {
-        const list = groupWOs
-          .map(w => `${w.workOrderId} — ${w.pestType} ${w.location}`)
-          .join('\n');
-        await replyMessage(event.replyToken, `งานค้าง ${groupWOs.length} รายการ:\n${list}`);
+        const lines = [`📋 งานค้าง ${groupWOs.length} รายการ`, '━━━━━━━━━━━━━━'];
+        for (const wo of groupWOs) {
+          const floor = wo.floor && wo.floor !== 'ไม่ระบุ' ? ` ${wo.floor}` : '';
+          const contact = [wo.contactName, wo.contactPhone]
+            .filter(v => v && v !== 'ไม่ระบุ').join(' ');
+          lines.push('');
+          lines.push(`🟡 ${wo.workOrderId} — ${wo.pestType}`);
+          lines.push(`📍 ${wo.location}${floor}`);
+          lines.push(`🕐 ${formatShortTimestamp(wo.timestamp)} น.`);
+          if (contact) lines.push(`📞 ${contact}`);
+        }
+        lines.push('');
+        lines.push('━━━━━━━━━━━━━━');
+        lines.push(`💬 ปิดงาน: พิมพ์ "ปิดงาน ${groupWOs[0].workOrderId} [วิธี+จำนวน]"`);
+        await replyMessage(event.replyToken, lines.join('\n'));
       }
       continue;
     }

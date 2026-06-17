@@ -129,7 +129,10 @@ async function getOpenWorkOrders() {
           groupName: row[3],
           pestType: row[5],
           location: row[6],
+          floor: row[7] || '',
           severity: row[8],
+          contactName: row[9] || '',
+          contactPhone: row[10] || '',
           workOrderId: row[13], // column N (index 13)
           status,
           acknowledger: row[15],
