@@ -27,3 +27,6 @@ steps:
 
 images:
   - 'asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
