@@ -202,7 +202,6 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     if (event.source.type !== 'group') continue;
 
     const groupId = event.source.groupId;
-    if (allowedGroups.length > 0 && !allowedGroups.includes(groupId)) continue;
 
     const timestamp = new Date(event.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
