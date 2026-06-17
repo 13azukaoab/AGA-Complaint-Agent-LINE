@@ -32,12 +32,13 @@ async function pushMessage(groupId, text) {
 }
 
 // แปลง timestamp ไทย (พ.ศ.) → Date object (ค.ศ.)
+// รองรับหลายรูปแบบ: "17/6/2569 13:33:00", "17/6/2569, 13:33:00", "17/6/2569 13:33"
 function parseThaiTimestamp(ts) {
   if (!ts) return null;
   try {
-    const parts = ts.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
+    const parts = ts.match(/(\d+)\/(\d+)\/(\d+)[,\s]+(\d+):(\d+)(?::(\d+))?/);
     if (!parts) return null;
-    const [, day, month, yearBE, hour, min, sec] = parts;
+    const [, day, month, yearBE, hour, min, sec = '0'] = parts;
     const yearCE = parseInt(yearBE) - 543;
     return new Date(yearCE, parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min), parseInt(sec));
   } catch (e) {
