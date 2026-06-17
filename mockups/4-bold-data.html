@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup 4 — Bold Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Archivo:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans Thai',sans-serif; }
+  :root {
+    --bg:#0f1115; --ink:#15171c; --lime:#d4ff3f; --lime-d:#a8d600;
+    --white:#f5f6f7; --gray:#71757e; --line:#262932; --card:#181b21;
+    --num:'Archivo',sans-serif;
+  }
+  body { background:var(--bg); color:var(--white); padding:22px; }
+  .num { font-family:var(--num); }
+
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .brand { display:flex; align-items:center; gap:13px; }
+  .logo { width:42px; height:42px; background:var(--lime); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--num); font-weight:900; font-size:22px; color:#15171c; }
+  .brand h1 { font-family:var(--num); font-size:18px; font-weight:800; letter-spacing:-.3px; text-transform:uppercase; }
+  .brand p { font-size:12px; color:var(--gray); }
+  .date { font-family:var(--num); font-size:13px; font-weight:700; color:var(--lime); border:1px solid var(--line); border-radius:8px; padding:8px 14px; }
+
+  .hero { display:grid; grid-template-columns:1.6fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+  .hero-main { background:var(--lime); border-radius:16px; padding:24px; color:#15171c; }
+  .hero-main label { font-size:14px; font-weight:600; }
+  .hero-main .big { font-family:var(--num); font-size:88px; font-weight:900; line-height:.9; letter-spacing:-3px; margin:6px 0; }
+  .hero-main .row { display:flex; gap:24px; margin-top:14px; }
+  .hero-main .row div { font-size:13px; } .hero-main .row b { font-family:var(--num); font-size:22px; font-weight:800; display:block; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; }
+  .stat label { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:1px; }
+  .stat .v { font-family:var(--num); font-size:52px; font-weight:900; line-height:1; letter-spacing:-2px; }
+  .stat .v.lime{ color:var(--lime); } .stat .v.red{ color:#ff5c5c; }
+  .stat .tag { font-size:12px; color:var(--gray); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .card h3 { font-size:12px; text-transform:uppercase; letter-spacing:2px; color:var(--gray); margin-bottom:20px; }
+
+  .rank { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .rank .n { font-family:var(--num); font-size:14px; font-weight:900; color:var(--lime); width:24px; }
+  .rank .name { flex:1; font-size:14px; font-weight:500; }
+  .rank .track { width:90px; height:8px; background:var(--line); border-radius:4px; overflow:hidden; }
+  .rank .track i { display:block; height:100%; background:var(--lime); }
+  .rank .q { font-family:var(--num); font-size:18px; font-weight:800; width:40px; text-align:right; }
+
+  .splitbar { display:flex; height:44px; border-radius:10px; overflow:hidden; margin-bottom:18px; }
+  .splitbar div { display:flex; align-items:center; justify-content:center; font-family:var(--num); font-weight:800; font-size:15px; }
+  .sb-rat{ background:var(--lime); color:#15171c; } .sb-roach{ background:#5b7cfa; } .sb-ant{ background:#fb923c; color:#15171c; } .sb-other{ background:var(--line); color:var(--gray); }
+  .pestlegend { display:flex; gap:18px; flex-wrap:wrap; }
+  .pestlegend div { display:flex; align-items:center; gap:7px; font-size:13px; } .pestlegend .sw{ width:11px;height:11px;border-radius:3px; }
+
+  table { width:100%; border-collapse:collapse; }
+  th { font-family:var(--num); font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--gray); text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+  td { padding:13px 12px; font-size:13px; border-bottom:1px solid var(--line); }
+  td.id { font-family:var(--num); font-weight:900; color:var(--lime); }
+  .st { font-family:var(--num); font-weight:700; font-size:11px; padding:3px 10px; border-radius:6px; text-transform:uppercase; }
+  .st.open{ background:rgba(212,255,63,.15); color:var(--lime); } .st.closed{ background:var(--line); color:var(--gray); }
+  .sla{ font-family:var(--num); font-weight:800; font-size:13px; } .sla.ok{color:var(--lime);} .sla.warn{color:#fbbf24;} .sla.over{color:#ff5c5c;}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">A</div>
+      <div><h1>AGA Pest Control</h1><p>Advance Group Asia · Dashboard</p></div>
+    </div>
+    <div class="date">17 มิ.ย. 2569</div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-main">
+      <label>งานแจ้งทั้งหมด</label>
+      <div class="big">248</div>
+      <div class="row">
+        <div>ปิดแล้ว<b>217</b></div>
+        <div>เปิดอยู่<b>31</b></div>
+        <div>วันนี้<b>+12</b></div>
+      </div>
+    </div>
+    <div class="stat"><label>อัตราปิดงาน</label><div class="v lime">87%</div><span class="tag">เป้าหมาย 90%</span></div>
+    <div class="stat"><label>ค้างเกิน 3 วัน</label><div class="v red">04</div><span class="tag">ต้องติดตามด่วน</span></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>อาคารที่พบมากสุด</h3>
+      <div class="rank"><span class="n">01</span><span class="name">ตึก 100 ปีฯ</span><span class="track"><i style="width:100%"></i></span><span class="q">68</span></div>
+      <div class="rank"><span class="n">02</span><span class="name">เฉลิมพระเกียรติ</span><span class="track"><i style="width:74%"></i></span><span class="q">50</span></div>
+      <div class="rank"><span class="n">03</span><span class="name">ศูนย์ทันตกรรม</span><span class="track"><i style="width:53%"></i></span><span class="q">36</span></div>
+      <div class="rank"><span class="n">04</span><span class="name">ผู้ป่วยนอก</span><span class="track"><i style="width:38%"></i></span><span class="q">26</span></div>
+    </div>
+    <div class="card">
+      <h3>สัดส่วนชนิดสัตว์</h3>
+      <div class="splitbar">
+        <div class="sb-rat" style="width:57%">57%</div>
+        <div class="sb-roach" style="width:23%">23%</div>
+        <div class="sb-ant" style="width:11%">11%</div>
+        <div class="sb-other" style="width:9%">9%</div>
+      </div>
+      <div class="pestlegend">
+        <div><span class="sw" style="background:#d4ff3f"></span>หนู 142</div>
+        <div><span class="sw" style="background:#5b7cfa"></span>แมลงสาบ 58</div>
+        <div><span class="sw" style="background:#fb923c"></span>มด 28</div>
+        <div><span class="sw" style="background:#262932"></span>อื่นๆ 20</div>
+      </div>
+      <div style="margin-top:24px;display:flex;gap:14px;">
+        <div style="flex:1;background:var(--bg);border-radius:12px;padding:16px;text-align:center;"><div class="num" style="font-size:34px;font-weight:900;color:var(--lime)">6.2</div><div style="font-size:12px;color:var(--gray)">SLA เฉลี่ย (ชม.)</div></div>
+        <div style="flex:1;background:var(--bg);border-radius:12px;padding:16px;text-align:center;"><div class="num" style="font-size:34px;font-weight:900;">31</div><div style="font-size:12px;color:var(--gray)">งานเปิดอยู่</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>รายการงานล่าสุด</h3>
+    <table>
+      <thead><tr><th>WO</th><th>วันที่</th><th>อาคาร</th><th>ชนิด</th><th>สถานะ</th><th>SLA</th><th>ผู้ปิด</th></tr></thead>
+      <tbody>
+        <tr><td class="id">W248</td><td>17/06 14:10</td><td>เฉลิมพระเกียรติ</td><td>หนู</td><td><span class="st open">เปิด</span></td><td class="sla warn">4.2H</td><td>—</td></tr>
+        <tr><td class="id">W247</td><td>17/06 13:33</td><td>ตึก 100 ปีฯ</td><td>หนู</td><td><span class="st open">เปิด</span></td><td class="sla over">26H</td><td>—</td></tr>
+        <tr><td class="id">W246</td><td>17/06 11:20</td><td>ศูนย์ทันตกรรม</td><td>แมลงสาบ</td><td><span class="st closed">ปิด</span></td><td class="sla ok">1.8H</td><td>นัท</td></tr>
+        <tr><td class="id">W245</td><td>17/06 09:45</td><td>ผู้ป่วยนอก</td><td>มด</td><td><span class="st closed">ปิด</span></td><td class="sla ok">3.1H</td><td>Toon</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

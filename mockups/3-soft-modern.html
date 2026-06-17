@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup 3 — Soft Modern</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans Thai','Plus Jakarta Sans',sans-serif; }
+  :root {
+    --bg:#f4f6fb; --card:#ffffff; --ink:#2d3748; --dim:#94a3b8;
+    --blue:#5b7cfa; --blue-soft:#eef1fe; --teal:#2dd4bf; --teal-soft:#e6fbf7;
+    --amber:#fbbf24; --amber-soft:#fef6e0; --rose:#fb7185; --rose-soft:#fee9ec;
+    --violet:#a78bfa; --violet-soft:#f1ecfe;
+  }
+  body { background:var(--bg); color:var(--ink); padding:22px; }
+
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+  .brand { display:flex; align-items:center; gap:14px; }
+  .logo { width:46px; height:46px; border-radius:14px; background:var(--blue); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:22px; box-shadow:0 8px 20px rgba(91,124,250,.35); }
+  .brand h1 { font-size:18px; font-weight:700; }
+  .brand p { font-size:13px; color:var(--dim); }
+  .header-actions { display:flex; gap:10px; align-items:center; }
+  .chip { background:var(--card); border-radius:12px; padding:9px 16px; font-size:13px; color:var(--dim); box-shadow:0 2px 8px rgba(45,55,72,.06); }
+  .btn { background:var(--blue); color:#fff; border:none; border-radius:12px; padding:10px 18px; font-size:13px; font-weight:600; box-shadow:0 6px 16px rgba(91,124,250,.3); }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:18px; }
+  .kpi { background:var(--card); border-radius:20px; padding:18px; box-shadow:0 4px 16px rgba(45,55,72,.05); }
+  .kpi .ico { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:12px; }
+  .kpi label { font-size:12px; color:var(--dim); }
+  .kpi .val { font-size:28px; font-weight:700; margin-top:3px; }
+  .i-blue{background:var(--blue-soft);} .i-amber{background:var(--amber-soft);}
+  .i-teal{background:var(--teal-soft);} .i-violet{background:var(--violet-soft);} .i-rose{background:var(--rose-soft);}
+
+  .grid2 { display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-bottom:18px; }
+  .card { background:var(--card); border-radius:24px; padding:24px; box-shadow:0 4px 16px rgba(45,55,72,.05); }
+  .card h3 { font-size:15px; font-weight:700; margin-bottom:20px; }
+
+  .barchart { display:flex; align-items:flex-end; gap:16px; height:170px; padding-top:10px; }
+  .bargroup { flex:1; display:flex; flex-direction:column; align-items:center; gap:10px; height:100%; justify-content:flex-end; }
+  .barv { width:100%; max-width:42px; border-radius:12px 12px 6px 6px; background:linear-gradient(180deg,var(--blue),#8aa0fc); }
+  .bargroup span { font-size:12px; color:var(--dim); }
+  .bargroup b { font-size:13px; font-weight:600; }
+
+  .donut-wrap { display:flex; align-items:center; gap:24px; }
+  .legend { display:flex; flex-direction:column; gap:13px; flex:1; }
+  .legend div { display:flex; align-items:center; gap:10px; font-size:13px; }
+  .legend .sw { width:12px; height:12px; border-radius:5px; }
+  .legend b { margin-left:auto; font-weight:700; }
+
+  .wo-list { display:flex; flex-direction:column; gap:12px; }
+  .wo { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; background:var(--bg); }
+  .wo .id { font-weight:700; font-size:14px; width:54px; }
+  .wo .info { flex:1; } .wo .info .t { font-size:14px; font-weight:600; } .wo .info .s { font-size:12px; color:var(--dim); }
+  .badge { font-size:12px; font-weight:600; padding:5px 13px; border-radius:20px; }
+  .badge.open{ background:var(--amber-soft); color:#b07d09; }
+  .badge.closed{ background:var(--teal-soft); color:#0d9488; }
+  .sla-tag { font-size:12px; font-weight:600; padding:5px 12px; border-radius:20px; }
+  .sla-tag.ok{background:var(--teal-soft);color:#0d9488;} .sla-tag.warn{background:var(--amber-soft);color:#b07d09;} .sla-tag.over{background:var(--rose-soft);color:#e11d48;}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">A</div>
+      <div><h1>AGA Pest Control</h1><p>ระบบแจ้งปัญหาแมลง/สัตว์รบกวน</p></div>
+    </div>
+    <div class="header-actions">
+      <span class="chip">📅 มิถุนายน 2569</span>
+      <button class="btn">+ งานใหม่</button>
+    </div>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="ico i-blue">📋</div><label>งานทั้งหมด</label><div class="val">248</div></div>
+    <div class="kpi"><div class="ico i-amber">⏳</div><label>งานเปิด</label><div class="val">31</div></div>
+    <div class="kpi"><div class="ico i-teal">✅</div><label>งานปิด</label><div class="val">217</div></div>
+    <div class="kpi"><div class="ico i-blue">📊</div><label>% ปิดงาน</label><div class="val">87%</div></div>
+    <div class="kpi"><div class="ico i-violet">⚡</div><label>SLA เฉลี่ย</label><div class="val">6.2</div></div>
+    <div class="kpi"><div class="ico i-rose">🔔</div><label>ค้าง 3 วัน</label><div class="val">4</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>แนวโน้มงานแจ้ง 6 เดือน</h3>
+      <div class="barchart">
+        <div class="bargroup"><b>32</b><div class="barv" style="height:42%"></div><span>ม.ค.</span></div>
+        <div class="bargroup"><b>41</b><div class="barv" style="height:54%"></div><span>ก.พ.</span></div>
+        <div class="bargroup"><b>38</b><div class="barv" style="height:50%"></div><span>มี.ค.</span></div>
+        <div class="bargroup"><b>52</b><div class="barv" style="height:68%"></div><span>เม.ย.</span></div>
+        <div class="bargroup"><b>45</b><div class="barv" style="height:59%"></div><span>พ.ค.</span></div>
+        <div class="bargroup"><b>40</b><div class="barv" style="height:53%"></div><span>มิ.ย.</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>ชนิดสัตว์/แมลง</h3>
+      <div class="donut-wrap">
+        <svg width="140" height="140" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#eef1fe" stroke-width="7"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#5b7cfa" stroke-width="7" stroke-dasharray="57 43" stroke-dashoffset="25"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#fbbf24" stroke-width="7" stroke-dasharray="23 77" stroke-dashoffset="-32"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#2dd4bf" stroke-width="7" stroke-dasharray="11 89" stroke-dashoffset="-55"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#a78bfa" stroke-width="7" stroke-dasharray="9 91" stroke-dashoffset="-66"/>
+        </svg>
+        <div class="legend">
+          <div><span class="sw" style="background:#5b7cfa"></span>หนู<b>142</b></div>
+          <div><span class="sw" style="background:#fbbf24"></span>แมลงสาบ<b>58</b></div>
+          <div><span class="sw" style="background:#2dd4bf"></span>มด<b>28</b></div>
+          <div><span class="sw" style="background:#a78bfa"></span>ปลวก<b>12</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>งานล่าสุด</h3>
+    <div class="wo-list">
+      <div class="wo"><span class="id">W248</span><div class="info"><div class="t">หนู · เฉลิมพระเกียรติ ชั้น 5</div><div class="s">แจ้งเมื่อ 17 มิ.ย. 14:10</div></div><span class="sla-tag warn">4.2 ชม.</span><span class="badge open">เปิด</span></div>
+      <div class="wo"><span class="id">W247</span><div class="info"><div class="t">หนู · ตึก 100 ปีฯ ชั้น 7</div><div class="s">แจ้งเมื่อ 17 มิ.ย. 13:33</div></div><span class="sla-tag over">26 ชม.</span><span class="badge open">เปิด</span></div>
+      <div class="wo"><span class="id">W246</span><div class="info"><div class="t">แมลงสาบ · ศูนย์ทันตกรรม ชั้น 2</div><div class="s">ปิดโดย นัท · 17 มิ.ย. 11:20</div></div><span class="sla-tag ok">1.8 ชม.</span><span class="badge closed">ปิด</span></div>
+    </div>
+  </div>
+</body>
+</html>

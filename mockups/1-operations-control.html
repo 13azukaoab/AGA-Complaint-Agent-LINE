@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup 1 — Operations Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans Thai',sans-serif; }
+  :root {
+    --bg:#0a0e16; --panel:#121826; --panel2:#0e1420; --line:#1e2738;
+    --txt:#e2e8f0; --dim:#64748b; --mono:'JetBrains Mono',monospace;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --cyan:#22d3ee;
+  }
+  body { background:var(--bg); color:var(--txt); padding:18px; }
+  .mono { font-family:var(--mono); }
+
+  header {
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:18px;
+  }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .logo { width:38px; height:38px; border:1.5px solid var(--cyan); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--cyan); font-size:18px; }
+  .brand h1 { font-size:15px; font-weight:600; letter-spacing:.3px; }
+  .brand p { font-size:11px; color:var(--dim); font-family:var(--mono); letter-spacing:1px; text-transform:uppercase; }
+  .live { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px; color:var(--dim); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2s infinite; }
+  @keyframes pulse { 50%{opacity:.4;} }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:16px; }
+  .kpi { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; position:relative; overflow:hidden; }
+  .kpi::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .kpi.g::before{background:var(--green);} .kpi.a::before{background:var(--amber);}
+  .kpi.r::before{background:var(--red);} .kpi.c::before{background:var(--cyan);}
+  .kpi label { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; font-family:var(--mono); }
+  .kpi .val { font-size:30px; font-weight:700; font-family:var(--mono); margin-top:6px; line-height:1; }
+  .kpi .sub { font-size:11px; color:var(--dim); margin-top:5px; font-family:var(--mono); }
+
+  .grid2 { display:grid; grid-template-columns:1.4fr 1fr; gap:14px; margin-bottom:14px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; }
+  .panel h3 { font-size:12px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; font-family:var(--mono); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .panel h3::before { content:'▸'; color:var(--cyan); }
+
+  .bar-row { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+  .bar-row .name { width:130px; font-size:12px; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track { flex:1; height:18px; background:var(--panel2); border-radius:3px; overflow:hidden; }
+  .bar-fill { height:100%; background:linear-gradient(90deg,#0e7490,var(--cyan)); border-radius:3px; }
+  .bar-row .num { width:36px; text-align:right; font-family:var(--mono); font-size:13px; font-weight:500; color:var(--cyan); }
+
+  .donut-wrap { display:flex; align-items:center; gap:20px; }
+  .legend { display:flex; flex-direction:column; gap:9px; }
+  .legend div { display:flex; align-items:center; gap:8px; font-size:12px; font-family:var(--mono); }
+  .legend .sw { width:11px; height:11px; border-radius:2px; }
+
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; font-family:var(--mono); text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  td { padding:10px; font-size:12px; border-bottom:1px solid var(--panel2); }
+  td.id { font-family:var(--mono); font-weight:500; color:var(--cyan); }
+  .st { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; }
+  .st::before { content:''; width:7px; height:7px; border-radius:50%; }
+  .st.open::before{ background:var(--amber); box-shadow:0 0 6px var(--amber);}
+  .st.closed::before{ background:var(--green); }
+  .sla { font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:3px; }
+  .sla.ok{ background:rgba(34,197,94,.15); color:var(--green);}
+  .sla.warn{ background:rgba(245,158,11,.15); color:var(--amber);}
+  .sla.over{ background:rgba(239,68,68,.15); color:var(--red);}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>AGA PEST CONTROL — OPERATIONS</h1>
+        <p>Advance Group Asia · Live Monitoring</p>
+      </div>
+    </div>
+    <div class="live"><span class="dot"></span>LIVE · อัปเดต 14:32:07</div>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi c"><label>งานทั้งหมด</label><div class="val">248</div><div class="sub">+12 วันนี้</div></div>
+    <div class="kpi a"><label>งานเปิด</label><div class="val">31</div><div class="sub">รอดำเนินการ</div></div>
+    <div class="kpi g"><label>งานปิด</label><div class="val">217</div><div class="sub">เสร็จสิ้น</div></div>
+    <div class="kpi c"><label>% ปิดงาน</label><div class="val">87.5</div><div class="sub">เป้า 90%</div></div>
+    <div class="kpi g"><label>SLA เฉลี่ย</label><div class="val">6.2</div><div class="sub">ชั่วโมง</div></div>
+    <div class="kpi r"><label>ค้าง 3 วัน+</label><div class="val">4</div><div class="sub">ต้องติดตาม</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>อาคารที่พบมากสุด</h3>
+      <div class="bar-row"><span class="name">ตึก 100 ปีฯ</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="num">68</span></div>
+      <div class="bar-row"><span class="name">เฉลิมพระเกียรติ</span><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><span class="num">50</span></div>
+      <div class="bar-row"><span class="name">ศูนย์ทันตกรรม</span><div class="bar-track"><div class="bar-fill" style="width:53%"></div></div><span class="num">36</span></div>
+      <div class="bar-row"><span class="name">ผู้ป่วยนอก</span><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><span class="num">26</span></div>
+      <div class="bar-row"><span class="name">อาคารจอดรถ</span><div class="bar-track"><div class="bar-fill" style="width:25%"></div></div><span class="num">17</span></div>
+    </div>
+    <div class="panel">
+      <h3>ชนิดสัตว์/แมลง</h3>
+      <div class="donut-wrap">
+        <svg width="130" height="130" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#0e1420" stroke-width="6"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#22d3ee" stroke-width="6" stroke-dasharray="57 43" stroke-dashoffset="25"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f59e0b" stroke-width="6" stroke-dasharray="23 77" stroke-dashoffset="-32"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#22c55e" stroke-width="6" stroke-dasharray="11 89" stroke-dashoffset="-55"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#a855f7" stroke-width="6" stroke-dasharray="9 91" stroke-dashoffset="-66"/>
+        </svg>
+        <div class="legend">
+          <div><span class="sw" style="background:#22d3ee"></span>หนู · 142</div>
+          <div><span class="sw" style="background:#f59e0b"></span>แมลงสาบ · 58</div>
+          <div><span class="sw" style="background:#22c55e"></span>มด · 28</div>
+          <div><span class="sw" style="background:#a855f7"></span>ปลวก · 12</div>
+          <div><span class="sw" style="background:#64748b"></span>อื่นๆ · 8</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>รายการงานล่าสุด</h3>
+    <table>
+      <thead><tr><th>WO</th><th>วันที่</th><th>อาคาร</th><th>ชนิด</th><th>สถานะ</th><th>SLA</th><th>ผู้ปิด</th></tr></thead>
+      <tbody>
+        <tr><td class="id">W248</td><td class="mono">17/06 14:10</td><td>เฉลิมพระเกียรติ</td><td>หนู</td><td><span class="st open">OPEN</span></td><td><span class="sla warn">4.2 ชม.</span></td><td>—</td></tr>
+        <tr><td class="id">W247</td><td class="mono">17/06 13:33</td><td>ตึก 100 ปีฯ</td><td>หนู</td><td><span class="st open">OPEN</span></td><td><span class="sla over">26 ชม.</span></td><td>—</td></tr>
+        <tr><td class="id">W246</td><td class="mono">17/06 11:20</td><td>ศูนย์ทันตกรรม</td><td>แมลงสาบ</td><td><span class="st closed">CLOSED</span></td><td><span class="sla ok">1.8 ชม.</span></td><td>นัท</td></tr>
+        <tr><td class="id">W245</td><td class="mono">17/06 09:45</td><td>ผู้ป่วยนอก</td><td>มด</td><td><span class="st closed">CLOSED</span></td><td><span class="sla ok">3.1 ชม.</span></td><td>Toon</td></tr>
+        <tr><td class="id">W244</td><td class="mono">16/06 16:02</td><td>อาคารจอดรถ</td><td>หนู</td><td><span class="st closed">CLOSED</span></td><td><span class="sla warn">8.5 ชม.</span></td><td>Jane</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup 2 — Clinical Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans Thai',sans-serif; }
+  :root {
+    --ink:#1a1a18; --paper:#faf9f5; --card:#ffffff; --line:#e7e3d8;
+    --dim:#8a8678; --accent:#1b4d3e; --accent-soft:#eef3f0;
+    --serif:'Fraunces',serif;
+  }
+  body { background:var(--paper); color:var(--ink); padding:28px 32px; }
+  .serif { font-family:var(--serif); }
+
+  header { display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:18px; border-bottom:2px solid var(--ink); margin-bottom:4px; }
+  .eyebrow { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--dim); margin-bottom:6px; }
+  header h1 { font-family:var(--serif); font-size:30px; font-weight:500; line-height:1.1; letter-spacing:-.5px; }
+  header .meta { text-align:right; font-size:12px; color:var(--dim); line-height:1.7; }
+  header .meta strong { color:var(--accent); font-weight:600; }
+
+  .section-label { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--dim); margin:26px 0 14px; display:flex; align-items:center; gap:12px; }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--line); }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--card); }
+  .kpi { padding:20px 22px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .kpi:nth-child(3n){ border-right:none; } .kpi:nth-child(n+4){ border-bottom:none; }
+  .kpi label { font-size:13px; color:var(--dim); }
+  .kpi .val { font-family:var(--serif); font-size:38px; font-weight:500; line-height:1; margin-top:8px; letter-spacing:-1px; }
+  .kpi .sub { font-size:12px; color:var(--dim); margin-top:8px; }
+  .kpi .val .unit { font-size:16px; color:var(--dim); margin-left:4px; }
+  .kpi.feat .val { color:var(--accent); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:22px; }
+  .card h3 { font-family:var(--serif); font-size:18px; font-weight:500; margin-bottom:18px; }
+
+  .stat-line { display:flex; align-items:baseline; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); }
+  .stat-line:last-child{ border-bottom:none; }
+  .stat-line .lbl { font-size:14px; }
+  .stat-line .qty { font-family:var(--serif); font-size:17px; font-weight:500; }
+  .stat-line .track { flex:1; margin:0 16px; height:5px; background:var(--accent-soft); border-radius:3px; overflow:hidden; }
+  .stat-line .track i { display:block; height:100%; background:var(--accent); }
+
+  table { width:100%; border-collapse:collapse; margin-top:4px; }
+  th { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--dim); text-align:left; padding:0 12px 12px; border-bottom:1px solid var(--ink); font-weight:600; }
+  td { padding:13px 12px; font-size:13px; border-bottom:1px solid var(--line); }
+  td.id { font-family:var(--serif); font-weight:600; }
+  .pill { font-size:12px; padding:3px 11px; border-radius:20px; border:1px solid; }
+  .pill.open{ border-color:#c89a3c; color:#8a6a1f; background:#fdf6e8; }
+  .pill.closed{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .sla { font-size:12px; font-weight:500; }
+  .sla.ok{color:#2f7a5e;} .sla.warn{color:#b5840f;} .sla.over{color:#a83232;}
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="eyebrow">Pest Control Report</div>
+      <h1>รายงานระบบแจ้งปัญหา</h1>
+    </div>
+    <div class="meta">
+      Advance Group Asia<br/>
+      <strong>17 มิถุนายน 2569</strong><br/>
+      รพ.ศิริราช · ประจำเดือน
+    </div>
+  </header>
+
+  <div class="section-label">ภาพรวม</div>
+  <div class="kpi-row">
+    <div class="kpi"><label>งานแจ้งทั้งหมด</label><div class="val">248</div><div class="sub">เพิ่มขึ้น 12 รายการจากเมื่อวาน</div></div>
+    <div class="kpi feat"><label>อัตราปิดงาน</label><div class="val">87.5<span class="unit">%</span></div><div class="sub">เป้าหมาย 90% · ใกล้เคียง</div></div>
+    <div class="kpi"><label>SLA เฉลี่ย</label><div class="val">6.2<span class="unit">ชม.</span></div><div class="sub">ภายในมาตรฐาน 24 ชม.</div></div>
+    <div class="kpi"><label>งานเปิดอยู่</label><div class="val">31</div><div class="sub">กำลังดำเนินการ</div></div>
+    <div class="kpi"><label>งานปิดแล้ว</label><div class="val">217</div><div class="sub">เสร็จสมบูรณ์</div></div>
+    <div class="kpi"><label>ค้างเกิน 3 วัน</label><div class="val">4</div><div class="sub">ต้องติดตามเร่งด่วน</div></div>
+  </div>
+
+  <div class="section-label">การกระจายตัว</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>ชนิดสัตว์ที่พบ</h3>
+      <div class="stat-line"><span class="lbl">หนู</span><span class="track"><i style="width:100%"></i></span><span class="qty">142</span></div>
+      <div class="stat-line"><span class="lbl">แมลงสาบ</span><span class="track"><i style="width:41%"></i></span><span class="qty">58</span></div>
+      <div class="stat-line"><span class="lbl">มด</span><span class="track"><i style="width:20%"></i></span><span class="qty">28</span></div>
+      <div class="stat-line"><span class="lbl">ปลวก</span><span class="track"><i style="width:9%"></i></span><span class="qty">12</span></div>
+    </div>
+    <div class="card">
+      <h3>อาคารที่พบมากสุด</h3>
+      <div class="stat-line"><span class="lbl">ตึก 100 ปีฯ</span><span class="track"><i style="width:100%"></i></span><span class="qty">68</span></div>
+      <div class="stat-line"><span class="lbl">เฉลิมพระเกียรติ</span><span class="track"><i style="width:74%"></i></span><span class="qty">50</span></div>
+      <div class="stat-line"><span class="lbl">ศูนย์ทันตกรรม</span><span class="track"><i style="width:53%"></i></span><span class="qty">36</span></div>
+      <div class="stat-line"><span class="lbl">ผู้ป่วยนอก</span><span class="track"><i style="width:38%"></i></span><span class="qty">26</span></div>
+    </div>
+  </div>
+
+  <div class="section-label">รายการงานล่าสุด</div>
+  <table>
+    <thead><tr><th>WO</th><th>วันที่แจ้ง</th><th>อาคาร</th><th>ชนิด</th><th>สถานะ</th><th>SLA</th><th>ผู้ปิดงาน</th></tr></thead>
+    <tbody>
+      <tr><td class="id">W248</td><td>17 มิ.ย. 14:10</td><td>เฉลิมพระเกียรติ</td><td>หนู</td><td><span class="pill open">เปิด</span></td><td class="sla warn">4.2 ชม.</td><td>—</td></tr>
+      <tr><td class="id">W247</td><td>17 มิ.ย. 13:33</td><td>ตึก 100 ปีฯ</td><td>หนู</td><td><span class="pill open">เปิด</span></td><td class="sla over">26 ชม.</td><td>—</td></tr>
+      <tr><td class="id">W246</td><td>17 มิ.ย. 11:20</td><td>ศูนย์ทันตกรรม</td><td>แมลงสาบ</td><td><span class="pill closed">ปิด</span></td><td class="sla ok">1.8 ชม.</td><td>นัท</td></tr>
+      <tr><td class="id">W245</td><td>17 มิ.ย. 09:45</td><td>ผู้ป่วยนอก</td><td>มด</td><td><span class="pill closed">ปิด</span></td><td class="sla ok">3.1 ชม.</td><td>Toon</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>
