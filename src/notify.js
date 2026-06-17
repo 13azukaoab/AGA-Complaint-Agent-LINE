@@ -15,7 +15,7 @@ const allowedGroups = process.env.ALLOWED_GROUP_IDS
 
 async function pushMessage(groupId, text) {
   try {
-    await fetch('https://api.line.me/v2/bot/message/push', {
+    const res = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LINE_TOKEN}`,
@@ -26,6 +26,12 @@ async function pushMessage(groupId, text) {
         messages: [{ type: 'text', text }],
       }),
     });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`   ❌ pushMessage fail (${res.status}) groupId=${groupId}:`, body);
+    } else {
+      console.log(`   ✅ pushMessage ok → groupId=${groupId}`);
+    }
   } catch (e) {
     console.error('   ❌ pushMessage error:', e.message);
   }
