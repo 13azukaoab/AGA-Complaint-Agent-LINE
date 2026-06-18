@@ -6,6 +6,10 @@ Secret Key.env
 credentials/*.json
 credentials/*.txt
 
+# Temp / scratch files
+test_*_tmp.js
+*.tmp.js
+
 # Logs
 *.log
 npm-debug.log*

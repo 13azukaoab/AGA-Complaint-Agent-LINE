@@ -81,8 +81,8 @@ async function getRowData(rowNumber) {
   }
 }
 
-// อัปเดต status ของ WO (รับทราบ หรือ ปิด)
-// column O=สถานะ, P=ผู้รับทราบ, Q=เวลารับทราบ, R=ผู้ปิด, S=เวลาปิด, T=วิธีปิด, U=จำนวนที่ติด
+// อัปเดต status ของ WO → "ปิด" (ระบบใช้แค่สถานะ เปิด/ปิด)
+// column O=สถานะ, P/Q=สำรอง(ไม่ใช้แล้ว), R=ผู้ปิด, S=เวลาปิด, T=วิธีปิด, U=จำนวนที่ติด
 async function updateWorkOrderStatus(rowNumber, fields) {
   try {
     const { sheets } = await getSheetClient();
@@ -121,7 +121,8 @@ async function getOpenWorkOrders() {
       const row = rows[i];
       if (!row) continue;
       const status = row[14]; // column O (index 14)
-      if (status === 'เปิด' || status === 'รับทราบ') {
+      // ใช้แค่สถานะ เปิด/ปิด — งานที่ยังไม่ "ปิด" ถือว่าค้าง (รองรับข้อมูลเก่าที่เป็น "รับทราบ" ด้วย)
+      if (status && status !== 'ปิด') {
         open.push({
           rowNumber: i + 1,
           timestamp: row[0],
@@ -135,8 +136,6 @@ async function getOpenWorkOrders() {
           contactPhone: row[10] || '',
           workOrderId: row[13], // column N (index 13)
           status,
-          acknowledger: row[15],
-          ackTime: row[16],
         });
       }
     }
@@ -144,39 +143,6 @@ async function getOpenWorkOrders() {
   } catch (err) {
     console.error('   ❌ getOpenWorkOrders error:', err.message);
     return [];
-  }
-}
-
-// ดึงสรุปสถิติของวันนี้
-async function getTodaySummary() {
-  try {
-    const { sheets } = await getSheetClient();
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:T`,
-    });
-    const rows = res.data.values || [];
-    const today = new Date().toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' });
-    let open = 0, acknowledged = 0, closed = 0;
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || !row[0]) continue;
-      if (!row[0].includes(today.split('/')[0])) continue; // เช็คปีเดียวกัน
-      const ts = row[0];
-      // เช็คว่าเป็นวันนี้ (เปรียบเทียบวัน/เดือน)
-      const todayStr = new Date().toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit' });
-      if (!ts.startsWith(today.split('/')[0] + '/' + today.split('/')[1].padStart(2,'0'))) {
-        // ลองเช็คแบบอื่น
-      }
-      const status = row[14];
-      if (status === 'เปิด') open++;
-      else if (status === 'รับทราบ') acknowledged++;
-      else if (status === 'ปิด') closed++;
-    }
-    return { open, acknowledged, closed };
-  } catch (err) {
-    console.error('   ❌ getTodaySummary error:', err.message);
-    return { open: 0, acknowledged: 0, closed: 0 };
   }
 }
 
@@ -233,8 +199,10 @@ async function appendComplaint(data) {
     });
 
     console.log(`   📊 บันทึกลง Google Sheet [${data.workOrderId}] row ${nextRow} ✅`);
+    return true;
   } catch (err) {
     console.error('   ❌ บันทึก Sheet ไม่สำเร็จ:', err.message);
+    return false;
   }
 }
 
@@ -281,6 +249,5 @@ module.exports = {
   getRowData,
   updateWorkOrderStatus,
   getOpenWorkOrders,
-  getTodaySummary,
   getAllWorkOrders,
 };

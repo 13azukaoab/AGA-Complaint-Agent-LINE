@@ -114,7 +114,7 @@ async function safeReply(replyToken, groupId, text) {
 function formatShortTimestamp(ts) {
   if (!ts) return '?';
   try {
-    const parts = ts.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+)/);
+    const parts = ts.match(/(\d+)\/(\d+)\/(\d+)[,\s]+(\d+):(\d+)/);
     if (!parts) return ts;
     const [, day, month, yearBE, hour, min] = parts;
     return `${day.padStart(2,'0')}/${month.padStart(2,'0')}/${String(yearBE).slice(-2)} ${hour.padStart(2,'0')}:${min.padStart(2,'0')}`;
@@ -202,9 +202,8 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
   console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchCount !== null ? ` (จับได้ ${catchCount} ตัว)` : ''}`);
 }
 
-const allowedGroups = process.env.ALLOWED_GROUP_IDS
-  ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
-  : [];
+// หมายเหตุ: bot ตอบ/สร้าง WO ให้ทุกกลุ่มที่ถูกเพิ่มเข้าไป
+// ALLOWED_GROUP_IDS ใช้เฉพาะใน notify.js (เลือกกลุ่มที่รับ morning alert)
 
 app.post('/webhook', middleware(lineConfig), async (req, res) => {
   res.status(200).send('OK');
@@ -324,7 +323,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       const contact = [result.contact_name, result.contact_phone]
         .filter(v => v && v !== 'ไม่ระบุ').join(' ');
 
-      await appendComplaint({
+      const saved = await appendComplaint({
         timestamp,
         groupId,
         senderId: event.source.userId || 'ไม่ระบุ',
@@ -340,6 +339,13 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
         summary: result.summary,
         workOrderId,
       });
+
+      // บันทึก Sheet ไม่สำเร็จ → แจ้งเตือนแทนข้อความ "เปิดแล้ว" (กัน user เข้าใจผิด)
+      if (!saved) {
+        console.error(`   ❌ บันทึก ${workOrderId} ไม่สำเร็จ — ไม่ตอบว่าเปิดงาน`);
+        woMessages.push(`⚠️ บันทึก Work Order ไม่สำเร็จ (ระบบขัดข้อง)\nกรุณาแจ้งปัญหาซ้ำอีกครั้ง`);
+        continue;
+      }
 
       const lines = [
         '📋 แจ้งเตือน Work Order เปิดแล้ว',
