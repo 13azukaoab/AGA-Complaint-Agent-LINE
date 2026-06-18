@@ -188,15 +188,16 @@ async function checkPendingWorkOrders() {
 // 17:30 — สรุปรายวัน: งานวันนี้ทั้งหมด แยก ปิดแล้ว/ยังไม่ปิด
 async function sendDailySummary() {
   const allWOs = await getAllWorkOrders(); // มี groupId แล้ว (หลังแก้ sheets.js)
-
   const todayWOs = allWOs.filter(wo => isToday(wo.timestamp));
-  if (todayWOs.length === 0) {
-    console.log('[notify/daily] ไม่มีงานวันนี้');
-    return { groupsNotified: 0 };
+
+  // เตรียม entry สำหรับทุกกลุ่มใน ALLOWED_GROUP_IDS เสมอ — ส่งสรุปทุกวัน
+  // (วันไหนไม่มีงาน → แจ้ง "วันนี้ไม่มีงาน" ให้กลุ่มรับรู้ว่าระบบทำงานปกติ)
+  const byGroup = {};
+  for (const gid of allowedGroups) {
+    byGroup[gid] = { closed: [], notClosed: [] };
   }
 
-  // จัดกลุ่มตาม groupId — ใช้ groupId จาก getAllWorkOrders โดยตรง (ไม่ต้องพึ่ง openWOs)
-  const byGroup = {};
+  // ใส่งานวันนี้ลงแต่ละกลุ่ม (เพิ่มกลุ่มนอก allowedGroups ถ้ามีงานวันนี้)
   for (const wo of todayWOs) {
     if (!wo.groupId) continue;
     if (!byGroup[wo.groupId]) byGroup[wo.groupId] = { closed: [], notClosed: [] };
@@ -209,6 +210,14 @@ async function sendDailySummary() {
 
   for (const [groupId, data] of Object.entries(byGroup)) {
     const total = data.closed.length + data.notClosed.length;
+
+    // วันที่ไม่มีงานเลย → ส่งข้อความสั้นแจ้งสถานะ
+    if (total === 0) {
+      await pushMessage(groupId, `📋 สรุปงานประจำวัน — ${dateLabel}\n━━━━━━━━━━━━━━━━━━━\n\n🟢 วันนี้ไม่มีงานแจ้งเข้ามา`);
+      sent++;
+      continue;
+    }
+
     const lines = [];
     lines.push(`📋 สรุปงานประจำวัน — ${dateLabel}`);
     lines.push('━━━━━━━━━━━━━━━━━━━');
