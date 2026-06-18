@@ -834,6 +834,7 @@ function renderSLAChart(rows) {
 function sumCatchBy(rows, field) {
   const m = {};
   rows.forEach(r => {
+    if (r.isFollowup) return;          // ข้ามงานแจ้งซ้ำ — ไม่นับยอดหนูซ้ำ
     const c = Number(r.catchCount);
     if (!c || c <= 0) return;          // นับเฉพาะที่มีจำนวนจริง
     const k = r[field] || 'ไม่ระบุ';
@@ -1064,7 +1065,7 @@ function vsSubset(dim, value) {
 function computeMetrics(rows) {
   const total = rows.length;
   const closed = rows.filter(r => r.status === 'ปิด').length;
-  const catchSum = rows.reduce((s, r) => s + (Number(r.catchCount) > 0 ? Number(r.catchCount) : 0), 0);
+  const catchSum = rows.reduce((s, r) => s + (!r.isFollowup && Number(r.catchCount) > 0 ? Number(r.catchCount) : 0), 0);
   let sumH = 0, cntH = 0;
   rows.forEach(r => {
     if (r.status === 'ปิด') {
@@ -1171,7 +1172,7 @@ function renderTable(rows) {
     const cleanMethod = (r.closeMethod || '').replace(/\s*\[รูป:.*?\]/g, '').trim();
 
     return `<tr class="border-b border-slate-50 hover:bg-blue-50/40 transition-colors ${isOverdue ? 'bg-red-50' : ''}">
-      <td class="py-2 pr-3 font-semibold text-slate-800 whitespace-nowrap">${r.workOrderId}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}</td>
+      <td class="py-2 pr-3 font-semibold text-slate-800 whitespace-nowrap">${r.workOrderId}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}${r.isFollowup ? ` <span class="text-amber-500" title="แจ้งซ้ำ${r.dupOf ? ' · ซ้ำกับ ' + r.dupOf : ''}">🔁</span>` : ''}</td>
       <td class="py-2 pr-3 text-slate-500 whitespace-nowrap">${fmtDate(o)}</td>
       <td class="py-2 pr-3 text-slate-600 max-w-[120px] truncate" title="${r.groupName || ''}">${r.groupName || '—'}</td>
       <td class="py-2 pr-3 text-slate-600">${r.senderName || '—'}</td>

@@ -8,6 +8,7 @@ const {
   findRowByWorkOrderId,
   getRowData,
   updateWorkOrderStatus,
+  appendClosePhoto,
   getOpenWorkOrders,
   getAllWorkOrders,
 } = require('./sheets');
@@ -24,6 +25,11 @@ const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
 // เก็บรูปภาพล่าสุดในแต่ละกลุ่ม (ใช้ตอนปิดงาน) TTL 5 นาที
 const pendingPhotos = new Map();
+
+// เก็บงานที่เพิ่งปิดในแต่ละกลุ่ม (ใช้ผูกรูปที่วางหลังปิดงาน) TTL 5 นาที
+// groupId → { woId, rowNumber, time }
+const recentCloses = new Map();
+const PHOTO_TTL_MS = 5 * 60 * 1000;
 
 async function getGroupName(groupId) {
   try {
@@ -190,16 +196,45 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
 
   await updateWorkOrderStatus(rowNumber, {
     status: 'ปิด',
-    acknowledger: rowData[15] || '',
-    ackTime: rowData[16] || '',
     closer: senderName,
     closeTime: timestamp,
     closeMethod: finalMethod,
     catchCount,
   });
 
+  // จำงานที่เพิ่งปิด — เผื่อมีรูปวางตามมาหลังปิดงาน (ภายใน 5 นาที)
+  recentCloses.set(groupId, { woId, rowNumber, time: Date.now() });
+
   await safeReply(replyToken, groupId, `${woId} ปิดแล้ว โดย ${senderName} ✅`);
   console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchCount !== null ? ` (จับได้ ${catchCount} ตัว)` : ''}`);
+}
+
+// normalize สำหรับเทียบสถานที่/ชั้น/ชนิด (ตัดช่องว่าง)
+function normKey(s) {
+  return (s || '').toString().trim().replace(/\s+/g, '');
+}
+
+// หางาน "ต้นฉบับ" ของการแจ้งซ้ำ — match กลุ่ม+สถานที่+ชนิดเดียวกัน (ไม่เอางานที่เป็นแจ้งซ้ำเอง)
+// คืน WO ID ของงานล่าสุดที่ตรง หรือ null ถ้าไม่พบ
+async function findOriginalWO(groupId, location, floor, pestType) {
+  try {
+    const all = await getAllWorkOrders();
+    const matches = all.filter(w =>
+      w.groupId === groupId &&
+      !w.isFollowup &&
+      w.workOrderId &&
+      normKey(w.location) === normKey(location) &&
+      normKey(w.pestType) === normKey(pestType) &&
+      // ชั้นตรงกัน หรือฝั่งใดฝั่งหนึ่งไม่ระบุ → ยอมรับ
+      (normKey(w.floor) === normKey(floor) || !normKey(floor) || normKey(floor) === 'ไม่ระบุ'
+        || !normKey(w.floor) || normKey(w.floor) === 'ไม่ระบุ')
+    );
+    if (matches.length === 0) return null;
+    return matches[matches.length - 1].workOrderId; // ล่าสุด (อยู่ท้ายชีต)
+  } catch (e) {
+    console.error('   ❌ findOriginalWO error:', e.message);
+    return null;
+  }
 }
 
 // หมายเหตุ: bot ตอบ/สร้าง WO ให้ทุกกลุ่มที่ถูกเพิ่มเข้าไป
@@ -217,18 +252,26 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
     const timestamp = new Date(event.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
-    // เก็บรูปภาพไว้รอปิดงาน (รองรับหลายรูป, TTL 5 นาที)
     if (event.type === 'message' && event.message.type === 'image') {
-      const existing = pendingPhotos.get(groupId);
       const now = Date.now();
-      // ถ้ายังอยู่ในช่วง TTL เดิม → เพิ่มเข้า array, ถ้าหมด TTL → เริ่มใหม่
-      if (existing && (now - existing.time) < 5 * 60 * 1000) {
+
+      // ① ถ้าเพิ่งปิดงานในกลุ่มนี้ (ภายใน 5 นาที) → ผูกรูปกับงานที่ปิดไปเลย (รูปวางหลังปิดงาน)
+      const rc = recentCloses.get(groupId);
+      if (rc && (now - rc.time) < PHOTO_TTL_MS) {
+        const gcsUrl = await uploadPhotoToGCS(event.message.id, `${rc.woId}_after`);
+        if (gcsUrl) {
+          await appendClosePhoto(rc.rowNumber, gcsUrl);
+          console.log(`🖼️  ผูกรูปหลังปิดงาน → ${rc.woId}`);
+        }
+        continue;
+      }
+
+      // ② ไม่งั้นเก็บรูปไว้รอปิดงาน (รองรับหลายรูป, TTL 5 นาที)
+      const existing = pendingPhotos.get(groupId);
+      if (existing && (now - existing.time) < PHOTO_TTL_MS) {
         existing.messageIds.push(event.message.id);
       } else {
-        pendingPhotos.set(groupId, {
-          messageIds: [event.message.id],
-          time: now,
-        });
+        pendingPhotos.set(groupId, { messageIds: [event.message.id], time: now });
       }
       console.log('🖼️  เก็บรูปภาพรอปิดงาน:', groupId, '(', pendingPhotos.get(groupId).messageIds.length, 'รูป)');
       continue;
@@ -317,11 +360,19 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     const woMessages = [];
     for (const result of complaints) {
       const workOrderId = await getNextWorkOrderId();
-      console.log(`   ✅ พบการแจ้งปัญหา! [${workOrderId}]`);
-
       const floor = result.floor && result.floor !== 'ไม่ระบุ' ? ` ${result.floor}` : '';
       const contact = [result.contact_name, result.contact_phone]
         .filter(v => v && v !== 'ไม่ระบุ').join(' ');
+
+      // ตรวจว่าเป็นการแจ้งซ้ำ/ตามงานไหม → หางานต้นฉบับ
+      const isFollowup = !!result.is_followup;
+      let dupOf = '';
+      if (isFollowup) {
+        dupOf = await findOriginalWO(groupId, result.location, result.floor || 'ไม่ระบุ', result.pest_type) || '';
+        console.log(`   🔁 แจ้งซ้ำ! [${workOrderId}]${dupOf ? ` — ซ้ำกับ ${dupOf}` : ' — ไม่พบงานเดิม'}`);
+      } else {
+        console.log(`   ✅ พบการแจ้งปัญหา! [${workOrderId}]`);
+      }
 
       const saved = await appendComplaint({
         timestamp,
@@ -338,6 +389,8 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
         rawMessage: text,
         summary: result.summary,
         workOrderId,
+        isFollowup,
+        dupOf,
       });
 
       // บันทึก Sheet ไม่สำเร็จ → แจ้งเตือนแทนข้อความ "เปิดแล้ว" (กัน user เข้าใจผิด)
@@ -347,17 +400,32 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
         continue;
       }
 
-      const lines = [
-        '📋 แจ้งเตือน Work Order เปิดแล้ว',
-        '━━━━━━━━━━━━',
-        `หมายเลข: ${workOrderId}`,
-        `สัตว์: ${result.pest_type}`,
-        `พื้นที่: ${result.location}${floor}`,
-        `ผู้แจ้ง: ${senderName}`,
-      ];
-      if (contact) lines.push(`ติดต่อ: ${contact}`);
-      lines.push('', 'กรุณาดำเนินการและปิดงาน:');
-      lines.push(`ตัวอย่าง: ปิดงาน ${workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`);
+      let lines;
+      if (isFollowup) {
+        // งานแจ้งซ้ำ — ไม่นับเป็นงานค้าง ไม่ต้องปิดซ้ำ
+        lines = [
+          '📌 รับแจ้ง — ตามงาน/แจ้งซ้ำ',
+          '━━━━━━━━━━━━',
+          `หมายเลข: ${workOrderId}`,
+          `สัตว์: ${result.pest_type}`,
+          `พื้นที่: ${result.location}${floor}`,
+        ];
+        if (contact) lines.push(`ติดต่อ: ${contact}`);
+        if (dupOf) lines.push('', `🔁 ซ้ำกับงาน ${dupOf} — ไม่นับเป็นงานใหม่`, 'ℹ️ ปิดที่งานต้นฉบับ ไม่ต้องปิดงานนี้');
+        else lines.push('', '🔁 เป็นการแจ้งซ้ำ แต่ไม่พบงานเดิม', 'ℹ️ โปรดตรวจสอบ/ระบุงานต้นฉบับในชีต');
+      } else {
+        lines = [
+          '📋 แจ้งเตือน Work Order เปิดแล้ว',
+          '━━━━━━━━━━━━',
+          `หมายเลข: ${workOrderId}`,
+          `สัตว์: ${result.pest_type}`,
+          `พื้นที่: ${result.location}${floor}`,
+          `ผู้แจ้ง: ${senderName}`,
+        ];
+        if (contact) lines.push(`ติดต่อ: ${contact}`);
+        lines.push('', 'กรุณาดำเนินการและปิดงาน:');
+        lines.push(`ตัวอย่าง: ปิดงาน ${workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`);
+      }
 
       woMessages.push(lines.join('\n'));
     }

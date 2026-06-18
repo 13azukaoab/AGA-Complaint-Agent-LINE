@@ -82,28 +82,53 @@ async function getRowData(rowNumber) {
 }
 
 // อัปเดต status ของ WO → "ปิด" (ระบบใช้แค่สถานะ เปิด/ปิด)
-// column O=สถานะ, P/Q=สำรอง(ไม่ใช้แล้ว), R=ผู้ปิด, S=เวลาปิด, T=วิธีปิด, U=จำนวนที่ติด
+// column O=สถานะ, P=แจ้งซ้ำ?, Q=ซ้ำกับงาน, R=ผู้ปิด, S=เวลาปิด, T=วิธีปิด, U=จำนวนที่ติด
+// ⚠️ ห้ามเขียนทับ P/Q ตอนปิดงาน — เขียนแยก O และ R:U เท่านั้น
 async function updateWorkOrderStatus(rowNumber, fields) {
   try {
     const { sheets } = await getSheetClient();
-    const row = [
-      fields.status || '',
-      fields.acknowledger || '',
-      fields.ackTime || '',
-      fields.closer || '',
-      fields.closeTime || '',
-      fields.closeMethod || '',
-      fields.catchCount !== undefined ? fields.catchCount : '',
-    ];
-    await sheets.spreadsheets.values.update({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!O${rowNumber}:U${rowNumber}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [row] },
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data: [
+          { range: `${SHEET_NAME}!O${rowNumber}`, values: [[fields.status || '']] },
+          {
+            range: `${SHEET_NAME}!R${rowNumber}:U${rowNumber}`,
+            values: [[
+              fields.closer || '',
+              fields.closeTime || '',
+              fields.closeMethod || '',
+              fields.catchCount !== undefined && fields.catchCount !== null ? fields.catchCount : '',
+            ]],
+          },
+        ],
+      },
     });
     console.log(`   📊 อัปเดต WO row ${rowNumber} ✅`);
   } catch (err) {
     console.error('   ❌ updateWorkOrderStatus error:', err.message);
+  }
+}
+
+// เพิ่ม URL รูปต่อท้ายช่อง "วิธีปิดงาน" (column T) — ใช้กรณีวางรูปหลังปิดงาน
+async function appendClosePhoto(rowNumber, photoUrl) {
+  try {
+    const { sheets } = await getSheetClient();
+    const cur = await getRowData(rowNumber);
+    const existing = cur[19] || ''; // column T
+    const updated = existing ? `${existing} [รูป: ${photoUrl}]` : `[รูป: ${photoUrl}]`;
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!T${rowNumber}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[updated]] },
+    });
+    console.log(`   🖼️  เพิ่มรูปหลังปิดงาน row ${rowNumber} ✅`);
+    return true;
+  } catch (err) {
+    console.error('   ❌ appendClosePhoto error:', err.message);
+    return false;
   }
 }
 
@@ -121,8 +146,10 @@ async function getOpenWorkOrders() {
       const row = rows[i];
       if (!row) continue;
       const status = row[14]; // column O (index 14)
+      const isFollowup = row[15] === 'ใช่'; // column P — งานแจ้งซ้ำ ไม่นับเป็นงานค้าง
       // ใช้แค่สถานะ เปิด/ปิด — งานที่ยังไม่ "ปิด" ถือว่าค้าง (รองรับข้อมูลเก่าที่เป็น "รับทราบ" ด้วย)
-      if (status && status !== 'ปิด') {
+      // ข้ามงานแจ้งซ้ำ — ทีมปิดแค่งานต้นฉบับ ไม่ต้องปิดงานซ้ำ
+      if (status && status !== 'ปิด' && !isFollowup) {
         open.push({
           rowNumber: i + 1,
           timestamp: row[0],
@@ -183,8 +210,8 @@ async function appendComplaint(data) {
       data.summary,      // M
       data.workOrderId,  // N
       'เปิด',            // O — สถานะเริ่มต้น
-      '',                // P — ผู้รับทราบ
-      '',                // Q — เวลารับทราบ
+      data.isFollowup ? 'ใช่' : '', // P — แจ้งซ้ำ?
+      data.dupOf || '',  // Q — ซ้ำกับงาน (เช่น W009)
       '',                // R — ผู้ปิดงาน
       '',                // S — เวลาปิด
       '',                // T — วิธีปิดงาน
@@ -231,6 +258,8 @@ async function getAllWorkOrders() {
         summary: r[12] || '',
         workOrderId: r[13] || '',
         status: r[14] || 'เปิด',
+        isFollowup: r[15] === 'ใช่', // column P — งานแจ้งซ้ำ
+        dupOf: r[16] || '',          // column Q — ซ้ำกับงาน
         closer: r[17] || '',
         closeTime: r[18] || '',
         closeMethod: r[19] || '',
@@ -248,6 +277,7 @@ module.exports = {
   findRowByWorkOrderId,
   getRowData,
   updateWorkOrderStatus,
+  appendClosePhoto,
   getOpenWorkOrders,
   getAllWorkOrders,
 };
