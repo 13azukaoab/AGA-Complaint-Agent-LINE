@@ -93,6 +93,9 @@
   body.dark .bg-emerald-50  { background:rgba(6,78,59,.25) !important; }
   body.dark .bg-amber-50    { background:rgba(92,46,5,.25) !important; }
   body.dark .bg-red-50      { background:rgba(80,7,7,.25) !important; }
+  body.dark .bg-blue-50     { background:rgba(29,78,216,.15) !important; }
+  body.dark .bg-violet-50   { background:rgba(109,40,217,.15) !important; }
+  body.dark .bg-violet-100  { background:rgba(109,40,217,.25) !important; }
   body.dark .tab-btn        { color:#94a3b8; }
   body.dark .tab-btn.active { color:#fff; }
   body.dark .chip-all       { border-color:#475569 !important; color:#94a3b8; }
@@ -168,6 +171,11 @@
         <button class="chip chip-all active" id="chip-all" onclick="setStatus('')">ทั้งหมด</button>
         <button class="chip chip-open" id="chip-open" onclick="setStatus('เปิด')">🔴 เปิด</button>
         <button class="chip chip-close" id="chip-close" onclick="setStatus('ปิด')">✅ ปิด</button>
+      </div>
+      <div class="flex gap-2 ml-2 pl-2 border-l border-slate-200">
+        <button class="chip chip-all active" id="chip-src-all" onclick="setSource('')">ทุกแหล่ง</button>
+        <button class="chip chip-open" id="chip-src-w" onclick="setSource('W')" style="border-color:#93c5fd;color:#2563eb">🤖 Bot (W)</button>
+        <button class="chip chip-close" id="chip-src-h" onclick="setSource('H')" style="border-color:#c4b5fd;color:#7c3aed">📋 ประวัติ (H)</button>
       </div>
       <div class="flex-1 min-w-[200px] relative">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -315,6 +323,45 @@
     </div>
   </div>
 
+  <!-- แถววิเคราะห์เพิ่ม: Catch Trend รายเดือน + Follow-up Stats + Floor Analysis -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-1 text-slate-600">แนวโน้มจำนวนที่จับได้ รายเดือน (6 เดือนล่าสุด)</h3>
+      <p class="text-xs text-slate-400 mb-3">ดูว่าจำนวนสัตว์/แมลงที่จับได้เพิ่มขึ้นหรือลดลงในแต่ละเดือน</p>
+      <canvas id="chartCatchTrend" height="180"></canvas>
+    </div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-1 text-slate-600">วิเคราะห์ตามชั้น (Top 10)</h3>
+      <p class="text-xs text-slate-400 mb-3">ชั้นไหนถูกแจ้งบ่อยที่สุด — เจาะลึกจุดเสี่ยงภายในอาคาร</p>
+      <canvas id="chartFloor" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- Follow-up Stats -->
+  <div class="card p-4 mb-5">
+    <h3 class="text-sm font-semibold mb-1 text-slate-600">สถิติงานแจ้งซ้ำ (Follow-up)</h3>
+    <p class="text-xs text-slate-400 mb-3">งานที่ถูกแจ้งซ้ำ = ลูกค้าไม่พอใจหรือแก้ไม่ตรงจุด — ตรวจสอบอาคารที่มีงานแจ้งซ้ำมากที่สุด</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div class="text-center p-3 bg-amber-50 rounded-xl">
+        <p class="text-xs text-slate-500">งานแจ้งซ้ำทั้งหมด</p>
+        <p id="fuTotal" class="text-xl font-bold text-amber-600">0</p>
+      </div>
+      <div class="text-center p-3 bg-blue-50 rounded-xl">
+        <p class="text-xs text-slate-500">% ของงานทั้งหมด</p>
+        <p id="fuRate" class="text-xl font-bold text-blue-600">0%</p>
+      </div>
+      <div class="text-center p-3 bg-red-50 rounded-xl">
+        <p class="text-xs text-slate-500">อาคารแจ้งซ้ำมากสุด</p>
+        <p id="fuTopBuilding" class="text-lg font-bold text-red-600 truncate" title="">—</p>
+      </div>
+      <div class="text-center p-3 bg-violet-50 rounded-xl">
+        <p class="text-xs text-slate-500">ชนิดที่แจ้งซ้ำมากสุด</p>
+        <p id="fuTopPest" class="text-lg font-bold text-violet-600 truncate" title="">—</p>
+      </div>
+    </div>
+    <div id="fuBuildingList" class="flex flex-col gap-2"></div>
+  </div>
+
   <!-- อาคารปัญหาซ้ำ -->
   <div class="card p-4 mb-5">
     <h3 class="text-sm font-semibold mb-1 text-slate-600">อาคารที่พบปัญหาซ้ำ (แจ้ง ≥ 2 ครั้ง)</h3>
@@ -439,6 +486,7 @@ let allRecords   = [];
 let sortCol      = 'timestamp';
 let sortDir      = 'desc';
 let filterStatus = '';
+let filterSource = '';
 let currentPage  = 1;
 const charts     = {};
 
@@ -598,6 +646,7 @@ function getFiltered() {
     if (fromD && d && d < fromD) return false;
     if (toD   && d && d > toD)   return false;
     if (filterStatus && r.status    !== filterStatus) return false;
+    if (filterSource && !r.workOrderId.startsWith(filterSource)) return false;
     if (pest         && r.pestType  !== pest)          return false;
     if (group        && r.groupName !== group)         return false;
     if (q) {
@@ -659,6 +708,14 @@ function setStatus(val) {
   document.getElementById('chip-close').classList.toggle('active', val === 'ปิด');
   render();
 }
+function setSource(val) {
+  filterSource = val;
+  currentPage = 1;
+  document.getElementById('chip-src-all').classList.toggle('active', val === '');
+  document.getElementById('chip-src-w').classList.toggle('active', val === 'W');
+  document.getElementById('chip-src-h').classList.toggle('active', val === 'H');
+  render();
+}
 function setSev(val) {
   render();
 }
@@ -678,7 +735,7 @@ function render() {
 
   let sumH = 0, cntH = 0;
   rows.forEach(r => {
-    if (r.status === 'ปิด') {
+    if (r.status === 'ปิด' && !r.workOrderId.startsWith('H')) {
       const o = parseThai(r.timestamp), c = parseThai(r.closeTime);
       if (o && c && c > o) { sumH += (c - o) / 3600000; cntH++; }
     }
@@ -687,15 +744,16 @@ function render() {
 
   const now = Date.now();
   const overdue = rows.filter(r => {
-    if (r.status === 'ปิด') return false;
+    if (r.status === 'ปิด' || r.workOrderId.startsWith('H')) return false;
     const o = parseThai(r.timestamp);
     return o && (now - o.getTime()) > 3 * 86400000;
   }).length;
   document.getElementById('kpiOverdue').textContent = overdue;
 
-  // SLA summary
+  // SLA summary — skip H-series (ประวัติย้อนหลังไม่มีเวลาจริง)
   let slaOk = 0, slaWarn = 0, slaOver = 0;
   rows.forEach(r => {
+    if (r.workOrderId.startsWith('H')) return;
     const info = getSlaInfo(r);
     if (info.cls === 'sla-ok') slaOk++;
     else if (info.cls === 'sla-warn') slaWarn++;
@@ -714,6 +772,9 @@ function render() {
   renderSLAChart(rows);
   renderCatchChart(rows);
   renderMonthlyTrend(rows);
+  renderMonthlyCatch(rows);
+  renderFloorChart(rows);
+  renderFollowupStats(rows);
   renderRepeatOffenders(rows);
   renderHeatmap(rows);
 
@@ -805,7 +866,7 @@ function renderGroupChart(rows) {
 }
 
 function renderSLAChart(rows) {
-  const closedRows = rows.filter(r => r.status === 'ปิด');
+  const closedRows = rows.filter(r => r.status === 'ปิด' && !r.workOrderId.startsWith('H'));
   let ok = 0, warn = 0, over = 0;
   closedRows.forEach(r => {
     const o = parseThai(r.timestamp), c = parseThai(r.closeTime);
@@ -883,6 +944,108 @@ function renderMonthlyTrend(rows) {
     data: { labels: months.map(m => m.label), datasets: [{ data: months.map(m => m.count), borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.1)', fill:true, tension:.3, pointRadius:3 }] },
     options: { plugins:{ legend:{ display:false } }, scales:{ y:{ ticks:{ precision:0 } } } }
   });
+}
+
+/* ---- แนวโน้มจำนวนที่จับได้ รายเดือน ---- */
+function renderMonthlyCatch(rows) {
+  const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const months = [];
+  const base = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: `${TH_MONTH[d.getMonth()]} ${String((d.getFullYear()+543)%100).padStart(2,'0')}`, total: 0 });
+  }
+  rows.forEach(r => {
+    if (r.isFollowup) return;
+    const c = Number(r.catchCount);
+    if (!c || c <= 0) return;
+    const o = parseThai(r.timestamp);
+    if (!o) return;
+    const k = `${o.getFullYear()}-${o.getMonth()}`;
+    const slot = months.find(x => x.key === k);
+    if (slot) slot.total += c;
+  });
+  const ctx = document.getElementById('chartCatchTrend');
+  if (charts.chartCatchTrend) charts.chartCatchTrend.destroy();
+  charts.chartCatchTrend = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [{
+        data: months.map(m => m.total),
+        backgroundColor: 'rgba(14,165,233,.7)',
+        borderColor: '#0ea5e9',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: { plugins:{ legend:{ display:false } }, scales:{ y:{ ticks:{ precision:0 } } } }
+  });
+}
+
+/* ---- วิเคราะห์ตามชั้น ---- */
+function renderFloorChart(rows) {
+  const floorCount = {};
+  rows.forEach(r => {
+    const f = r.floor || 'ไม่ระบุ';
+    if (f === 'ไม่ระบุ') return;
+    floorCount[f] = (floorCount[f] || 0) + 1;
+  });
+  const sorted = Object.fromEntries(Object.entries(floorCount).sort((a, b) => b[1] - a[1]).slice(0, 10));
+  const ctx = document.getElementById('chartFloor');
+  if (charts.chartFloor) charts.chartFloor.destroy();
+  if (Object.keys(sorted).length === 0) {
+    const c = ctx.getContext('2d');
+    c.clearRect(0, 0, ctx.width, ctx.height);
+    c.font = '13px "Noto Sans Thai"'; c.fillStyle = '#94a3b8'; c.textAlign = 'center';
+    c.fillText('ยังไม่มีข้อมูลชั้น', ctx.width / 2, 60);
+    return;
+  }
+  charts.chartFloor = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: Object.keys(sorted), datasets: [{ data: Object.values(sorted), backgroundColor:'#8b5cf6', borderRadius:4 }] },
+    options: { indexAxis:'y', plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ precision:0 } } } }
+  });
+}
+
+/* ---- สถิติงานแจ้งซ้ำ (Follow-up) ---- */
+function renderFollowupStats(rows) {
+  const fuRows = rows.filter(r => r.isFollowup);
+  const total = rows.length;
+  const fuCount = fuRows.length;
+
+  document.getElementById('fuTotal').textContent = fuCount;
+  document.getElementById('fuRate').textContent = total ? Math.round(fuCount / total * 100) + '%' : '0%';
+
+  const bldgCount = countBy(fuRows, 'location');
+  const pestCount = countBy(fuRows, 'pestType');
+  const topBldg = Object.entries(bldgCount).sort((a, b) => b[1] - a[1])[0];
+  const topPest = Object.entries(pestCount).sort((a, b) => b[1] - a[1])[0];
+
+  const bldgEl = document.getElementById('fuTopBuilding');
+  const pestEl = document.getElementById('fuTopPest');
+  bldgEl.textContent = topBldg ? topBldg[0] : '—';
+  bldgEl.title = topBldg ? `${topBldg[0]} (${topBldg[1]} ครั้ง)` : '';
+  pestEl.textContent = topPest ? topPest[0] : '—';
+  pestEl.title = topPest ? `${topPest[0]} (${topPest[1]} ครั้ง)` : '';
+
+  const box = document.getElementById('fuBuildingList');
+  const entries = Object.entries(bldgCount).filter(([k]) => k !== 'ไม่ระบุ').sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    box.innerHTML = '<p class="text-sm text-slate-400">ยังไม่มีงานแจ้งซ้ำ ✅</p>';
+    return;
+  }
+  const max = entries[0][1];
+  box.innerHTML = entries.map(([loc, n]) => {
+    const pct = Math.round(n / max * 100);
+    return `<div class="flex items-center gap-3">
+      <span class="text-sm text-slate-600 w-40 truncate" title="${loc}">${loc}</span>
+      <div class="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">
+        <div class="h-full rounded-full bg-amber-400" style="width:${pct}%"></div>
+      </div>
+      <span class="text-sm font-semibold text-amber-700 w-16 text-right">${n} ครั้ง</span>
+    </div>`;
+  }).join('');
 }
 
 /* ---- อาคารปัญหาซ้ำ (แจ้ง ≥ 2 ครั้ง) ---- */
@@ -1172,7 +1335,7 @@ function renderTable(rows) {
     const cleanMethod = (r.closeMethod || '').replace(/\s*\[รูป:.*?\]/g, '').trim();
 
     return `<tr class="border-b border-slate-50 hover:bg-blue-50/40 transition-colors ${isOverdue ? 'bg-red-50' : ''}">
-      <td class="py-2 pr-3 font-semibold text-slate-800 whitespace-nowrap">${r.workOrderId}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}${r.isFollowup ? ` <span class="text-amber-500" title="แจ้งซ้ำ${r.dupOf ? ' · ซ้ำกับ ' + r.dupOf : ''}">🔁</span>` : ''}</td>
+      <td class="py-2 pr-3 font-semibold text-slate-800 whitespace-nowrap">${r.workOrderId}${r.workOrderId.startsWith('H') ? ' <span class="px-1.5 py-0.5 rounded text-[10px] bg-violet-100 text-violet-700" title="ข้อมูลประวัติย้อนหลัง">ประวัติ</span>' : ''}${isOverdue ? ' <span class="text-red-400">●</span>' : ''}${r.isFollowup ? ` <span class="text-amber-500" title="แจ้งซ้ำ${r.dupOf ? ' · ซ้ำกับ ' + r.dupOf : ''}">🔁</span>` : ''}</td>
       <td class="py-2 pr-3 text-slate-500 whitespace-nowrap">${fmtDate(o)}</td>
       <td class="py-2 pr-3 text-slate-600 max-w-[120px] truncate" title="${r.groupName || ''}">${r.groupName || '—'}</td>
       <td class="py-2 pr-3 text-slate-600">${r.senderName || '—'}</td>
@@ -1264,6 +1427,7 @@ document.getElementById('clearFilter').addEventListener('click', () => {
   document.getElementById('groupFilter').value = '';
   currentPage = 1;
   setStatus('');
+  setSource('');
   setSev('');
 });
 

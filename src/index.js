@@ -366,10 +366,13 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
       // ตรวจว่าเป็นการแจ้งซ้ำ/ตามงานไหม → หางานต้นฉบับ
       const isFollowup = !!result.is_followup;
+      const isClarification = !!result.is_clarification;
       let dupOf = '';
       if (isFollowup) {
         dupOf = await findOriginalWO(groupId, result.location, result.floor || 'ไม่ระบุ', result.pest_type) || '';
         console.log(`   🔁 แจ้งซ้ำ! [${workOrderId}]${dupOf ? ` — ซ้ำกับ ${dupOf}` : ' — ไม่พบงานเดิม'}`);
+      } else if (isClarification) {
+        console.log(`   💬 ชี้แจงลูกค้า [${workOrderId}] — จะสร้างและปิดอัตโนมัติ`);
       } else {
         console.log(`   ✅ พบการแจ้งปัญหา! [${workOrderId}]`);
       }
@@ -398,6 +401,22 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
         console.error(`   ❌ บันทึก ${workOrderId} ไม่สำเร็จ — ไม่ตอบว่าเปิดงาน`);
         woMessages.push(`⚠️ บันทึก Work Order ไม่สำเร็จ (ระบบขัดข้อง)\nกรุณาแจ้งปัญหาซ้ำอีกครั้ง`);
         continue;
+      }
+
+      // ชี้แจงลูกค้า → สร้าง WO แล้วปิดทันที ไม่แจ้งเตือนในกลุ่ม
+      if (isClarification) {
+        const clrRow = await findRowByWorkOrderId(workOrderId);
+        if (clrRow) {
+          await updateWorkOrderStatus(clrRow, {
+            status: 'ปิด',
+            closer: senderName,
+            closeTime: timestamp,
+            closeMethod: 'ชี้แจงกับลูกค้า',
+            catchCount: null,
+          });
+        }
+        console.log(`   💬 ${workOrderId} ปิดอัตโนมัติ (ชี้แจงลูกค้า)`);
+        continue; // ไม่แจ้งเตือนในกลุ่ม
       }
 
       let lines;
