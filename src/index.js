@@ -156,10 +156,10 @@ async function uploadPhotoToGCS(messageId, woId) {
 }
 
 // จัดการ "ปิดงาน WXXX [วิธีปิด]"
-async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pendingPhotoMessageId) {
+async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pendingPhotoMessageId, replyToken) {
   const rowNumber = await findRowByWorkOrderId(woId);
   if (!rowNumber) {
-    await pushMessage(groupId, `ไม่พบ ${woId} — ตรวจสอบหมายเลขอีกครั้ง`);
+    await safeReply(replyToken, groupId, `ไม่พบ ${woId} — ตรวจสอบหมายเลขอีกครั้ง`);
     return;
   }
 
@@ -167,7 +167,7 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
   const currentStatus = rowData[14] || 'เปิด';
 
   if (currentStatus === 'ปิด') {
-    await pushMessage(groupId, `${woId} ปิดแล้วก่อนหน้านี้`);
+    await safeReply(replyToken, groupId, `${woId} ปิดแล้วก่อนหน้านี้`);
     return;
   }
 
@@ -198,7 +198,7 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     catchCount,
   });
 
-  await pushMessage(groupId, `${woId} ปิดแล้ว โดย ${senderName} ✅`);
+  await safeReply(replyToken, groupId, `${woId} ปิดแล้ว โดย ${senderName} ✅`);
   console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchCount !== null ? ` (จับได้ ${catchCount} ตัว)` : ''}`);
 }
 
@@ -278,8 +278,9 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       continue;
     }
 
-    // ตรวจ command: "ปิดงาน WXXX [วิธีปิด]"
-    const closeMatch = text.match(/^ปิดงาน\s*(W\d+)\s*(.*)?$/i);
+    // ตรวจ command: "ปิดงาน WXXX [วิธีปิด]" หรือ "WXXX ปิดงาน [วิธีปิด]"
+    const closeMatch = text.match(/^ปิดงาน\s*(W\d+)\s*(.*)?$/i)
+      || text.match(/^(W\d+)\s+ปิดงาน\s*(.*)?$/i);
     if (closeMatch) {
       const woId = closeMatch[1].toUpperCase();
       const closeMethod = (closeMatch[2] || '').trim();
@@ -293,7 +294,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
         pendingPhotos.delete(groupId);
       }
 
-      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageIds);
+      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageIds, event.replyToken);
       continue;
     }
 
@@ -342,7 +343,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
       const lines = [
         '📋 แจ้งเตือน Work Order เปิดแล้ว',
-        '━━━━━━━━━━',
+        '━━━━━━━━━━━━',
         `หมายเลข: ${workOrderId}`,
         `สัตว์: ${result.pest_type}`,
         `พื้นที่: ${result.location}${floor}`,
