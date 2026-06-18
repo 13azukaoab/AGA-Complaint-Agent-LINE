@@ -1,6 +1,6 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 17 มิถุนายน 2569
+อัปเดตล่าสุด: 18 มิถุนายน 2569
 
 ---
 
@@ -48,19 +48,38 @@
 - `index.js`: command "งานค้าง" → รายการงานที่ยังไม่ปิดในกลุ่ม
 - Sheet column U หัวข้อ "จำนวนที่ติด" ✅
 
+### Phase 10 — Bug Fixes & Notify Enhancement (18 มิ.ย. 2569)
+
+**Bug Fixes:**
+- `index.js`: regex ปิดงาน รองรับ 2 รูปแบบ — `"ปิดงาน W009 ..."` และ `"W009 ปิดงาน ..."` (เดิมรูปแบบที่ 2 กลายเป็นเปิด WO ใหม่)
+- `index.js`: `handleClose` เปลี่ยน `pushMessage` → `safeReply` (ปิดงานแล้ว reply ไม่ขึ้นในบางกลุ่ม)
+- Cloud Run `ALLOWED_GROUP_IDS`: เพิ่มกลุ่มที่ 2 — morning alert ส่งครบทั้ง 2 กลุ่มแล้ว
+- `gemini.js`: เพิ่มกฎกรอง "ปิดงาน" ไม่ให้ Gemini จัดเป็น complaint
+
+**Notify Format Upgrade:**
+- 08:30: เพิ่มเบอร์ติดต่อ + format เหมือน "งานค้าง" (emoji/ชั้น/เวลา)
+- 12:00: เปลี่ยน format ใหม่เหมือน "งานค้าง" (เดิมเป็น plain text)
+- 17:30: เพิ่ม เวลาปิด / ผู้ปิด / วิธีปิด / จำนวนที่จับได้ ในส่วน ✅ ปิดแล้ว
+
+**Canonical Building Names:**
+- `gemini.js`: เพิ่ม location map 6 อาคาร (สยามมินทร์, 100ปีฯ, เฉลิมพระเกียรติ ฯลฯ)
+- `scripts/fix-locations.js`: script แก้ชื่ออาคารใน Sheet ย้อนหลัง (รัน manual เมื่อต้องการ)
+- แก้ข้อมูลเก่าใน Google Sheet 7 row แล้ว
+
 ---
 
-## 📋 สถานะระบบปัจจุบัน (17 มิ.ย. 2569)
+## 📋 สถานะระบบปัจจุบัน (18 มิ.ย. 2569)
 
 | Component | สถานะ |
 |-----------|-------|
-| Cloud Run Backend | ✅ revision 00038-fdq |
+| Cloud Run Backend | ✅ revision 00052-dvm (commit b61dee1) |
 | Netlify Dashboard | ✅ auto-deploy |
-| Cloud Scheduler morning | ✅ 08:30 |
-| Cloud Scheduler check | ✅ 12:00 (ลด 16:00 ออกแล้ว) |
+| Cloud Scheduler morning | ✅ 08:30 — ส่ง 2 กลุ่ม |
+| Cloud Scheduler check | ✅ 12:00 |
 | Cloud Scheduler daily | ✅ 17:30 |
-| LINE Notify กลุ่ม | ✅ ยืนยันรับข้อความแล้ว |
-| Security `/notify` | ✅ X-Notify-Key header — บอทภายนอก 403 |
+| ALLOWED_GROUP_IDS | ✅ 2 กลุ่ม: ศิริราช + Test |
+| Security `/notify` | ✅ X-Notify-Key header |
+| Building Name Normalize | ✅ 6 อาคาร (เพิ่มได้ทีหลัง) |
 
 ---
 
