@@ -110,19 +110,27 @@ async function checkMorningOverdue() {
     if (wos.length === 0) {
       msg = `วันที่ ${dateLabel}\n🟢 ไม่มีงานค้างในระบบก่อนหน้า`;
     } else {
-      const list = wos.map(w => {
-        const dateStr = w.timestamp ? w.timestamp.split(' ')[0] : '?';
-        return `• ${w.workOrderId} — ${w.pestType} ${w.location} (แจ้งเมื่อ ${dateStr}) [${w.status}]`;
-      }).join('\n');
-      const example = `ปิดงาน ${wos[0].workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`;
-      msg = [
+      const lines = [
         `วันที่ ${dateLabel}`,
         `🔴 งานค้างจากวันก่อน (${wos.length} งาน):`,
-        list,
-        '',
-        'กรุณาปิดงานค้างโดยเร็ว',
-        `ตัวอย่าง: ${example}`,
-      ].join('\n');
+        '━━━━━━━━━━━━━━',
+      ];
+      for (const w of wos) {
+        const floor = w.floor && w.floor !== 'ไม่ระบุ' ? ` ${w.floor}` : '';
+        const dateStr = w.timestamp ? w.timestamp.split(' ')[0] : '?';
+        const contact = [w.contactName, w.contactPhone]
+          .filter(v => v && v !== 'ไม่ระบุ').join(' ');
+        lines.push('');
+        lines.push(`🟡 ${w.workOrderId} — ${w.pestType}`);
+        lines.push(`📍 ${w.location}${floor}`);
+        lines.push(`🕐 แจ้งเมื่อ ${dateStr}`);
+        if (contact) lines.push(`📞 ${contact}`);
+      }
+      lines.push('');
+      lines.push('━━━━━━━━━━━━━━');
+      lines.push('กรุณาปิดงานค้างโดยเร็ว');
+      lines.push(`ตัวอย่าง: ปิดงาน ${wos[0].workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`);
+      msg = lines.join('\n');
     }
     await pushMessage(groupId, msg);
     sent++;
@@ -152,16 +160,24 @@ async function checkPendingWorkOrders() {
 
   let sent = 0;
   for (const [groupId, wos] of Object.entries(byGroup)) {
-    const list = wos.map(w => `• ${w.workOrderId} — ${w.pestType} ${w.location} [${w.status}]`).join('\n');
-    const example = `ปิดงาน ${wos[0].workOrderId} [วิธีที่ใช้กำจัด+จำนวนที่ได้]`;
-    const msg = [
+    const lines = [
       `📋 งานที่ยังค้างอยู่ (${wos.length} งาน):`,
-      list,
-      '',
-      'วิธีปิดงาน: พิมพ์ใน LINE กลุ่มนี้',
-      `ตัวอย่าง: ${example}`,
-    ].join('\n');
-    await pushMessage(groupId, msg);
+      '━━━━━━━━━━━━━━',
+    ];
+    for (const w of wos) {
+      const floor = w.floor && w.floor !== 'ไม่ระบุ' ? ` ${w.floor}` : '';
+      const contact = [w.contactName, w.contactPhone]
+        .filter(v => v && v !== 'ไม่ระบุ').join(' ');
+      lines.push('');
+      lines.push(`🟡 ${w.workOrderId} — ${w.pestType}`);
+      lines.push(`📍 ${w.location}${floor}`);
+      lines.push(`🕐 ${w.timestamp ? w.timestamp.replace(/.*?(\d+:\d+).*/, '$1') + ' น.' : '?'}`);
+      if (contact) lines.push(`📞 ${contact}`);
+    }
+    lines.push('');
+    lines.push('━━━━━━━━━━━━━━');
+    lines.push(`💬 ปิดงาน: พิมพ์ "ปิดงาน ${wos[0].workOrderId} [วิธี+จำนวน]"`);
+    await pushMessage(groupId, lines.join('\n'));
     sent++;
   }
 
@@ -200,12 +216,31 @@ async function sendDailySummary() {
 
     if (data.closed.length > 0) {
       lines.push(`\n✅ ปิดแล้ว (${data.closed.length} งาน):`);
-      data.closed.forEach(w => lines.push(`• ${w.workOrderId} — ${w.pestType} ${w.location}`));
+      data.closed.forEach(w => {
+        const floor = w.floor && w.floor !== 'ไม่ระบุ' ? ` ${w.floor}` : '';
+        lines.push(`\n• ${w.workOrderId} — ${w.pestType} ${w.location}${floor}`);
+        const closeTime = w.closeTime ? w.closeTime.replace(/.*?(\d+:\d+).*/, '$1') : null;
+        const closer = w.closer || null;
+        if (closeTime || closer) {
+          lines.push(`  🕐 ปิด ${closeTime ? closeTime + ' น.' : ''}${closer ? ` โดย ${closer}` : ''}`);
+        }
+        if (w.closeMethod && w.closeMethod !== 'ไม่ระบุ') {
+          const method = w.closeMethod.replace(/\[รูป:.*?\]/g, '').trim();
+          const catchStr = w.catchCount ? ` | จับได้ ${w.catchCount} ตัว` : '';
+          if (method) lines.push(`  🔧 ${method}${catchStr}`);
+          else if (w.catchCount) lines.push(`  🔧 จับได้ ${w.catchCount} ตัว`);
+        } else if (w.catchCount) {
+          lines.push(`  🔧 จับได้ ${w.catchCount} ตัว`);
+        }
+      });
     }
 
     if (data.notClosed.length > 0) {
       lines.push(`\n⏳ ยังไม่ปิด (${data.notClosed.length} งาน):`);
-      data.notClosed.forEach(w => lines.push(`• ${w.workOrderId} — ${w.pestType} ${w.location}`));
+      data.notClosed.forEach(w => {
+        const floor = w.floor && w.floor !== 'ไม่ระบุ' ? ` ${w.floor}` : '';
+        lines.push(`• ${w.workOrderId} — ${w.pestType} ${w.location}${floor}`);
+      });
     }
 
     await pushMessage(groupId, lines.join('\n'));
