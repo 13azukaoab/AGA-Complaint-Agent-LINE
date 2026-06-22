@@ -4,11 +4,12 @@ const path = require('path');
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SHEET_NAME = 'ชีต1';
 
+const fs = require('fs');
+
 const LOCAL_KEY_FILE = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
+const IS_CLOUD_RUN = !!process.env.K_SERVICE;
 
 // ── Auth client cache (singleton) ──────────────────────────────
-// สร้าง client ครั้งเดียว reuse ตลอด — google-auth-library refresh token เองอัตโนมัติ
-// ลดการแลก OAuth token จาก "ทุก request" เหลือ "นานๆ ครั้ง" → กัน error "Premature close"
 let _clientPromise = null;
 
 function getSheetClient() {
@@ -20,14 +21,21 @@ function getSheetClient() {
           'https://www.googleapis.com/auth/drive.file',
         ],
       };
-      if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      if (IS_CLOUD_RUN) {
+        console.log('   🔑 Auth: Cloud Run ADC (service account)');
+      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        console.log('   🔑 Auth: GOOGLE_APPLICATION_CREDENTIALS env');
+      } else if (fs.existsSync(LOCAL_KEY_FILE)) {
         authOptions.keyFile = LOCAL_KEY_FILE;
+        console.log('   🔑 Auth: local key file');
+      } else {
+        console.log('   🔑 Auth: ADC fallback (no key file found)');
       }
       const auth = new google.auth.GoogleAuth(authOptions);
       const authClient = await auth.getClient();
       return { sheets: google.sheets({ version: 'v4', auth: authClient }), authClient };
     })().catch((err) => {
-      _clientPromise = null; // สร้างไม่สำเร็จ → ให้ลองใหม่ครั้งหน้า
+      _clientPromise = null;
       throw err;
     });
   }
