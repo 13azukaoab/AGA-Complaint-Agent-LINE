@@ -1,5 +1,9 @@
 const { google } = require('googleapis');
 const path = require('path');
+const dns = require('dns');
+
+// Fix "Premature close" บน Cloud Run + Node 22 — undici มีปัญหากับ IPv6 DNS
+dns.setDefaultResultOrder('ipv4first');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SHEET_NAME = 'ชีต1';
@@ -47,7 +51,7 @@ function getSheetClient() {
 // ถ้าเจอ → ทิ้ง client cache แล้วสร้างใหม่ เผื่อ token/socket เสีย
 const TRANSIENT = /Premature close|ECONNRESET|ETIMEDOUT|socket hang up|EAI_AGAIN|network socket disconnected|read ECONN/i;
 
-async function withRetry(fn, label, tries = 3) {
+async function withRetry(fn, label, tries = 5) {
   let lastErr;
   for (let i = 0; i < tries; i++) {
     try {
@@ -56,8 +60,9 @@ async function withRetry(fn, label, tries = 3) {
       lastErr = err;
       const isTransient = TRANSIENT.test(err.message || '');
       if (!isTransient || i === tries - 1) throw err;
-      _clientPromise = null; // ทิ้ง client เสีย สร้างใหม่รอบหน้า
-      await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+      _clientPromise = null;
+      const delay = 500 * Math.pow(2, i); // 500, 1000, 2000, 4000ms
+      await new Promise((r) => setTimeout(r, delay));
       console.warn(`   ⚠️ retry ${label} (${i + 1}/${tries}) — ${err.message}`);
     }
   }
