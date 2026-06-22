@@ -487,6 +487,8 @@ app.get('/api/dashboard', async (req, res) => {
       ok: false,
       error: e.message,
       sheetId: process.env.GOOGLE_SHEET_ID ? 'set' : 'NOT SET',
+      kService: process.env.K_SERVICE ? 'set' : 'NOT SET',
+      gac: process.env.GOOGLE_APPLICATION_CREDENTIALS ? 'set' : 'NOT SET',
       hint: 'Check Cloud Run logs: gcloud run services logs read aga-complaint-agent --region asia-southeast1 --limit=20',
     });
   }

@@ -16,27 +16,36 @@ const IS_CLOUD_RUN = !!process.env.K_SERVICE;
 // ── Auth client cache (singleton) ──────────────────────────────
 let _clientPromise = null;
 
+const SCOPES = [
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/drive.file',
+];
+
 function getSheetClient() {
   if (!_clientPromise) {
     _clientPromise = (async () => {
-      const authOptions = {
-        scopes: [
-          'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/drive.file',
-        ],
-      };
+      let authClient;
+
       if (IS_CLOUD_RUN) {
-        console.log('   🔑 Auth: Cloud Run ADC (service account)');
-      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        console.log('   🔑 Auth: GOOGLE_APPLICATION_CREDENTIALS env');
-      } else if (fs.existsSync(LOCAL_KEY_FILE)) {
-        authOptions.keyFile = LOCAL_KEY_FILE;
-        console.log('   🔑 Auth: local key file');
+        // บังคับ metadata server โดยตรง — ข้าม JWT key file flow ที่เกิด "Premature close"
+        // metadata server = local HTTP call (http://metadata.google.internal) → ไม่มี TLS issue
+        const { Compute } = require('google-auth-library');
+        authClient = new Compute({ scopes: SCOPES });
+        console.log('   🔑 Auth: Cloud Run Compute (metadata server)');
       } else {
-        console.log('   🔑 Auth: ADC fallback (no key file found)');
+        const authOptions = { scopes: SCOPES };
+        if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+          console.log('   🔑 Auth: GOOGLE_APPLICATION_CREDENTIALS env');
+        } else if (fs.existsSync(LOCAL_KEY_FILE)) {
+          authOptions.keyFile = LOCAL_KEY_FILE;
+          console.log('   🔑 Auth: local key file');
+        } else {
+          console.log('   🔑 Auth: ADC fallback');
+        }
+        const auth = new google.auth.GoogleAuth(authOptions);
+        authClient = await auth.getClient();
       }
-      const auth = new google.auth.GoogleAuth(authOptions);
-      const authClient = await auth.getClient();
+
       return { sheets: google.sheets({ version: 'v4', auth: authClient }), authClient };
     })().catch((err) => {
       _clientPromise = null;
