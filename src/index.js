@@ -479,7 +479,13 @@ app.get('/api/dashboard', async (req, res) => {
     const data = await getAllWorkOrders();
     res.json({ ok: true, count: data.length, updatedAt: new Date().toISOString(), data });
   } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
+    console.error('   ❌ /api/dashboard error:', e.message, e.stack);
+    res.status(500).json({
+      ok: false,
+      error: e.message,
+      sheetId: process.env.GOOGLE_SHEET_ID ? 'set' : 'NOT SET',
+      hint: 'Check Cloud Run logs: gcloud run services logs read aga-complaint-agent --region asia-southeast1 --limit=20',
+    });
   }
 });
 
