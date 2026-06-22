@@ -1,16 +1,6 @@
 // ต้องอยู่บรรทัดแรกสุดก่อน load module อื่น — แก้ "Premature close" บน Node 22 + Cloud Run
 require('dns').setDefaultResultOrder('ipv4first');
 
-// แก้ undici "Premature close" — เพิ่ม timeout + keep-alive ให้ built-in fetch ของ Node 22
-const { setGlobalDispatcher, Agent: UndiciAgent } = require('undici');
-setGlobalDispatcher(new UndiciAgent({
-  keepAliveTimeout: 30_000,
-  keepAliveMaxTimeout: 60_000,
-  headersTimeout: 30_000,
-  bodyTimeout: 60_000,
-  connect: { timeout: 30_000 },
-}));
-
 require('dotenv').config({ path: require('path').resolve(__dirname, '../Secret Key.env') });
 const express = require('express');
 const { middleware } = require('@line/bot-sdk');
