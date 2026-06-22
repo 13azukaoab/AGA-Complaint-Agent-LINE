@@ -222,8 +222,34 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
   // จำงานที่เพิ่งปิด — เผื่อมีรูปวางตามมาหลังปิดงาน (ภายใน 5 นาที)
   recentCloses.set(groupId, { woId, rowNumber, time: Date.now() });
 
-  await safeReply(replyToken, groupId, `${woId} ปิดแล้ว โดย ${senderName} ✅`);
-  console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchCount !== null ? ` (จับได้ ${catchCount} ตัว)` : ''}`);
+  // นับงานค้างที่เหลือในกลุ่มนี้ (หลังปิดงานนี้แล้ว)
+  const remaining = await getOpenWorkOrders();
+  const groupRemaining = remaining.filter(w => w.groupId === groupId);
+
+  let replyMsg;
+  if (groupRemaining.length === 0) {
+    replyMsg = [
+      `✅ ${woId} ปิดแล้ว โดย ${senderName}`,
+      '━━━━━━━━━━━━━━',
+      '📋 สถานะงานกลุ่มนี้: ไม่มีงานค้าง',
+      'ดำเนินการครบทุกรายการแล้ว',
+    ].join('\n');
+  } else {
+    const lines = [
+      `✅ ${woId} ปิดแล้ว โดย ${senderName}`,
+      '━━━━━━━━━━━━━━',
+      `📋 คงเหลือในกลุ่มนี้ ${groupRemaining.length} งาน`,
+    ];
+    for (const w of groupRemaining) {
+      const floor = w.floor && w.floor !== 'ไม่ระบุ' ? ` ${w.floor}` : '';
+      lines.push(`• ${w.workOrderId} ${w.pestType} — ${w.location}${floor}`);
+    }
+    lines.push('💬 พิมพ์ "ปิดงาน Wxxx [วิธี]" เพื่อปิดงานถัดไป');
+    replyMsg = lines.join('\n');
+  }
+
+  await safeReply(replyToken, groupId, replyMsg);
+  console.log(`   ✅ ${woId} ปิดงาน โดย ${senderName}${catchCount !== null ? ` (จับได้ ${catchCount} ตัว)` : ''} — เหลือค้าง ${groupRemaining.length} งาน`);
 }
 
 // normalize สำหรับเทียบสถานที่/ชั้น/ชนิด (ตัดช่องว่าง)
