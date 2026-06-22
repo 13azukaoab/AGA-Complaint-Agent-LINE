@@ -320,10 +320,14 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       continue;
     }
 
-    // ตรวจ command: "ปิดงาน WXXX [วิธีปิด]" หรือ "WXXX ปิดงาน [วิธีปิด]"
-    // รองรับ typo เช่น "ปอดงาน" → treat เหมือน "ปิดงาน"
-    const closeMatch = text.match(/^ป[ิอ]ดงาน\s*(W\d+)\s*(.*)?$/i)
-      || text.match(/^(W\d+)\s+ป[ิอ]ดงาน\s*(.*)?$/i);
+    // ตรวจ command ปิดงาน — รองรับหลายรูปแบบ + typo
+    // คำกริยาปิดงานที่รับ: ปิด, ปอด(typo), จบ, เคลียร์/เคลีย, เสร็จ
+    // รูปแบบที่จับได้ เช่น: "ปิดงาน W028", "ปิด W028", "จบงาน W028 กาว 1ตัว",
+    //   "เคลียร์งาน W028", "W028 ปิดงาน", "W028 เสร็จแล้ว", "W028 จบ"
+    const CLOSE_VERB = '(?:ป[ิอ]ด|จบ|เคลียร์|เคลีย|เสร็จ)';
+    const closeMatch =
+         text.match(new RegExp(`^${CLOSE_VERB}\\s*(?:งาน)?\\s*(W\\d+)\\s*(.*)?$`, 'i'))
+      || text.match(new RegExp(`^(W\\d+)\\s+${CLOSE_VERB}\\s*(?:งาน|แล้ว)?\\s*(.*)?$`, 'i'));
     if (closeMatch) {
       const woId = closeMatch[1].toUpperCase();
       const closeMethod = (closeMatch[2] || '').trim();
