@@ -1,6 +1,13 @@
 // ต้องอยู่บรรทัดแรกสุดก่อน load module อื่น — แก้ "Premature close" บน Node 22 + Cloud Run
 require('dns').setDefaultResultOrder('ipv4first');
 
+// แทน built-in fetch (undici) ด้วย node-fetch — undici มี bug "Premature close" บน Cloud Run
+const _nodeFetch = require('node-fetch');
+globalThis.fetch = _nodeFetch;
+globalThis.Headers = _nodeFetch.Headers;
+globalThis.Request = _nodeFetch.Request;
+globalThis.Response = _nodeFetch.Response;
+
 require('dotenv').config({ path: require('path').resolve(__dirname, '../Secret Key.env') });
 const express = require('express');
 const { middleware } = require('@line/bot-sdk');
