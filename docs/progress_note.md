@@ -16,6 +16,7 @@
 - เขียน `src/gemini.js` เรียบร้อย
 - **แก้ปัญหา quota = 0:** สาเหตุที่แท้จริงคือ `gemini-2.0-flash` ถูก Google ปิดให้บริการตั้งแต่ 1 มิ.ย. 2569
 - เปลี่ยน model เป็น **`gemini-3.1-flash-lite`** (รองรับ ข้อความ/รูปภาพ/วิดีโอ/เสียง/PDF)
+- **[อัปเดต 22 มิ.ย. 2569]** อัปเกรด model → **`gemini-3.5-flash`** เพื่อความแม่นยำภาษาไทย/typo สูงขึ้น (เช่น "ปอดงาน" = "ปิดงาน") — เป็น paid tier (~$1.50/$9.00 ต่อ 1M token in/out)
 - ทดสอบสำเร็จ — ได้ผลลัพธ์ JSON ครบ
 - Gemini API Key ใหม่ผูกกับ project **QCS Bait App** แล้ว ✅
 
@@ -51,7 +52,7 @@
 
 ## 💡 หมายเหตุสำคัญ
 
-- `gemini-3.1-flash-lite` รองรับ **Vision (วิเคราะห์รูปภาพ)** ในตัว — พร้อมทำ Phase 5 ได้เลย
+- `gemini-3.5-flash` รองรับ **Vision (วิเคราะห์รูปภาพ)** ในตัว — พร้อมทำ Phase 5 ได้เลย
 - ไฟล์ Secrets ที่ห้าม commit: `Secret Key.env`, `credentials/*.json`, `credentials/*.txt`
 - `.gitignore` ครอบคลุมไฟล์ sensitive ครบแล้ว ✅
 
@@ -85,7 +86,7 @@
 Complaint Agent (LINE)/
 ├── src/
 │   ├── index.js        ✅ webhook + บันทึก Sheet
-│   ├── gemini.js       ✅ AI วิเคราะห์ (model: gemini-3.1-flash-lite)
+│   ├── gemini.js       ✅ AI วิเคราะห์ (model: gemini-3.5-flash)
 │   └── sheets.js       ✅ Google Sheets API
 ├── docs/
 │   ├── plan.md

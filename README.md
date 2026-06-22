@@ -348,7 +348,7 @@ gcloud run services logs read aga-complaint-agent --region asia-southeast1 --lim
 | Runtime | Node.js 22 (Alpine Docker) |
 | Web Framework | Express.js 5 |
 | LINE Integration | @line/bot-sdk v11 |
-| AI วิเคราะห์ข้อความ | Google Gemini (`gemini-3.1-flash-lite`) |
+| AI วิเคราะห์ข้อความ | Google Gemini (`gemini-3.5-flash`) |
 | ฐานข้อมูล | Google Sheets API v4 |
 | เก็บรูปภาพ | Google Cloud Storage (`aga-complaint-photos`) |
 | Hosting (Backend) | Google Cloud Run — asia-southeast1 |
