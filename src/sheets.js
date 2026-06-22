@@ -1,6 +1,9 @@
 const { google } = require('googleapis');
 const path = require('path');
-const nodeFetch = require('node-fetch');
+const https = require('https');
+const _nodeFetchBase = require('node-fetch');
+const _noKeepaliveAgent = new https.Agent({ keepAlive: false });
+const nodeFetch = (url, opts = {}) => _nodeFetchBase(url, { agent: _noKeepaliveAgent, ...opts });
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SHEET_NAME = 'ชีต1';

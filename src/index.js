@@ -1,13 +1,19 @@
 // IPv4 first — Cloud Run + Node 22 มีปัญหา DNS IPv6 ทำ connection ค้าง
 require('dns').setDefaultResultOrder('ipv4first');
 
-// Polyfill fetch ด้วย node-fetch — ใช้กับ LINE API calls ที่เรียก fetch() ตรง
-// (Google Sheets API ใช้ fetchImplementation แยกใน sheets.js)
-const _nodeFetch = require('node-fetch');
+// Wrap node-fetch + agent keepAlive:false — ป้องกัน "Premature close" จาก stale socket บน Cloud Run
+// ครอบทุก fetch() call รวมถึง @google/generative-ai (Gemini) และ LINE API
+const https = require('https');
+const _nodeFetchBase = require('node-fetch');
+const _noKeepaliveAgent = new https.Agent({ keepAlive: false });
+const _nodeFetch = (url, opts = {}) => _nodeFetchBase(url, { agent: _noKeepaliveAgent, ...opts });
+_nodeFetch.Headers = _nodeFetchBase.Headers;
+_nodeFetch.Request = _nodeFetchBase.Request;
+_nodeFetch.Response = _nodeFetchBase.Response;
 globalThis.fetch = _nodeFetch;
-globalThis.Headers = _nodeFetch.Headers;
-globalThis.Request = _nodeFetch.Request;
-globalThis.Response = _nodeFetch.Response;
+globalThis.Headers = _nodeFetchBase.Headers;
+globalThis.Request = _nodeFetchBase.Request;
+globalThis.Response = _nodeFetchBase.Response;
 
 require('dotenv').config({ path: require('path').resolve(__dirname, '../Secret Key.env') });
 const express = require('express');
