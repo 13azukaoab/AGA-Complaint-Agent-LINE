@@ -321,8 +321,9 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     }
 
     // ตรวจ command: "ปิดงาน WXXX [วิธีปิด]" หรือ "WXXX ปิดงาน [วิธีปิด]"
-    const closeMatch = text.match(/^ปิดงาน\s*(W\d+)\s*(.*)?$/i)
-      || text.match(/^(W\d+)\s+ปิดงาน\s*(.*)?$/i);
+    // รองรับ typo เช่น "ปอดงาน" → treat เหมือน "ปิดงาน"
+    const closeMatch = text.match(/^ป[ิอ]ดงาน\s*(W\d+)\s*(.*)?$/i)
+      || text.match(/^(W\d+)\s+ป[ิอ]ดงาน\s*(.*)?$/i);
     if (closeMatch) {
       const woId = closeMatch[1].toUpperCase();
       const closeMethod = (closeMatch[2] || '').trim();
