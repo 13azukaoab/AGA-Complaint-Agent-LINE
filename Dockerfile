@@ -11,6 +11,7 @@ COPY src/ ./src/
 
 # Cloud Run inject PORT มาให้เอง
 ENV PORT=8080
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 EXPOSE 8080
 
 CMD ["node", "src/index.js"]
