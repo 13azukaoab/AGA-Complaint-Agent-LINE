@@ -1,5 +1,9 @@
 const { google } = require('googleapis');
 const path = require('path');
+const dns = require('dns');
+
+// Fix "Premature close" บน Cloud Run + Node 22 — undici มีปัญหากับ IPv6 DNS
+dns.setDefaultResultOrder('ipv4first');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SHEET_NAME = 'ชีต1';
