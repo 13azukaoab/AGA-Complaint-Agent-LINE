@@ -1,13 +1,6 @@
 const { google } = require('googleapis');
 const path = require('path');
-const dns = require('dns');
-const https = require('https');
-
-// Fix "Premature close" บน Cloud Run + Node 22 — undici มีปัญหากับ IPv6 DNS
-dns.setDefaultResultOrder('ipv4first');
-
-// Force Node.js legacy HTTPS agent — bypass undici HTTP/2 issues on Cloud Run
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
+const nodeFetch = require('node-fetch');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SHEET_NAME = 'ชีต1';
@@ -50,8 +43,7 @@ function getSheetClient() {
         authClient = await auth.getClient();
       }
 
-      const gaxiosOpts = IS_CLOUD_RUN ? { agent: httpsAgent } : {};
-      google.options({ http2: false, ...gaxiosOpts });
+      google.options({ fetchImplementation: nodeFetch });
       return { sheets: google.sheets({ version: 'v4', auth: authClient }), authClient };
     })().catch((err) => {
       _clientPromise = null;

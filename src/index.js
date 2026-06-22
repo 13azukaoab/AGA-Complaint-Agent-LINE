@@ -1,7 +1,8 @@
-// ต้องอยู่บรรทัดแรกสุดก่อน load module อื่น — แก้ "Premature close" บน Node 22 + Cloud Run
+// IPv4 first — Cloud Run + Node 22 มีปัญหา DNS IPv6 ทำ connection ค้าง
 require('dns').setDefaultResultOrder('ipv4first');
 
-// แทน built-in fetch (undici) ด้วย node-fetch — undici มี bug "Premature close" บน Cloud Run
+// Polyfill fetch ด้วย node-fetch — ใช้กับ LINE API calls ที่เรียก fetch() ตรง
+// (Google Sheets API ใช้ fetchImplementation แยกใน sheets.js)
 const _nodeFetch = require('node-fetch');
 globalThis.fetch = _nodeFetch;
 globalThis.Headers = _nodeFetch.Headers;
