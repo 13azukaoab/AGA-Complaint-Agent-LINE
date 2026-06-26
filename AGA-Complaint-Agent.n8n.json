@@ -1,0 +1,328 @@
+{
+  "name": "AGA Complaint Agent (LINE)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ระบบ 1 · ตอบกลับอัตโนมัติเมื่อมีข้อความเข้ากลุ่ม LINE\nรับข้อความ → แยกประเภท → AI วิเคราะห์ / ปิดงาน / แนบรูป → บันทึก Google Sheet → ตอบกลับในกลุ่ม",
+        "height": 620,
+        "width": 1280,
+        "color": 4
+      },
+      "id": "sticky_system1",
+      "name": "ระบบ 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, -120]
+    },
+    {
+      "parameters": {
+        "content": "## ระบบ 2 · แจ้งเตือนงานค้างอัตโนมัติตามเวลา\nตั้งเวลา 08:30 / 12:00 / 17:30 → อ่านงานค้างจาก Google Sheet → Push แจ้งเตือนเข้ากลุ่ม",
+        "height": 260,
+        "width": 900,
+        "color": 3
+      },
+      "id": "sticky_system2",
+      "name": "ระบบ 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, 600]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "line-webhook",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node_webhook",
+      "name": "กลุ่ม LINE (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 220],
+      "webhookId": "line-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.events[0].message.type }}",
+                    "rightValue": "image",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "รูปภาพ"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.events[0].message.text }}",
+                    "rightValue": "ปิดงาน|จบงาน|เคลียร์|เสร็จ",
+                    "operator": { "type": "string", "operation": "regex" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "ปิดงาน Wxxx"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.events[0].message.text }}",
+                    "rightValue": "",
+                    "operator": { "type": "string", "operation": "exists" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "ข้อความทั่วไป"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node_switch",
+      "name": "แยกประเภทข้อความ",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [280, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-goog-api-key", "value": "={{ $env.GEMINI_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{ \"text\": \"วิเคราะห์ข้อความแจ้งปัญหาแมลง แล้วตอบเป็น JSON: pest_type, location, floor, severity, is_complaint. ข้อความ: \" }]\n  }]\n}",
+        "options": {}
+      },
+      "id": "node_gemini",
+      "name": "Gemini AI วิเคราะห์",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 40]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Complaints",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "node_sheet_append",
+      "name": "บันทึกงานใหม่ (Sheet)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [840, 40]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer ={{ $env.LINE_CHANNEL_ACCESS_TOKEN }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replyToken\": \"{{ $json.replyToken }}\",\n  \"messages\": [{ \"type\": \"text\", \"text\": \"📋 แจ้งเตือน Work Order เปิดแล้ว\" }]\n}",
+        "options": {}
+      },
+      "id": "node_reply_new",
+      "name": "ตอบเลขงานในกลุ่ม",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 40]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Complaints",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "node_sheet_close",
+      "name": "ปิดงานในระบบ (Sheet)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [560, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer ={{ $env.LINE_CHANNEL_ACCESS_TOKEN }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replyToken\": \"{{ $json.replyToken }}\",\n  \"messages\": [{ \"type\": \"text\", \"text\": \"✅ ปิดงานแล้ว — แสดงงานค้างที่เหลือ\" }]\n}",
+        "options": {}
+      },
+      "id": "node_reply_close",
+      "name": "ตอบงานค้างที่เหลือ",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 240]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api-data.line.me/v2/bot/message/{{ $json.body.events[0].message.id }}/content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer ={{ $env.LINE_CHANNEL_ACCESS_TOKEN }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node_photo",
+      "name": "แนบรูปกับงาน (GCS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 420]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "30 8 * * *" },
+            { "field": "cronExpression", "expression": "0 12 * * *" },
+            { "field": "cronExpression", "expression": "30 17 * * *" }
+          ]
+        }
+      },
+      "id": "node_schedule",
+      "name": "ตั้งเวลา 3 รอบ/วัน",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 720]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Complaints",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "node_sheet_read",
+      "name": "อ่านงานค้าง (Sheet)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 720]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer ={{ $env.LINE_CHANNEL_ACCESS_TOKEN }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"YOUR_GROUP_ID\",\n  \"messages\": [{ \"type\": \"text\", \"text\": \"🔴 แจ้งเตือนงานค้าง\" }]\n}",
+        "options": {}
+      },
+      "id": "node_push",
+      "name": "แจ้งเตือนเข้ากลุ่ม (Push)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 720]
+    }
+  ],
+  "connections": {
+    "กลุ่ม LINE (Webhook)": {
+      "main": [
+        [ { "node": "แยกประเภทข้อความ", "type": "main", "index": 0 } ]
+      ]
+    },
+    "แยกประเภทข้อความ": {
+      "main": [
+        [ { "node": "แนบรูปกับงาน (GCS)", "type": "main", "index": 0 } ],
+        [ { "node": "ปิดงานในระบบ (Sheet)", "type": "main", "index": 0 } ],
+        [ { "node": "Gemini AI วิเคราะห์", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Gemini AI วิเคราะห์": {
+      "main": [
+        [ { "node": "บันทึกงานใหม่ (Sheet)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "บันทึกงานใหม่ (Sheet)": {
+      "main": [
+        [ { "node": "ตอบเลขงานในกลุ่ม", "type": "main", "index": 0 } ]
+      ]
+    },
+    "ปิดงานในระบบ (Sheet)": {
+      "main": [
+        [ { "node": "ตอบงานค้างที่เหลือ", "type": "main", "index": 0 } ]
+      ]
+    },
+    "ตั้งเวลา 3 รอบ/วัน": {
+      "main": [
+        [ { "node": "อ่านงานค้าง (Sheet)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "อ่านงานค้าง (Sheet)": {
+      "main": [
+        [ { "node": "แจ้งเตือนเข้ากลุ่ม (Push)", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": {
+    "templatecredsSetupCompleted": false,
+    "description": "ผังจำลองการทำงานของ AGA Complaint Agent (ระบบจริงเขียนด้วย Node.js บน Cloud Run — ไฟล์นี้ใช้เพื่อ presentation/แสดงผังใน n8n)"
+  }
+}

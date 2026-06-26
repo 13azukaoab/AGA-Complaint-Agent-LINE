@@ -17,3 +17,9 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local agent settings (เฉพาะเครื่อง)
+.claude/
+
+# ข้อมูลรายงาน/ลูกค้า — ห้าม push ขึ้น GitHub (เช่น รายงานร้องเรียนศิริราช)
+*.xlsx

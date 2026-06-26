@@ -1,0 +1,99 @@
+<mxfile host="Electron" agent="drawio-skill-cli">
+  <diagram name="Page-1" id="0">
+    <mxGraphModel dx="400" dy="1268" grid="1" gridSize="8" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="648" pageHeight="992" background="#0F172A" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#312e5f;strokeColor=#6366f1;strokeWidth=1.5;fontColor=#c7d2fe;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="▍ระบบ 1 · ตอบกลับอัตโนมัติ เมื่อมีคนพิมพ์ในกลุ่ม LINE ระบบทำงานทันที" vertex="1">
+          <mxGeometry height="60" width="120" x="64" y="-32" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="ellipse;html=1;whiteSpace=wrap;fillColor=#10b981;strokeColor=#059669;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="กลุ่ม LINE ลูกบ้าน/ทีมงานพิมพ์แจ้งปัญหา" vertex="1">
+          <mxGeometry height="40" width="80" x="264" y="72" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#3f3f5e;strokeColor=#6b6b8a;strokeWidth=1.5;fontColor=#e8e8f0;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="รับข้อความเข้าระบบ Webhook · Google Cloud Run" vertex="1">
+          <mxGeometry height="60" width="120" x="232" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="5" parent="1" style="rhombus;html=1;whiteSpace=wrap;fillColor=#6366f1;strokeColor=#4f46e5;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="แยกประเภทข้อความ ดูว่าเป็นแบบไหน (3 ทาง)" vertex="1">
+          <mxGeometry height="60" width="184" x="208" y="272" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#8b5cf6;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="Gemini AI วิเคราะห์ AI อ่านแล้วสรุป: ปัญหาอะไร ที่ไหน ชั้นไหน" vertex="1">
+          <mxGeometry height="60" width="120" x="48" y="408" as="geometry" />
+        </mxCell>
+        <mxCell id="7" parent="1" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;html=1;whiteSpace=wrap;fillColor=#f59e0b;strokeColor=#d97706;strokeWidth=1.5;fontColor=#1f2937;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="เปิดงานใหม่ลงตาราง บันทึก Work Order · Google Sheet" vertex="1">
+          <mxGeometry height="60" width="120" x="48" y="528" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#3b82f6;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="ตอบเลขงานกลับกลุ่ม แจ้งเลข Work Order ทันที" vertex="1">
+          <mxGeometry height="60" width="120" x="48" y="648" as="geometry" />
+        </mxCell>
+        <mxCell id="9" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#f59e0b;strokeColor=#d97706;strokeWidth=1.5;fontColor=#1f2937;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="ปิดงานในระบบ อัปเดตสถานะเป็น &quot;ปิดงาน&quot; ใน Sheet" vertex="1">
+          <mxGeometry height="60" width="120" x="240" y="408" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#3b82f6;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="ตอบงานค้างที่เหลือ สรุปงานที่ยังไม่ปิดให้กลุ่มเห็น" vertex="1">
+          <mxGeometry height="60" width="120" x="240" y="544" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="shape=document;boundedLbl=1;html=1;whiteSpace=wrap;fillColor=#06b6d4;strokeColor=#0891b2;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="แนบรูปกับงาน เก็บรูปก่อน/หลังเป็นหลักฐาน (Cloud Storage)" vertex="1">
+          <mxGeometry height="60" width="120" x="448" y="408" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#0e3a44;strokeColor=#06b6d4;strokeWidth=1.5;fontColor=#a5f3fc;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="▍ระบบ 2 · แจ้งเตือนตามเวลา เตือนงานค้างเองวันละ 3 รอบ" vertex="1">
+          <mxGeometry height="60" width="120" x="48" y="768" as="geometry" />
+        </mxCell>
+        <mxCell id="13" parent="1" style="rounded=1;arcSize=50;html=1;whiteSpace=wrap;fillColor=#06b6d4;strokeColor=#0891b2;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="ตั้งเวลา 3 รอบ/วัน 08:30 · 12:00 · 17:30" vertex="1">
+          <mxGeometry height="40" width="80" x="72" y="872" as="geometry" />
+        </mxCell>
+        <mxCell id="14" parent="1" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;html=1;whiteSpace=wrap;fillColor=#f59e0b;strokeColor=#d97706;strokeWidth=1.5;fontColor=#1f2937;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="อ่านงานค้าง ดึงงานที่ยังไม่ปิดออกจาก Sheet" vertex="1">
+          <mxGeometry height="60" width="120" x="240" y="848" as="geometry" />
+        </mxCell>
+        <mxCell id="15" parent="1" style="rounded=1;arcSize=20;html=1;whiteSpace=wrap;fillColor=#10b981;strokeColor=#059669;strokeWidth=1.5;fontColor=#ffffff;fontSize=13;fontFamily=Inter, Roboto, system-ui, -apple-system, sans-serif;verticalAlign=middle;align=center" value="แจ้งเตือนเข้ากลุ่ม เด้งเตือนเข้า LINE ไม่ให้ลืมงาน" vertex="1">
+          <mxGeometry height="60" width="120" x="448" y="848" as="geometry" />
+        </mxCell>
+        <mxCell id="16" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="17" edge="1" parent="1" source="4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="18" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="6" value="ข้อความทั่วไป">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="19" connectable="0" parent="18" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=11;fontColor=#94A3B8;" value="ข้อความทั่วไป" vertex="1">
+          <mxGeometry relative="1" x="0.5" as="geometry">
+            <mxPoint y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="20" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="9" value="พิมพ์ปิดงาน Wxxx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="21" connectable="0" parent="20" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=11;fontColor=#94A3B8;" value="พิมพ์ปิดงาน Wxxx" vertex="1">
+          <mxGeometry relative="1" x="0.5" as="geometry">
+            <mxPoint x="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="22" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="11" value="ส่งรูปภาพ">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="23" connectable="0" parent="22" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=11;fontColor=#94A3B8;" value="ส่งรูปภาพ" vertex="1">
+          <mxGeometry relative="1" x="0.5" as="geometry">
+            <mxPoint y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="24" edge="1" parent="1" source="6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#94A3B8;strokeWidth=2;endArrow=block;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;jumpStyle=arc;jumpSize=8" target="7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="25" edge="1" parent="1" source="7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="26" edge="1" parent="1" source="9" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="10" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="288" y="480" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27" edge="1" parent="1" source="13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F1F5F9;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=8" target="14" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="28" edge="1" parent="1" source="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#94A3B8;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;jumpStyle=arc;jumpSize=8" target="15" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

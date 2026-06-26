@@ -1,0 +1,234 @@
+meta:
+  profile: default
+  theme: dark
+  source: edited
+  layout: vertical
+  canvas: auto
+  routing: orthogonal
+  title: AGA Complaint Agent — ผังการทำงานระบบ (LINE + AI)
+  description: >-
+    ระบบ 1 รับข้อความจากกลุ่ม LINE ใช้ Gemini AI วิเคราะห์ บันทึก Google Sheet แล้วตอบกลับ / ระบบ 2
+    แจ้งเตือนงานค้างอัตโนมัติวันละ 3 รอบ
+  legend: >-
+    เขียว = LINE/แจ้งเตือน · ม่วง = AI Gemini · ส้ม = Google Sheet · น้ำเงิน = ตอบกลับในกลุ่ม · ฟ้า = เก็บรูป/ตั้งเวลา ·
+    คราม = จุดแยกประเภท
+nodes:
+  - id: banner1
+    label: |-
+      ▍ระบบ 1 · ตอบกลับอัตโนมัติ
+      เมื่อมีคนพิมพ์ในกลุ่ม LINE ระบบทำงานทันที
+    type: service
+    position:
+      x: 120
+      'y': 0
+    style:
+      fillColor: '#312e5f'
+      strokeColor: '#6366f1'
+      fontColor: '#c7d2fe'
+      fontSize: 13
+      fontWeight: 700
+  - id: line_in
+    label: |-
+      กลุ่ม LINE
+      ลูกบ้าน/ทีมงานพิมพ์แจ้งปัญหา
+    type: user
+    position:
+      x: 300
+      'y': 90
+    style:
+      fillColor: '#10b981'
+      strokeColor: '#059669'
+      fontColor: '#ffffff'
+      fontWeight: 600
+  - id: webhook
+    label: |-
+      รับข้อความเข้าระบบ
+      Webhook · Google Cloud Run
+    type: service
+    position:
+      x: 290
+      'y': 190
+    style:
+      fillColor: '#3f3f5e'
+      strokeColor: '#6b6b8a'
+      fontColor: '#e8e8f0'
+      fontWeight: 600
+  - id: classify
+    label: |-
+      แยกประเภทข้อความ
+      ดูว่าเป็นแบบไหน (3 ทาง)
+    type: decision
+    position:
+      x: 290
+      'y': 300
+    style:
+      fillColor: '#6366f1'
+      strokeColor: '#4f46e5'
+      fontColor: '#ffffff'
+      fontWeight: 700
+  - id: gemini
+    label: |-
+      Gemini AI วิเคราะห์
+      AI อ่านแล้วสรุป: ปัญหาอะไร ที่ไหน ชั้นไหน
+    type: service
+    position:
+      x: 110
+      'y': 440
+    style:
+      fillColor: '#8b5cf6'
+      strokeColor: '#7c3aed'
+      fontColor: '#ffffff'
+      fontWeight: 600
+  - id: sheet_new
+    label: |-
+      เปิดงานใหม่ลงตาราง
+      บันทึก Work Order · Google Sheet
+    type: database
+    position:
+      x: 110
+      'y': 560
+    style:
+      fillColor: '#f59e0b'
+      strokeColor: '#d97706'
+      fontColor: '#1f2937'
+      fontWeight: 600
+  - id: reply_new
+    label: |-
+      ตอบเลขงานกลับกลุ่ม
+      แจ้งเลข Work Order ทันที
+    type: service
+    position:
+      x: 110
+      'y': 680
+    style:
+      fillColor: '#3b82f6'
+      strokeColor: '#2563eb'
+      fontColor: '#ffffff'
+      fontWeight: 600
+  - id: close
+    label: |-
+      ปิดงานในระบบ
+      อัปเดตสถานะเป็น "ปิดงาน" ใน Sheet
+    type: service
+    position:
+      x: 300
+      'y': 440
+    style:
+      fillColor: '#f59e0b'
+      strokeColor: '#d97706'
+      fontColor: '#1f2937'
+      fontWeight: 600
+  - id: reply_close
+    label: |-
+      ตอบงานค้างที่เหลือ
+      สรุปงานที่ยังไม่ปิดให้กลุ่มเห็น
+    type: service
+    position:
+      x: 300
+      'y': 560
+    style:
+      fillColor: '#3b82f6'
+      strokeColor: '#2563eb'
+      fontColor: '#ffffff'
+      fontWeight: 600
+  - id: photo
+    label: |-
+      แนบรูปกับงาน
+      เก็บรูปก่อน/หลังเป็นหลักฐาน (Cloud Storage)
+    type: document
+    position:
+      x: 510
+      'y': 440
+    style:
+      fillColor: '#06b6d4'
+      strokeColor: '#0891b2'
+      fontColor: '#ffffff'
+      fontWeight: 600
+  - id: banner2
+    label: |-
+      ▍ระบบ 2 · แจ้งเตือนตามเวลา
+      เตือนงานค้างเองวันละ 3 รอบ
+    type: service
+    position:
+      x: 110
+      'y': 800
+    style:
+      fillColor: '#0e3a44'
+      strokeColor: '#06b6d4'
+      fontColor: '#a5f3fc'
+      fontSize: 13
+      fontWeight: 700
+  - id: schedule
+    label: |-
+      ตั้งเวลา 3 รอบ/วัน
+      08:30 · 12:00 · 17:30
+    type: terminal
+    position:
+      x: 110
+      'y': 890
+    style:
+      fillColor: '#06b6d4'
+      strokeColor: '#0891b2'
+      fontColor: '#ffffff'
+      fontWeight: 600
+  - id: sheet_read
+    label: |-
+      อ่านงานค้าง
+      ดึงงานที่ยังไม่ปิดออกจาก Sheet
+    type: database
+    position:
+      x: 300
+      'y': 880
+    style:
+      fillColor: '#f59e0b'
+      strokeColor: '#d97706'
+      fontColor: '#1f2937'
+      fontWeight: 600
+  - id: push
+    label: |-
+      แจ้งเตือนเข้ากลุ่ม
+      เด้งเตือนเข้า LINE ไม่ให้ลืมงาน
+    type: service
+    position:
+      x: 510
+      'y': 880
+    style:
+      fillColor: '#10b981'
+      strokeColor: '#059669'
+      fontColor: '#ffffff'
+      fontWeight: 600
+edges:
+  - from: line_in
+    to: webhook
+    type: primary
+  - from: webhook
+    to: classify
+    type: primary
+  - from: classify
+    to: gemini
+    type: primary
+    label: ข้อความทั่วไป
+  - from: classify
+    to: close
+    type: primary
+    label: พิมพ์ปิดงาน Wxxx
+  - from: classify
+    to: photo
+    type: primary
+    label: ส่งรูปภาพ
+  - from: gemini
+    to: sheet_new
+    type: data
+  - from: sheet_new
+    to: reply_new
+    type: primary
+  - from: close
+    to: reply_close
+    type: primary
+  - from: schedule
+    to: sheet_read
+    type: primary
+  - from: sheet_read
+    to: push
+    type: data
+modules: []
