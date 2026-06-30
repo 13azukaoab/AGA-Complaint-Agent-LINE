@@ -113,6 +113,8 @@
   body.dark .border-b { border-color:#334155 !important; }
   body.dark .border-t { border-color:#334155 !important; }
   body.dark .border-b-2 { border-color:#334155 !important; }
+  body.dark .hm-cell[style*="background:#f8fafc"] { background:#1e293b !important; color:#475569 !important; }
+  body.dark #drillHint { color:#64748b; }
 
   /* หัวรายงานเฉพาะตอน print */
   #printHeader { display:none; }
@@ -331,10 +333,25 @@
       <canvas id="chartCatchTrend" height="180"></canvas>
     </div>
     <div class="card p-4">
-      <h3 class="text-sm font-semibold mb-1 text-slate-600">วิเคราะห์ตามชั้น (Top 10)</h3>
-      <p class="text-xs text-slate-400 mb-3">ชั้นไหนถูกแจ้งบ่อยที่สุด — เจาะลึกจุดเสี่ยงภายในอาคาร</p>
-      <canvas id="chartFloor" height="180"></canvas>
+      <h3 class="text-sm font-semibold mb-1 text-slate-600">งานตามอาคาร — คลิกเจาะดูชั้น</h3>
+      <p class="text-xs text-slate-400 mb-3">แท่ง = จำนวนงานรวมของอาคาร · คลิกที่แท่งเพื่อดู breakdown แยกชั้น</p>
+      <canvas id="chartBldgDrill" height="180"></canvas>
+      <p id="drillHint" class="text-center text-xs text-slate-400 mt-2">👆 คลิกแท่งอาคารเพื่อเจาะดูชั้น</p>
+      <div id="drillDetail" class="mt-3" style="display:none">
+        <div class="flex items-center gap-2 mb-2">
+          <span id="drillLabel" class="text-sm font-semibold text-blue-600"></span>
+          <button onclick="closeDrill()" class="text-xs text-slate-400 hover:text-slate-600 ml-auto">✕ ปิด</button>
+        </div>
+        <canvas id="chartBldgDrillSub" height="140"></canvas>
+      </div>
     </div>
+  </div>
+
+  <!-- Heatmap อาคาร × ชั้น -->
+  <div class="card p-4 mb-5">
+    <h3 class="text-sm font-semibold mb-1 text-slate-600">Heatmap อาคาร × ชั้น</h3>
+    <p class="text-xs text-slate-400 mb-3">สีเข้ม = แจ้งบ่อย · เปรียบเทียบจุดเสี่ยงข้ามอาคารในแต่ละชั้น</p>
+    <div id="bldgFloorHeatmap" class="overflow-x-auto"></div>
   </div>
 
   <!-- Follow-up Stats -->
@@ -773,7 +790,8 @@ function render() {
   renderCatchChart(rows);
   renderMonthlyTrend(rows);
   renderMonthlyCatch(rows);
-  renderFloorChart(rows);
+  renderBuildingFloorDrill(rows);
+  renderBuildingFloorHeatmap(rows);
   renderFollowupStats(rows);
   renderRepeatOffenders(rows);
   renderHeatmap(rows);
@@ -983,29 +1001,148 @@ function renderMonthlyCatch(rows) {
   });
 }
 
-/* ---- วิเคราะห์ตามชั้น ---- */
-function renderFloorChart(rows) {
-  const floorCount = {};
-  rows.forEach(r => {
-    const f = r.floor || 'ไม่ระบุ';
-    if (f === 'ไม่ระบุ') return;
-    floorCount[f] = (floorCount[f] || 0) + 1;
+/* ---- อาคาร × ชั้น: helper sort ชั้นตามตัวเลข ---- */
+function floorNum(f) {
+  const m = f.match(/\d+/);
+  return m ? parseInt(m[0]) : 999;
+}
+function sortFloors(a, b) { return floorNum(a) - floorNum(b); }
+
+/* ---- อาคาร × ชั้น: Drill-down (B) ---- */
+let _drillData = {};
+function closeDrill() {
+  document.getElementById('drillDetail').style.display = 'none';
+  document.getElementById('drillHint').textContent = '👆 คลิกแท่งอาคารเพื่อเจาะดูชั้น';
+  if (charts.chartBldgDrillSub) { charts.chartBldgDrillSub.destroy(); charts.chartBldgDrillSub = null; }
+}
+function showDrill(bldg) {
+  const floors = _drillData[bldg];
+  if (!floors) return;
+  const sorted = Object.entries(floors).sort((a, b) => sortFloors(a[0], b[0]));
+  document.getElementById('drillDetail').style.display = 'block';
+  document.getElementById('drillLabel').textContent = '📍 ' + bldg + ' — แยกตามชั้น';
+  document.getElementById('drillHint').textContent = '👆 คลิกแท่งอื่นเพื่อสลับอาคาร';
+  const ctx = document.getElementById('chartBldgDrillSub');
+  if (charts.chartBldgDrillSub) charts.chartBldgDrillSub.destroy();
+  const vals = sorted.map(e => e[1]);
+  const maxV = Math.max(...vals);
+  charts.chartBldgDrillSub = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => /ชั้น/i.test(e[0]) ? e[0] : 'ชั้น ' + e[0]),
+      datasets: [{
+        data: vals,
+        backgroundColor: vals.map(v => {
+          const alpha = 0.25 + (v / maxV) * 0.65;
+          return `rgba(59,130,246,${alpha})`;
+        }),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw + ' งาน' } } },
+      scales: { y: { ticks: { precision: 0 } }, x: { ticks: { font: { size: 11, family: 'Noto Sans Thai' } } } }
+    }
   });
-  const sorted = Object.fromEntries(Object.entries(floorCount).sort((a, b) => b[1] - a[1]).slice(0, 10));
-  const ctx = document.getElementById('chartFloor');
-  if (charts.chartFloor) charts.chartFloor.destroy();
-  if (Object.keys(sorted).length === 0) {
+}
+function renderBuildingFloorDrill(rows) {
+  _drillData = {};
+  const bldgTotals = {};
+  rows.forEach(r => {
+    const loc = r.location || 'ไม่ระบุ';
+    const fl = r.floor || 'ไม่ระบุ';
+    if (loc === 'ไม่ระบุ') return;
+    if (!_drillData[loc]) _drillData[loc] = {};
+    _drillData[loc][fl] = (_drillData[loc][fl] || 0) + 1;
+    bldgTotals[loc] = (bldgTotals[loc] || 0) + 1;
+  });
+  const top = Object.entries(bldgTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const ctx = document.getElementById('chartBldgDrill');
+  if (charts.chartBldgDrill) charts.chartBldgDrill.destroy();
+  closeDrill();
+  if (top.length === 0) {
     const c = ctx.getContext('2d');
     c.clearRect(0, 0, ctx.width, ctx.height);
     c.font = '13px "Noto Sans Thai"'; c.fillStyle = '#94a3b8'; c.textAlign = 'center';
-    c.fillText('ยังไม่มีข้อมูลชั้น', ctx.width / 2, 60);
+    c.fillText('ยังไม่มีข้อมูล', ctx.width / 2, 60);
     return;
   }
-  charts.chartFloor = new Chart(ctx, {
+  const labels = top.map(e => e[0]);
+  charts.chartBldgDrill = new Chart(ctx, {
     type: 'bar',
-    data: { labels: Object.keys(sorted), datasets: [{ data: Object.values(sorted), backgroundColor:'#8b5cf6', borderRadius:4 }] },
-    options: { indexAxis:'y', plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ precision:0 } } } }
+    data: {
+      labels: labels.map(l => l.length > 18 ? l.slice(0, 17) + '…' : l),
+      datasets: [{ data: top.map(e => e[1]), backgroundColor: '#3b82f6', borderRadius: 4, barThickness: 22 }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: ctx => [labels[ctx[0].dataIndex]],
+        label: ctx => ctx.raw + ' งาน (คลิกดูชั้น)'
+      } } },
+      scales: { x: { ticks: { precision: 0 } }, y: { ticks: { font: { size: 11, family: 'Noto Sans Thai' } } } },
+      onClick: (e, el) => { if (el.length) showDrill(labels[el[0].index]); }
+    }
   });
+}
+
+/* ---- อาคาร × ชั้น: Heatmap (C) ---- */
+function renderBuildingFloorHeatmap(rows) {
+  const bldgFloor = {};
+  const bldgTotals = {};
+  const floorSet = new Set();
+  rows.forEach(r => {
+    const loc = r.location || 'ไม่ระบุ';
+    const fl = r.floor || '';
+    if (loc === 'ไม่ระบุ' || !fl) return;
+    if (!bldgFloor[loc]) bldgFloor[loc] = {};
+    bldgFloor[loc][fl] = (bldgFloor[loc][fl] || 0) + 1;
+    bldgTotals[loc] = (bldgTotals[loc] || 0) + 1;
+    floorSet.add(fl);
+  });
+  const topLocs = Object.entries(bldgTotals)
+    .sort((a, b) => b[1] - a[1]).slice(0, 10).map(e => e[0]);
+  const floors = [...floorSet].sort(sortFloors);
+  const container = document.getElementById('bldgFloorHeatmap');
+  if (topLocs.length === 0 || floors.length === 0) {
+    container.innerHTML = '<p class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>';
+    return;
+  }
+  let maxCount = 0;
+  topLocs.forEach(loc => floors.forEach(fl => {
+    maxCount = Math.max(maxCount, (bldgFloor[loc]?.[fl] || 0));
+  }));
+  function cellStyle(count) {
+    if (!count) return 'background:#f8fafc;color:#cbd5e1;';
+    const t = count / maxCount;
+    const r = Math.round(219 + (29 - 219) * t);
+    const g = Math.round(234 + (78 - 234) * t);
+    const b = Math.round(254 + (216 - 254) * t);
+    return `background:rgb(${r},${g},${b});color:${t > .5 ? '#fff' : '#1e40af'};font-weight:600;`;
+  }
+  let html = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:480px">';
+  html += '<thead><tr>';
+  html += '<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:#94a3b8;font-weight:500;width:140px">อาคาร</th>';
+  floors.forEach(fl => {
+    const label = fl.replace(/ชั้น\s*/i, '');
+    html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:#94a3b8;font-weight:500" title="ชั้น ${label}">ชั้น ${label}</th>`;
+  });
+  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500">รวม</th></tr></thead>';
+  html += '<tbody>';
+  topLocs.forEach(loc => {
+    html += '<tr>';
+    html += `<td style="padding:2px 8px 2px 0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px" title="${loc}">${loc}</td>`;
+    let rowTotal = 0;
+    floors.forEach(fl => {
+      const c = bldgFloor[loc]?.[fl] || 0;
+      rowTotal += c;
+      html += `<td class="hm-cell" style="${cellStyle(c)}" title="${loc} ชั้น ${fl.replace(/ชั้น\s*/i,'')}: ${c} งาน">${c || ''}</td>`;
+    });
+    html += `<td style="text-align:center;font-size:12px;font-weight:700;color:#1d4ed8;padding:2px 6px">${rowTotal}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
 /* ---- สถิติงานแจ้งซ้ำ (Follow-up) ---- */
