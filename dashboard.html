@@ -401,6 +401,17 @@
       </div>
     </div>
     <p class="text-xs text-slate-400 mb-3">แต่ละแท่ง = 1 อาคาร แบ่งสีตามชนิด · เห็นสัดส่วนชนิดสัตว์รบกวนของแต่ละอาคารในภาพเดียว · คลิกแท่งเพื่อกรองตาราง</p>
+    <div class="flex flex-wrap items-center gap-2 mb-3 p-2.5 bg-slate-50 rounded-lg">
+      <span class="text-xs text-slate-500 flex items-center gap-1">🏢 อาคาร</span>
+      <button type="button" class="ms-btn" style="width:auto;min-width:110px;flex:none" data-bp="buildings"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button>
+      <span class="w-px h-5 bg-slate-200"></span>
+      <span class="text-xs text-slate-500 flex items-center gap-1">📅 เดือน</span>
+      <select id="bpMonth" class="border border-slate-200 rounded-lg px-2 py-1 text-xs"><option value="">ทั้งหมด</option></select>
+      <span class="w-px h-5 bg-slate-200"></span>
+      <span class="text-xs text-slate-500 flex items-center gap-1">🐛 ชนิด</span>
+      <button type="button" class="ms-btn" style="width:auto;min-width:110px;flex:none" data-bp="pests"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button>
+      <button id="bpClear" class="ml-auto text-xs text-slate-500 px-3 py-1 border border-slate-200 rounded-lg hover:text-slate-700 transition">ล้าง</button>
+    </div>
     <div id="bldgPestLegend" class="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 text-xs"></div>
     <canvas id="chartBldgPest" height="230"></canvas>
   </div>
@@ -724,6 +735,8 @@ function populateDropdowns() {
   populateSelect('pestFilter',  allRecords.map(r => r.pestType));
   populateSelect('groupFilter', allRecords.map(r => r.groupName));
   populateColFilterSelects();
+  _pestColors = null;      // ให้ pestColorFor คำนวณสีใหม่ตามข้อมูลล่าสุด
+  populateBpMonth();
 }
 function populateColFilterSelects() {
   const sel = document.querySelector('[data-col-filter="groupName"]');
@@ -1316,40 +1329,79 @@ function renderBuildingFloorDrill(rows) {
   });
 }
 
-/* ---- ชนิดสัตว์รบกวน แยกตามอาคาร (Stacked bar) ---- */
+/* ---- ชนิดสัตว์รบกวน แยกตามอาคาร (Stacked bar + filter อาคาร/เดือน/ชนิด) ---- */
 let _bldgPestChart = null;
 const PEST_PALETTE = ['#dc2626','#ea580c','#ca8a04','#16a34a','#0891b2','#7c3aed'];
+const OTHER_PEST = 'อื่นๆ', OTHER_PEST_C = '#94a3b8';
+const bpState = { buildings: new Set(), pests: new Set() };
+let _pestColors = null;
+// สีชนิด — จัดตามความถี่รวมทั้งชุดข้อมูล (สีคงที่ ไม่เปลี่ยนตาม filter)
+function pestColorFor(pest) {
+  if (!_pestColors) {
+    const tot = {};
+    allRecords.forEach(r => { const p = (r.pestType || '').trim() || 'ไม่ระบุ'; tot[p] = (tot[p] || 0) + 1; });
+    _pestColors = {};
+    Object.entries(tot).sort((a, b) => b[1] - a[1])
+      .forEach(([p], i) => { _pestColors[p] = i < PEST_PALETTE.length ? PEST_PALETTE[i] : OTHER_PEST_C; });
+  }
+  return _pestColors[pest] || OTHER_PEST_C;
+}
+
 function renderBuildingPestStack(rows) {
   const ctx = document.getElementById('chartBldgPest');
   const legend = document.getElementById('bldgPestLegend');
   const topN = parseInt(document.getElementById('bldgPestTopN')?.value);
   const limit = isNaN(topN) ? 10 : topN;
+  const month = document.getElementById('bpMonth')?.value || '';
 
+  // กรองเดือน (ภายในกราฟ)
+  let rows2 = rows;
+  if (month) rows2 = rows.filter(r => {
+    const d = parseThai(r.timestamp);
+    return d && `${d.getFullYear()}-${d.getMonth()}` === month;
+  });
+
+  const usePestFilter = bpState.pests.size > 0;
   const bldgTotals = {}, bldgPest = {}, pestTotals = {};
-  rows.forEach(r => {
+  rows2.forEach(r => {
     const loc = r.location || 'ไม่ระบุ';
     if (loc === 'ไม่ระบุ') return;
     const pest = (r.pestType || '').trim() || 'ไม่ระบุ';
+    if (usePestFilter && !bpState.pests.has(pest)) return;
     bldgTotals[loc] = (bldgTotals[loc] || 0) + 1;
     (bldgPest[loc] = bldgPest[loc] || {})[pest] = (bldgPest[loc][pest] || 0) + 1;
     pestTotals[pest] = (pestTotals[pest] || 0) + 1;
   });
 
-  const sortedBldg = Object.entries(bldgTotals).sort((a, b) => b[1] - a[1]);
-  const topBldgs = (limit > 0 ? sortedBldg.slice(0, limit) : sortedBldg).map(e => e[0]);
-  // ชนิดยอดนิยม → ได้สีจาก palette, ที่เหลือรวมเป็น "อื่นๆ"
-  const topPests = Object.entries(pestTotals).sort((a, b) => b[1] - a[1])
-    .slice(0, PEST_PALETTE.length).map(e => e[0]);
-  const OTHER = 'อื่นๆ', OTHER_C = '#94a3b8';
-  const pestColor = {}; topPests.forEach((p, i) => pestColor[p] = PEST_PALETTE[i]);
-  const hasOther = Object.keys(pestTotals).some(p => !topPests.includes(p));
-  const cats = hasOther ? [...topPests, OTHER] : [...topPests];
-  const colorOf = c => c === OTHER ? OTHER_C : pestColor[c];
-  const catOf = p => topPests.includes(p) ? p : OTHER;
+  // อาคารที่จะแสดง — เลือกเองได้ (เทียบกัน) หรือ top N
+  let showBldgs;
+  if (bpState.buildings.size > 0) {
+    showBldgs = [...bpState.buildings].filter(b => bldgTotals[b] != null)
+      .sort((a, b) => bldgTotals[b] - bldgTotals[a]);
+  } else {
+    const sorted = Object.entries(bldgTotals).sort((a, b) => b[1] - a[1]);
+    showBldgs = (limit > 0 ? sorted.slice(0, limit) : sorted).map(e => e[0]);
+  }
+
+  // หมวดชนิด (สี)
+  let cats, topPestsSet;
+  if (usePestFilter) {
+    cats = [...bpState.pests].filter(p => pestTotals[p] != null)
+      .sort((a, b) => pestTotals[b] - pestTotals[a]);
+    topPestsSet = null;
+  } else {
+    const topPests = Object.entries(pestTotals).sort((a, b) => b[1] - a[1])
+      .slice(0, PEST_PALETTE.length).map(e => e[0]);
+    topPestsSet = new Set(topPests);
+    const hasOther = Object.keys(pestTotals).some(p => !topPestsSet.has(p));
+    cats = hasOther ? [...topPests, OTHER_PEST] : [...topPests];
+  }
+  const colorOf = c => c === OTHER_PEST ? OTHER_PEST_C : pestColorFor(c);
+  const catOf = p => usePestFilter ? p : (topPestsSet.has(p) ? p : OTHER_PEST);
 
   const datasets = cats.map(cat => ({
     label: cat, backgroundColor: colorOf(cat), borderRadius: 2, barThickness: 20,
-    data: topBldgs.map(b => {
+    data: showBldgs.map(b => {
       const pm = bldgPest[b] || {}; let s = 0;
       Object.keys(pm).forEach(p => { if (catOf(p) === cat) s += pm[p]; });
       return s;
@@ -1361,22 +1413,22 @@ function renderBuildingPestStack(rows) {
   ).join('');
 
   if (_bldgPestChart) _bldgPestChart.destroy();
-  if (topBldgs.length === 0) {
+  if (showBldgs.length === 0) {
     const c = ctx.getContext('2d');
     c.clearRect(0, 0, ctx.width, ctx.height);
     c.font = '13px "Noto Sans Thai"'; c.fillStyle = MUTED(); c.textAlign = 'center';
-    c.fillText('ยังไม่มีข้อมูล', ctx.width / 2, 60);
+    c.fillText('ไม่มีข้อมูลตามตัวกรอง', ctx.width / 2, 60);
     legend.innerHTML = '';
     return;
   }
 
   _bldgPestChart = new Chart(ctx, {
     type: 'bar',
-    data: { labels: topBldgs.map(l => l.length > 18 ? l.slice(0, 17) + '…' : l), datasets },
+    data: { labels: showBldgs.map(l => l.length > 18 ? l.slice(0, 17) + '…' : l), datasets },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: true,
       plugins: { legend: { display: false }, tooltip: { callbacks: {
-        title: c => [topBldgs[c[0].dataIndex]],
+        title: c => [showBldgs[c[0].dataIndex]],
         label: c => `${c.dataset.label}: ${c.raw} งาน`,
         footer: c => 'รวม ' + c.reduce((t, x) => t + x.raw, 0) + ' งาน'
       } } },
@@ -1384,9 +1436,84 @@ function renderBuildingPestStack(rows) {
         x: { stacked: true, ticks: { precision: 0 } },
         y: { stacked: true, ticks: { font: { size: 11, family: 'Noto Sans Thai' } } }
       },
-      onClick: (e, el) => { if (el.length) selectHeatmapBuilding(topBldgs[el[0].index]); }
+      onClick: (e, el) => { if (el.length) selectHeatmapBuilding(showBldgs[el[0].index]); }
     }
   });
+}
+
+/* ---- filter bar ของกราฟ (อาคาร/ชนิด multi-select + เดือน) ---- */
+function updateBpButton(kind) {
+  const btn = document.querySelector(`[data-bp="${kind}"]`);
+  if (!btn) return;
+  const set = bpState[kind], lbl = btn.querySelector('.ms-lbl');
+  if (set.size === 0)      { btn.classList.remove('has-value'); lbl.textContent = 'ทั้งหมด'; }
+  else if (set.size === 1) { btn.classList.add('has-value'); lbl.textContent = [...set][0] || '(ไม่ระบุ)'; }
+  else                     { btn.classList.add('has-value'); lbl.textContent = set.size + ' รายการ'; }
+}
+function populateBpMonth() {
+  const sel = document.getElementById('bpMonth');
+  if (!sel) return;
+  const TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const map = new Map();
+  allRecords.forEach(r => {
+    const d = parseThai(r.timestamp);
+    if (!d) return;
+    const k = `${d.getFullYear()}-${d.getMonth()}`;
+    if (!map.has(k)) map.set(k, { k, t: new Date(d.getFullYear(), d.getMonth(), 1).getTime(),
+      label: `${TH[d.getMonth()]} ${String((d.getFullYear() + 543) % 100).padStart(2, '0')}` });
+  });
+  const arr = [...map.values()].sort((a, b) => a.t - b.t);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' +
+    arr.map(m => `<option value="${m.k}">${m.label}</option>`).join('');
+  if (map.has(cur)) sel.value = cur;
+}
+function openBpPopup(kind, btn) {
+  const pop = getColPopup();
+  const set = bpState[kind];
+  const field = kind === 'buildings' ? 'location' : 'pestType';
+  const opts = [...new Set(getFiltered().map(r => (r[field] || '').trim()))]
+    .filter(v => v && v !== 'ไม่ระบุ' || (field === 'pestType' && v))
+    .sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'th'));
+  pop.innerHTML =
+    `<input class="cp-search" placeholder="ค้นหา..." />` +
+    `<label class="cp-item cp-all"><input type="checkbox" class="cp-selectall"/> <b>เลือกทั้งหมด</b></label>` +
+    `<div class="cp-list">` +
+    opts.map(v => `<label class="cp-item"><input type="checkbox" value="${msEsc(v)}" ${set.has(v) ? 'checked' : ''}/> <span>${msEsc(v) || '(ไม่ระบุ)'}</span></label>`).join('') +
+    `</div>` +
+    `<div class="cp-foot"><button class="cp-clear" type="button">ล้าง</button><button class="cp-close" type="button">ปิด</button></div>`;
+  const list = pop.querySelector('.cp-list');
+  const selAll = pop.querySelector('.cp-selectall');
+  const syncSelAll = () => {
+    const boxes = [...list.querySelectorAll('.cp-item:not(.hide) input')];
+    selAll.checked = boxes.length > 0 && boxes.every(b => b.checked);
+  };
+  const apply = () => { updateBpButton(kind); renderBuildingPestStack(getFiltered()); };
+  syncSelAll();
+  list.querySelectorAll('input').forEach(box => box.addEventListener('change', () => {
+    box.checked ? set.add(box.value) : set.delete(box.value);
+    apply(); syncSelAll();
+  }));
+  selAll.addEventListener('change', () => {
+    list.querySelectorAll('.cp-item:not(.hide) input').forEach(box => {
+      box.checked = selAll.checked;
+      selAll.checked ? set.add(box.value) : set.delete(box.value);
+    });
+    apply();
+  });
+  pop.querySelector('.cp-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    list.querySelectorAll('.cp-item').forEach(it => it.classList.toggle('hide', !it.textContent.toLowerCase().includes(q)));
+    syncSelAll();
+  });
+  pop.querySelector('.cp-clear').addEventListener('click', () => {
+    set.clear(); list.querySelectorAll('input').forEach(b => b.checked = false);
+    selAll.checked = false; apply();
+  });
+  pop.querySelector('.cp-close').addEventListener('click', hideColPopup);
+  pop.classList.remove('hidden');
+  positionColPopup(pop, btn);
+  msOpenKey = 'bp:' + kind;
 }
 
 /* ---- อาคาร × ชั้น: Heatmap (C) ---- */
@@ -1956,6 +2083,24 @@ document.getElementById('pageSize').addEventListener('change', () => { currentPa
   document.getElementById(id).addEventListener('change', () => renderHeatmap(getFiltered()));
 });
 document.getElementById('bldgPestTopN').addEventListener('change', () => renderBuildingPestStack(getFiltered()));
+
+// filter bar ของกราฟ ชนิด×อาคาร
+document.querySelectorAll('[data-bp]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const kind = btn.dataset.bp;
+    if (msOpenKey === 'bp:' + kind) { hideColPopup(); return; }
+    openBpPopup(kind, btn);
+  });
+});
+document.getElementById('bpMonth').addEventListener('change', () => renderBuildingPestStack(getFiltered()));
+document.getElementById('bpClear').addEventListener('click', () => {
+  bpState.buildings.clear(); bpState.pests.clear();
+  updateBpButton('buildings'); updateBpButton('pests');
+  document.getElementById('bpMonth').value = '';
+  hideColPopup();
+  renderBuildingPestStack(getFiltered());
+});
 
 document.getElementById('clearFilter').addEventListener('click', () => {
   ['dateFrom','dateTo','searchBox'].forEach(id => document.getElementById(id).value = '');
