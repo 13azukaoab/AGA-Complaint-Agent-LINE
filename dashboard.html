@@ -51,6 +51,10 @@
   #colPopup .cp-foot button { flex:1; height:28px; font-size:11px; border-radius:6px; cursor:pointer; border:1px solid #e2e8f0; background:#fff; color:#64748b; }
   #colPopup .cp-foot .cp-close { background:#3b82f6; color:#fff; border-color:#3b82f6; }
   #colPopup .cp-foot button:hover { filter:brightness(.97); }
+  /* a11y: ยก muted text ใน light mode ให้ผ่าน contrast 4.5:1 (dark mode คงเดิม) */
+  body:not(.dark) .text-slate-400 { color:#64748b !important; }
+  input::placeholder, select::placeholder, textarea::placeholder { color:#64748b; opacity:1; }
+  body.dark input::placeholder, body.dark select::placeholder, body.dark textarea::placeholder { color:#94a3b8; }
 
   .chip {
     display:inline-flex; align-items:center; gap:4px;
@@ -555,6 +559,8 @@ const BACKEND_URL   = 'https://aga-complaint-agent-396358198178.asia-southeast1.
 const DASHBOARD_KEY = '418667f4821721f56caf9116';
 // Auto-refresh ถูกปิด — user กด Refresh หรือ R เอง เพื่อลด API read quota
 const SLA_HOURS     = { ok: 4, warn: 24 };
+// สี muted แบบ mode-aware — light ใช้ slate-500 (ผ่าน contrast 4.5:1), dark ใช้ slate-400
+const MUTED = () => document.body.classList.contains('dark') ? '#94a3b8' : '#64748b';
 
 /* ============================================================
    State
@@ -726,7 +732,10 @@ function getColPopup() {
 function hideColPopup() { getColPopup().classList.add('hidden'); msOpenKey = null; }
 function positionColPopup(pop, btn) {
   const r = btn.getBoundingClientRect();
-  pop.style.top  = (r.bottom + 4) + 'px';
+  const ph = pop.offsetHeight || 280;               // popup ต้องไม่ hidden ก่อนเรียก (วัดความสูงได้)
+  const spaceBelow = window.innerHeight - r.bottom;
+  const openUp = spaceBelow < ph + 12 && r.top > spaceBelow;   // ล่างไม่พอ + บนมีที่มากกว่า → flip ขึ้น
+  pop.style.top  = openUp ? Math.max(8, r.top - ph - 4) + 'px' : (r.bottom + 4) + 'px';
   pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 238)) + 'px';
 }
 function updateMsButton(col) {
@@ -790,8 +799,8 @@ function openMsPopup(col, btn) {
   });
   pop.querySelector('.cp-close').addEventListener('click', hideColPopup);
 
-  positionColPopup(pop, btn);
   pop.classList.remove('hidden');
+  positionColPopup(pop, btn);
   msOpenKey = 'ms:' + col;
 }
 function openDatePopup(btn) {
@@ -808,8 +817,8 @@ function openDatePopup(btn) {
     updateDateRangeButton(); currentPage = 1; render();
   });
   pop.querySelector('.cp-close').addEventListener('click', hideColPopup);
-  positionColPopup(pop, btn);
   pop.classList.remove('hidden');
+  positionColPopup(pop, btn);
   msOpenKey = 'date';
 }
 function populateSelect(id, values) {
@@ -1129,7 +1138,7 @@ function renderCatchChart(rows) {
   if (Object.keys(data).length === 0) {
     const c = ctx.getContext('2d');
     c.clearRect(0, 0, ctx.width, ctx.height);
-    c.font = '13px "Noto Sans Thai"'; c.fillStyle = '#94a3b8'; c.textAlign = 'center';
+    c.font = '13px "Noto Sans Thai"'; c.fillStyle = MUTED(); c.textAlign = 'center';
     c.fillText('ยังไม่มีข้อมูลจำนวนที่จับได้', ctx.width / 2, 60);
     return;
   }
@@ -1264,7 +1273,7 @@ function renderBuildingFloorDrill(rows) {
   if (top.length === 0) {
     const c = ctx.getContext('2d');
     c.clearRect(0, 0, ctx.width, ctx.height);
-    c.font = '13px "Noto Sans Thai"'; c.fillStyle = '#94a3b8'; c.textAlign = 'center';
+    c.font = '13px "Noto Sans Thai"'; c.fillStyle = MUTED(); c.textAlign = 'center';
     c.fillText('ยังไม่มีข้อมูล', ctx.width / 2, 60);
     return;
   }
@@ -1323,12 +1332,12 @@ function renderBuildingFloorHeatmap(rows) {
   }
   let html = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:480px">';
   html += '<thead><tr>';
-  html += '<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:#94a3b8;font-weight:500;width:140px">อาคาร</th>';
+  html += `<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:${MUTED()};font-weight:500;width:140px">อาคาร</th>`;
   floors.forEach(fl => {
     const label = fl.replace(/ชั้น\s*/i, '');
-    html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:#94a3b8;font-weight:500" title="ชั้น ${label}">ชั้น ${label}</th>`;
+    html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:${MUTED()};font-weight:500" title="ชั้น ${label}">ชั้น ${label}</th>`;
   });
-  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500">รวม</th></tr></thead>';
+  html += `<th style="text-align:center;padding:4px 6px;font-size:11px;color:${MUTED()};font-weight:500">รวม</th></tr></thead>`;
   html += '<tbody>';
   topLocs.forEach(loc => {
     html += '<tr>';
@@ -1464,10 +1473,10 @@ function renderHeatmap(rows) {
 
   let html = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:480px">';
   html += '<thead><tr>';
-  html += '<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:#94a3b8;font-weight:500;width:160px">อาคาร</th>';
-  months.forEach(m => { html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:#94a3b8;font-weight:500">${m.label}</th>`; });
-  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500">รวม</th>';
-  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500" title="แนวโน้ม: เดือนล่าสุด vs เดือนก่อน">แนวโน้ม</th></tr></thead>';
+  html += `<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:${MUTED()};font-weight:500;width:160px">อาคาร</th>`;
+  months.forEach(m => { html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:${MUTED()};font-weight:500">${m.label}</th>`; });
+  html += `<th style="text-align:center;padding:4px 6px;font-size:11px;color:${MUTED()};font-weight:500">รวม</th>`;
+  html += `<th style="text-align:center;padding:4px 6px;font-size:11px;color:${MUTED()};font-weight:500" title="แนวโน้ม: เดือนล่าสุด vs เดือนก่อน">แนวโน้ม</th></tr></thead>`;
   html += '<tbody>';
   topLocs.forEach(loc => {
     const isSel = selectedLoc && loc === selectedLoc;
@@ -1477,11 +1486,11 @@ function renderHeatmap(rows) {
     const lastC = locMonthMap[loc]?.[lastM.key] || 0;
     const prevC = prevM ? (locMonthMap[loc]?.[prevM.key] || 0) : 0;
     const diff  = lastC - prevC;
-    let trend = '<span style="color:#94a3b8;font-weight:400">—</span>';
+    let trend = `<span style="color:${MUTED()};font-weight:400">—</span>`;
     if (prevM && (lastC || prevC)) {
       if (diff > 0)      trend = `<span style="color:#dc2626;font-weight:600" title="เดือนล่าสุดเพิ่มขึ้น ${diff}">▲ ${diff}</span>`;
       else if (diff < 0) trend = `<span style="color:#16a34a;font-weight:600" title="เดือนล่าสุดลดลง ${Math.abs(diff)}">▼ ${Math.abs(diff)}</span>`;
-      else               trend = '<span style="color:#94a3b8;font-weight:400" title="เท่าเดือนก่อน">→</span>';
+      else               trend = `<span style="color:${MUTED()};font-weight:400" title="เท่าเดือนก่อน">→</span>`;
     }
     html += `<tr style="${rowBg}">`;
     html += `<td onclick="selectHeatmapBuilding('${loc.replace(/'/g,"\\'")}')" style="padding:2px 8px 2px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;cursor:pointer;color:${isSel ? '#b91c1c' : '#334155'};font-weight:${isSel ? '600' : '500'};" title="คลิกเพื่อดูงานทั้งหมดของ ${loc}">${loc}${isSel ? ' <span style=\"color:#dc2626;font-size:10px\">●</span>' : ''}</td>`;
