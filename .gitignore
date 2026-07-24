@@ -10,6 +10,10 @@ credentials/*.txt
 test_*_tmp.js
 *.tmp.js
 
+# draw.io desktop lock/backup files
+.$*.drawio.bkp
+*.drawio.bkp
+
 # Logs
 *.log
 npm-debug.log*
