@@ -230,6 +230,7 @@ async function getOpenWorkOrders() {
             severity: row[8],
             contactName: row[9] || '',
             contactPhone: row[10] || '',
+            summary: row[12] || '', // column M (index 12) — สรุปเนื้อหา complaint
             workOrderId: row[13], // column N (index 13)
             status,
           });

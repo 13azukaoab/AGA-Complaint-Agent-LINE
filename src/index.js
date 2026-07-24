@@ -352,6 +352,10 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
           lines.push('');
           lines.push(`🟡 ${wo.workOrderId} — ${wo.pestType}`);
           lines.push(`📍 ${wo.location}${floor}`);
+          if (wo.summary && wo.summary !== 'ไม่ระบุ') {
+            const s = wo.summary.length > 60 ? wo.summary.slice(0, 60) + '…' : wo.summary;
+            lines.push(`📝 ${s}`);
+          }
           lines.push(`🕐 ${formatShortTimestamp(wo.timestamp)} น.`);
           if (contact) lines.push(`📞 ${contact}`);
         }
