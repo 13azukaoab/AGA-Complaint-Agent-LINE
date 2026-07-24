@@ -84,7 +84,24 @@
 - "เดือนนี้" เดิม bug ใช้สิ้นเดือนก่อนหน้าเป็น `to` → แก้เป็นวันที่ 1 ถึงสิ้นเดือนปัจจุบันจริง
 - "สัปดาห์นี้" แก้ให้ครอบจันทร์–อาทิตย์ (เดิม to = วันนี้)
 
-ไฟล์ที่แก้: `dashboard.html`
+ไฟล์ที่แก้: `dashboard.html` (commit `5255c0f`)
+
+### Phase 12 — Summary in "งานค้าง" + Sheet Cleanup (24 ก.ค. 2569)
+
+**Summary column M:**
+- `src/sheets.js` — `getOpenWorkOrders()` เพิ่ม field `summary: row[12]` (column M)
+- `src/index.js` — คำสั่ง "งานค้าง" แสดง 📝 สรุปเนื้อหา complaint (ตัด 60 ตัวอักษร)
+- commit `01f239d` — deploy ผ่าน Cloud Build
+
+**Sheet Cleanup (รัน script แล้ว):**
+- ลบ W035, W037 (ซ้ำ) + แก้ W040 floor → ชั้น 2 ผ่าน `scripts/fix-sheet-duplicates.js`
+
+**Diagram + gitignore:**
+- ปรับ layout ผัง workflow `AGA-Complaint-Agent.drawio` + gitignore `.drawio.bkp` — commit `2b61189`
+
+**ยกเลิกจาก TODO (user ตัดออก):**
+- Monthly spend cap Gemini (ค่าใช้จ่ายต่ำ ~฿3/เดือน)
+- อัปเกรด LINE OA plan (ใช้ Free ต่อ)
 
 ---
 
