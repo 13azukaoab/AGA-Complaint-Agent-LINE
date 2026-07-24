@@ -27,6 +27,30 @@
   .col-filter-input { width:100%; min-width:60px; height:26px; padding:0 6px; font-size:11px; border:1px solid #e2e8f0; border-radius:6px; background:#fff; color:#334155; font-weight:400; outline:none; transition:border-color .15s, box-shadow .15s; }
   .col-filter-input:focus { border-color:#93c5fd; box-shadow:0 0 0 2px rgba(147,197,253,.3); }
   .col-filter-input.has-value { border-color:#60a5fa; background:#eff6ff; }
+  /* Excel-style multi-select + date-range button */
+  .ms-btn { width:100%; min-width:64px; height:26px; padding:0 6px; font-size:11px; border:1px solid #e2e8f0; border-radius:6px; background:#fff; color:#334155; display:flex; align-items:center; justify-content:space-between; gap:4px; cursor:pointer; font-weight:400; transition:border-color .15s; }
+  .ms-btn:hover { border-color:#93c5fd; }
+  .ms-btn.has-value { border-color:#60a5fa; background:#eff6ff; color:#1d4ed8; font-weight:500; }
+  .ms-btn .ms-lbl { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ms-btn .ms-caret { flex:none; opacity:.5; font-size:9px; }
+  #colPopup { position:fixed; z-index:70; width:230px; background:#fff; border:1px solid #cbd5e1; border-radius:10px; box-shadow:0 12px 32px rgba(15,23,42,.18); padding:8px; }
+  #colPopup.hidden { display:none; }
+  #colPopup .cp-search { width:100%; height:30px; padding:0 8px; font-size:12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:6px; outline:none; }
+  #colPopup .cp-search:focus { border-color:#93c5fd; }
+  #colPopup .cp-list { max-height:220px; overflow-y:auto; margin:2px 0; }
+  #colPopup .cp-item { display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:6px; font-size:12px; color:#334155; cursor:pointer; }
+  #colPopup .cp-item:hover { background:#f1f5f9; }
+  #colPopup .cp-item.hide { display:none; }
+  #colPopup .cp-item input { flex:none; cursor:pointer; }
+  #colPopup .cp-item span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #colPopup .cp-all { border-bottom:1px solid #f1f5f9; margin-bottom:2px; padding-bottom:6px; }
+  #colPopup .cp-daterow { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:12px; color:#64748b; }
+  #colPopup .cp-daterow label { width:44px; flex:none; }
+  #colPopup .cp-daterow input { flex:1; height:30px; padding:0 6px; font-size:12px; border:1px solid #e2e8f0; border-radius:6px; outline:none; }
+  #colPopup .cp-foot { display:flex; gap:6px; margin-top:6px; padding-top:6px; border-top:1px solid #f1f5f9; }
+  #colPopup .cp-foot button { flex:1; height:28px; font-size:11px; border-radius:6px; cursor:pointer; border:1px solid #e2e8f0; background:#fff; color:#64748b; }
+  #colPopup .cp-foot .cp-close { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+  #colPopup .cp-foot button:hover { filter:brightness(.97); }
 
   .chip {
     display:inline-flex; align-items:center; gap:4px;
@@ -451,15 +475,15 @@
           </tr>
           <tr class="col-filter-row bg-slate-50/60 border-b border-slate-100">
             <th class="py-1.5 pr-2"><input type="text" data-col-filter="workOrderId" placeholder="ค้น..." class="col-filter-input"/></th>
-            <th class="py-1.5 pr-2"><input type="text" data-col-filter="timestamp" placeholder="ก.ค." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><button type="button" class="ms-btn" data-daterange><span class="ms-lbl">ทุกวันที่</span><span class="ms-caret">▼</span></button></th>
             <th class="py-1.5 pr-2"><select data-col-filter="groupName" class="col-filter-input"><option value="">ทั้งหมด</option></select></th>
-            <th class="py-1.5 pr-2"><input type="text" data-col-filter="senderName" placeholder="ชื่อ..." class="col-filter-input"/></th>
-            <th class="py-1.5 pr-2"><select data-col-filter="pestType" class="col-filter-input"><option value="">ทั้งหมด</option></select></th>
-            <th class="py-1.5 pr-2"><input type="text" data-col-filter="location" placeholder="ตึก..." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><button type="button" class="ms-btn" data-ms-col="senderName"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button></th>
+            <th class="py-1.5 pr-2"><button type="button" class="ms-btn" data-ms-col="pestType"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button></th>
+            <th class="py-1.5 pr-2"><button type="button" class="ms-btn" data-ms-col="location"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button></th>
             <th class="py-1.5 pr-2"><input type="text" data-col-filter="floor" placeholder="ชั้น..." class="col-filter-input"/></th>
             <th class="py-1.5 pr-2"><select data-col-filter="status" class="col-filter-input"><option value="">ทั้งหมด</option><option value="ปิด">ปิด</option><option value="เปิด">เปิด</option></select></th>
             <th class="py-1.5 pr-2"></th>
-            <th class="py-1.5 pr-2"><select data-col-filter="closer" class="col-filter-input"><option value="">ทั้งหมด</option></select></th>
+            <th class="py-1.5 pr-2"><button type="button" class="ms-btn" data-ms-col="closer"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button></th>
             <th class="py-1.5 pr-2"><input type="text" data-col-filter="closeMethod" placeholder="วิธี..." class="col-filter-input"/></th>
             <th class="py-1.5 pr-2"></th>
             <th class="py-1.5 pr-2"></th>
@@ -677,16 +701,116 @@ function populateDropdowns() {
   populateColFilterSelects();
 }
 function populateColFilterSelects() {
-  const cols = { groupName:'groupName', pestType:'pestType', closer:'closer' };
-  Object.entries(cols).forEach(([col, field]) => {
-    const sel = document.querySelector(`[data-col-filter="${col}"]`);
-    if (!sel || sel.tagName !== 'SELECT') return;
-    const cur = sel.value;
-    const uniq = [...new Set(allRecords.map(r => r[field]).filter(Boolean))].sort();
-    sel.innerHTML = '<option value="">ทั้งหมด</option>' +
-      uniq.map(v => `<option value="${v}">${v}</option>`).join('');
-    if (uniq.includes(cur)) sel.value = cur;
+  const sel = document.querySelector('[data-col-filter="groupName"]');
+  if (!sel) return;
+  const cur = sel.value;
+  const uniq = [...new Set(allRecords.map(r => r.groupName).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' +
+    uniq.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (uniq.includes(cur)) sel.value = cur;
+}
+
+/* ===== Excel-style multi-select + date-range column filters ===== */
+const MS_COLS = { senderName:'ผู้แจ้ง', pestType:'ชนิด', location:'พื้นที่', closer:'ผู้ปิดงาน' };
+const colState = {
+  senderName: new Set(), pestType: new Set(), location: new Set(), closer: new Set(),
+  dateFrom: '', dateTo: ''
+};
+let msOpenKey = null;
+function msEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getColPopup() {
+  let p = document.getElementById('colPopup');
+  if (!p) { p = document.createElement('div'); p.id = 'colPopup'; p.className = 'hidden'; document.body.appendChild(p); }
+  return p;
+}
+function hideColPopup() { getColPopup().classList.add('hidden'); msOpenKey = null; }
+function positionColPopup(pop, btn) {
+  const r = btn.getBoundingClientRect();
+  pop.style.top  = (r.bottom + 4) + 'px';
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 238)) + 'px';
+}
+function updateMsButton(col) {
+  const btn = document.querySelector(`[data-ms-col="${col}"]`);
+  if (!btn) return;
+  const set = colState[col], lbl = btn.querySelector('.ms-lbl');
+  if (set.size === 0)      { btn.classList.remove('has-value'); lbl.textContent = 'ทั้งหมด'; }
+  else if (set.size === 1) { btn.classList.add('has-value'); lbl.textContent = [...set][0] || '(ไม่ระบุ)'; }
+  else                     { btn.classList.add('has-value'); lbl.textContent = set.size + ' รายการ'; }
+}
+function updateDateRangeButton() {
+  const btn = document.querySelector('[data-daterange]');
+  if (!btn) return;
+  const lbl = btn.querySelector('.ms-lbl');
+  if (colState.dateFrom || colState.dateTo) {
+    btn.classList.add('has-value');
+    lbl.textContent = `${colState.dateFrom || '…'} → ${colState.dateTo || '…'}`;
+  } else { btn.classList.remove('has-value'); lbl.textContent = 'ทุกวันที่'; }
+}
+function openMsPopup(col, btn) {
+  const pop = getColPopup();
+  const set = colState[col];
+  const opts = [...new Set(allRecords.map(r => (r[col] || '').trim()))]
+    .sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'th'));
+  pop.innerHTML =
+    `<input class="cp-search" placeholder="ค้นหา..." />` +
+    `<label class="cp-item cp-all"><input type="checkbox" class="cp-selectall"/> <b>เลือกทั้งหมด</b></label>` +
+    `<div class="cp-list">` +
+    opts.map(v => `<label class="cp-item"><input type="checkbox" value="${msEsc(v)}" ${set.has(v) ? 'checked' : ''}/> <span>${msEsc(v) || '(ไม่ระบุ)'}</span></label>`).join('') +
+    `</div>` +
+    `<div class="cp-foot"><button class="cp-clear" type="button">ล้าง</button><button class="cp-close" type="button">ปิด</button></div>`;
+
+  const list   = pop.querySelector('.cp-list');
+  const selAll = pop.querySelector('.cp-selectall');
+  const syncSelAll = () => {
+    const boxes = [...list.querySelectorAll('.cp-item:not(.hide) input')];
+    selAll.checked = boxes.length > 0 && boxes.every(b => b.checked);
+  };
+  syncSelAll();
+
+  list.querySelectorAll('input').forEach(box => box.addEventListener('change', () => {
+    box.checked ? set.add(box.value) : set.delete(box.value);
+    updateMsButton(col); syncSelAll(); currentPage = 1; render();
+  }));
+  selAll.addEventListener('change', () => {
+    list.querySelectorAll('.cp-item:not(.hide) input').forEach(box => {
+      box.checked = selAll.checked;
+      selAll.checked ? set.add(box.value) : set.delete(box.value);
+    });
+    updateMsButton(col); currentPage = 1; render();
   });
+  pop.querySelector('.cp-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    list.querySelectorAll('.cp-item').forEach(it =>
+      it.classList.toggle('hide', !it.textContent.toLowerCase().includes(q)));
+    syncSelAll();
+  });
+  pop.querySelector('.cp-clear').addEventListener('click', () => {
+    set.clear(); list.querySelectorAll('input').forEach(b => b.checked = false);
+    selAll.checked = false; updateMsButton(col); currentPage = 1; render();
+  });
+  pop.querySelector('.cp-close').addEventListener('click', hideColPopup);
+
+  positionColPopup(pop, btn);
+  pop.classList.remove('hidden');
+  msOpenKey = 'ms:' + col;
+}
+function openDatePopup(btn) {
+  const pop = getColPopup();
+  pop.innerHTML =
+    `<div class="cp-daterow"><label>ตั้งแต่</label><input type="date" class="cp-df" value="${colState.dateFrom}"/></div>` +
+    `<div class="cp-daterow"><label>ถึง</label><input type="date" class="cp-dt" value="${colState.dateTo}"/></div>` +
+    `<div class="cp-foot"><button class="cp-clear" type="button">ล้าง</button><button class="cp-close" type="button">ปิด</button></div>`;
+  const df = pop.querySelector('.cp-df'), dt = pop.querySelector('.cp-dt');
+  df.addEventListener('change', () => { colState.dateFrom = df.value; updateDateRangeButton(); currentPage = 1; render(); });
+  dt.addEventListener('change', () => { colState.dateTo   = dt.value; updateDateRangeButton(); currentPage = 1; render(); });
+  pop.querySelector('.cp-clear').addEventListener('click', () => {
+    colState.dateFrom = ''; colState.dateTo = ''; df.value = ''; dt.value = '';
+    updateDateRangeButton(); currentPage = 1; render();
+  });
+  pop.querySelector('.cp-close').addEventListener('click', hideColPopup);
+  positionColPopup(pop, btn);
+  pop.classList.remove('hidden');
+  msOpenKey = 'date';
 }
 function populateSelect(id, values) {
   const sel = document.getElementById(id);
@@ -726,19 +850,28 @@ function getFiltered() {
 }
 
 function passColFilters(r) {
-  const inputs = document.querySelectorAll('[data-col-filter]');
-  for (const el of inputs) {
+  // text/select column filters (WO, กลุ่ม, ชั้น, สถานะ, วิธีปิด)
+  for (const el of document.querySelectorAll('[data-col-filter]')) {
     const val = (el.value || '').trim();
     if (!val) continue;
     const col = el.dataset.colFilter;
-    const isSelect = el.tagName === 'SELECT';
-    const raw = col === 'timestamp' ? (r.timestamp || '')
-              : (r[col] == null ? '' : String(r[col]));
-    if (isSelect) {
-      if (raw !== val) return false;
-    } else {
-      if (!raw.toLowerCase().includes(val.toLowerCase())) return false;
-    }
+    const raw = r[col] == null ? '' : String(r[col]);
+    if (el.tagName === 'SELECT') { if (raw !== val) return false; }
+    else if (!raw.toLowerCase().includes(val.toLowerCase())) return false;
+  }
+  // multi-select columns (ผู้แจ้ง/ชนิด/พื้นที่/ผู้ปิดงาน)
+  for (const col of Object.keys(MS_COLS)) {
+    const set = colState[col];
+    if (set.size === 0) continue;
+    const raw = (r[col] == null ? '' : String(r[col])).trim();
+    if (!set.has(raw)) return false;
+  }
+  // date range (คอลัมน์ วันที่แจ้ง)
+  if (colState.dateFrom || colState.dateTo) {
+    const d = parseThai(r.timestamp);
+    if (!d) return false;
+    if (colState.dateFrom && d < new Date(colState.dateFrom + 'T00:00:00')) return false;
+    if (colState.dateTo   && d > new Date(colState.dateTo   + 'T23:59:59')) return false;
   }
   return true;
 }
@@ -1327,7 +1460,7 @@ function renderHeatmap(rows) {
     return `background:rgb(${r},${g},${b});color:${t > .5 ? '#fff' : '#7f1d1d'};font-weight:600;`;
   }
 
-  const selectedLoc = (document.querySelector('[data-col-filter="location"]')?.value || '').trim();
+  const selectedLoc = colState.location.size === 1 ? [...colState.location][0] : '';
 
   let html = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:480px">';
   html += '<thead><tr>';
@@ -1372,10 +1505,9 @@ function renderHeatmap(rows) {
 }
 
 function selectHeatmapBuilding(loc) {
-  const el = document.querySelector('[data-col-filter="location"]');
-  if (!el) return;
-  el.value = loc;
-  el.classList.toggle('has-value', !!loc);
+  colState.location.clear();
+  if (loc) colState.location.add(loc);
+  updateMsButton('location');
   currentPage = 1;
   render();
   if (loc) {
@@ -1384,8 +1516,9 @@ function selectHeatmapBuilding(loc) {
 }
 
 function selectHeatmapCell(loc, year, monthIdx) {
-  const el = document.querySelector('[data-col-filter="location"]');
-  if (el) { el.value = loc; el.classList.toggle('has-value', !!loc); }
+  colState.location.clear();
+  if (loc) colState.location.add(loc);
+  updateMsButton('location');
   const toISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const from = new Date(year, monthIdx, 1);
   const to   = new Date(year, monthIdx + 1, 0);
@@ -1688,6 +1821,33 @@ document.querySelectorAll('[data-col-filter]').forEach(el => {
   });
 });
 
+// Excel-style multi-select buttons
+document.querySelectorAll('[data-ms-col]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const col = btn.dataset.msCol;
+    if (msOpenKey === 'ms:' + col) { hideColPopup(); return; }
+    openMsPopup(col, btn);
+  });
+});
+// date-range button (คอลัมน์ วันที่แจ้ง)
+const dateBtn = document.querySelector('[data-daterange]');
+if (dateBtn) dateBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (msOpenKey === 'date') { hideColPopup(); return; }
+  openDatePopup(dateBtn);
+});
+// ปิด popup เมื่อคลิกนอกพื้นที่ / scroll / กด ESC
+document.addEventListener('mousedown', e => {
+  const pop = document.getElementById('colPopup');
+  if (pop && !pop.classList.contains('hidden') &&
+      !pop.contains(e.target) && !e.target.closest('.ms-btn')) hideColPopup();
+});
+window.addEventListener('scroll', e => {
+  const pop = document.getElementById('colPopup');
+  if (msOpenKey && !(pop && pop.contains(e.target))) hideColPopup();
+}, true);
+
 document.getElementById('pageSize').addEventListener('change', () => { currentPage = 1; renderTable(getFiltered()); });
 
 ['heatmapMonths','heatmapTopN'].forEach(id => {
@@ -1699,6 +1859,9 @@ document.getElementById('clearFilter').addEventListener('click', () => {
   document.getElementById('pestFilter').value  = '';
   document.getElementById('groupFilter').value = '';
   document.querySelectorAll('[data-col-filter]').forEach(el => { el.value = ''; el.classList.remove('has-value'); });
+  Object.keys(MS_COLS).forEach(c => { colState[c].clear(); updateMsButton(c); });
+  colState.dateFrom = ''; colState.dateTo = ''; updateDateRangeButton();
+  hideColPopup();
   currentPage = 1;
   setStatus('');
   setSource('');
@@ -1723,7 +1886,9 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     const modal = document.getElementById('photoModal');
     const help  = document.getElementById('shortcutHelp');
+    const pop   = document.getElementById('colPopup');
     if (!modal.classList.contains('hidden')) { closePhotoModal(); return; }
+    if (pop && !pop.classList.contains('hidden')) { hideColPopup(); return; }
     if (!help.classList.contains('hidden'))  { help.classList.add('hidden'); return; }
   }
 
