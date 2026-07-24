@@ -103,6 +103,31 @@
 - Monthly spend cap Gemini (ค่าใช้จ่ายต่ำ ~฿3/เดือน)
 - อัปเกรด LINE OA plan (ใช้ Free ต่อ)
 
+### Phase 13 — Dashboard: Excel-filter + a11y + กราฟชนิด×อาคาร (24 ก.ค. 2569)
+
+**ตาราง "รายการงาน" — filter แบบ Excel (commit `3251d20`):**
+- "วันที่แจ้ง" → popup เลือกช่วงวันที่ (from-to)
+- "ผู้แจ้ง/ชนิด/พื้นที่/ผู้ปิดงาน" → multi-select checkbox + ค้นหา + เลือกทั้งหมด
+- popup ใช้ `position:fixed` หนี clip ของ overflow-x · ปิดด้วยคลิกนอก/ESC/scroll
+
+**a11y + popup flip (commit `de88642`):**
+- muted text (slate-400 → slate-500) ใน light mode ผ่าน contrast 4.5:1 (เดิม 2.3-2.6) · dark mode คงเดิมผ่าน `body:not(.dark)` + helper `MUTED()`
+- placeholder เข้มขึ้น · heatmap header/canvas ใช้สี mode-aware
+- filter popup flip ขึ้นเมื่อพื้นที่ล่างจอไม่พอ
+
+**กราฟใหม่ "ชนิดสัตว์รบกวน แยกตามอาคาร" (commit `66d918d` + `114d212`):**
+- Stacked bar แนวนอน — แต่ละแท่ง = 1 อาคาร แบ่งสีตามชนิด (top 6 + "อื่นๆ")
+- คลิกแท่ง → กรองตารางเฉพาะอาคารนั้น
+- filter bar ของกราฟเอง (อิสระจากตาราง): อาคาร multi-check (เทียบหลายตึก) + เดือน dropdown + ชนิด multi-check + ล้าง
+- สีชนิดคงที่ (`pestColorFor`) จัดตามความถี่รวม ไม่เปลี่ยนตาม filter
+
+**กฎใหม่ใน CLAUDE.md (commit `646cb82`):**
+- งาน design สำคัญ → ทำ preview/mockup ให้ user เลือกก่อนเขียนโค้ดจริง
+
+ไฟล์ที่แก้: `dashboard.html`, `CLAUDE.md`
+
+**⚠️ ค้างตรวจเอง:** Cloud Build deploy ของ commit `01f239d` (summary column M — backend) — ดูที่ Cloud Build History (gcloud ไม่ได้ติดตั้งบนเครื่อง local จึงเช็คแทนไม่ได้)
+
 ---
 
 ## 📋 สถานะระบบปัจจุบัน (18 มิ.ย. 2569)
