@@ -23,6 +23,10 @@
   .th-sort:hover { color:#3b82f6; }
   .sort-arrow { display:inline-block; margin-left:3px; opacity:.35; font-size:10px; }
   .sort-arrow.active { opacity:1; color:#3b82f6; }
+  .col-filter-row th { font-weight:400; }
+  .col-filter-input { width:100%; min-width:60px; height:26px; padding:0 6px; font-size:11px; border:1px solid #e2e8f0; border-radius:6px; background:#fff; color:#334155; font-weight:400; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .col-filter-input:focus { border-color:#93c5fd; box-shadow:0 0 0 2px rgba(147,197,253,.3); }
+  .col-filter-input.has-value { border-color:#60a5fa; background:#eff6ff; }
 
   .chip {
     display:inline-flex; align-items:center; gap:4px;
@@ -388,8 +392,25 @@
 
   <!-- Heatmap อาคาร × เดือน -->
   <div class="card p-4 mb-5">
-    <h3 class="text-sm font-semibold mb-1 text-slate-600">Heatmap อาคาร — แยกตามเดือน (6 เดือนล่าสุด)</h3>
-    <p class="text-xs text-slate-400 mb-3">ความหนาแน่นของงานแจ้งในแต่ละอาคาร เข้มขึ้น = พบมากขึ้น — ใช้เปรียบเทียบว่าอาคารไหนมีปัญหาซ้ำในช่วงเวลาไหน</p>
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+      <h3 class="text-sm font-semibold text-slate-600">Heatmap อาคาร — แยกตามเดือน</h3>
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <label>ช่วง</label>
+        <select id="heatmapMonths" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+          <option value="3">3 เดือน</option>
+          <option value="6" selected>6 เดือน</option>
+          <option value="12">12 เดือน</option>
+        </select>
+        <label class="ml-2">แสดง</label>
+        <select id="heatmapTopN" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+          <option value="5">5 ตึก</option>
+          <option value="10" selected>10 ตึก</option>
+          <option value="20">20 ตึก</option>
+          <option value="0">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400 mb-3">เข้มขึ้น = พบมากขึ้น · ▲/▼ = แนวโน้มเดือนล่าสุด vs เดือนก่อน · คลิกช่องเพื่อดูงานเฉพาะตึก+เดือนนั้น</p>
     <div id="heatmapContainer" class="overflow-x-auto"></div>
   </div>
 
@@ -427,6 +448,21 @@
             <th class="py-2.5 pr-3">วิธีปิด</th>
             <th class="th-sort py-2.5 pr-3" data-col="catchCount">จำนวนที่ติด <span class="sort-arrow" data-col="catchCount">↕</span></th>
             <th class="py-2.5 pr-3">รูป</th>
+          </tr>
+          <tr class="col-filter-row bg-slate-50/60 border-b border-slate-100">
+            <th class="py-1.5 pr-2"><input type="text" data-col-filter="workOrderId" placeholder="ค้น..." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><input type="text" data-col-filter="timestamp" placeholder="ก.ค." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><select data-col-filter="groupName" class="col-filter-input"><option value="">ทั้งหมด</option></select></th>
+            <th class="py-1.5 pr-2"><input type="text" data-col-filter="senderName" placeholder="ชื่อ..." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><select data-col-filter="pestType" class="col-filter-input"><option value="">ทั้งหมด</option></select></th>
+            <th class="py-1.5 pr-2"><input type="text" data-col-filter="location" placeholder="ตึก..." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><input type="text" data-col-filter="floor" placeholder="ชั้น..." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"><select data-col-filter="status" class="col-filter-input"><option value="">ทั้งหมด</option><option value="ปิด">ปิด</option><option value="เปิด">เปิด</option></select></th>
+            <th class="py-1.5 pr-2"></th>
+            <th class="py-1.5 pr-2"><select data-col-filter="closer" class="col-filter-input"><option value="">ทั้งหมด</option></select></th>
+            <th class="py-1.5 pr-2"><input type="text" data-col-filter="closeMethod" placeholder="วิธี..." class="col-filter-input"/></th>
+            <th class="py-1.5 pr-2"></th>
+            <th class="py-1.5 pr-2"></th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -638,6 +674,19 @@ async function fetchData() {
 function populateDropdowns() {
   populateSelect('pestFilter',  allRecords.map(r => r.pestType));
   populateSelect('groupFilter', allRecords.map(r => r.groupName));
+  populateColFilterSelects();
+}
+function populateColFilterSelects() {
+  const cols = { groupName:'groupName', pestType:'pestType', closer:'closer' };
+  Object.entries(cols).forEach(([col, field]) => {
+    const sel = document.querySelector(`[data-col-filter="${col}"]`);
+    if (!sel || sel.tagName !== 'SELECT') return;
+    const cur = sel.value;
+    const uniq = [...new Set(allRecords.map(r => r[field]).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">ทั้งหมด</option>' +
+      uniq.map(v => `<option value="${v}">${v}</option>`).join('');
+    if (uniq.includes(cur)) sel.value = cur;
+  });
 }
 function populateSelect(id, values) {
   const sel = document.getElementById(id);
@@ -671,8 +720,27 @@ function getFiltered() {
         .join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
+    if (!passColFilters(r)) return false;
     return true;
   });
+}
+
+function passColFilters(r) {
+  const inputs = document.querySelectorAll('[data-col-filter]');
+  for (const el of inputs) {
+    const val = (el.value || '').trim();
+    if (!val) continue;
+    const col = el.dataset.colFilter;
+    const isSelect = el.tagName === 'SELECT';
+    const raw = col === 'timestamp' ? (r.timestamp || '')
+              : (r[col] == null ? '' : String(r[col]));
+    if (isSelect) {
+      if (raw !== val) return false;
+    } else {
+      if (!raw.toLowerCase().includes(val.toLowerCase())) return false;
+    }
+  }
+  return true;
 }
 
 /* ---- sort ---- */
@@ -1212,11 +1280,14 @@ function renderRepeatOffenders(rows) {
 /* ---- Heatmap อาคาร × เดือน ---- */
 function renderHeatmap(rows) {
   const TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const monthsN = parseInt(document.getElementById('heatmapMonths')?.value) || 6;
+  const topN    = parseInt(document.getElementById('heatmapTopN')?.value);
+  const topLimit = isNaN(topN) ? 10 : topN;
   const base = new Date();
   const months = [];
-  for (let i = 5; i >= 0; i--) {
+  for (let i = monthsN - 1; i >= 0; i--) {
     const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
-    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: `${TH_MONTH[d.getMonth()]} ${String((d.getFullYear()+543)%100).padStart(2,'0')}` });
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, y: d.getFullYear(), m: d.getMonth(), label: `${TH_MONTH[d.getMonth()]} ${String((d.getFullYear()+543)%100).padStart(2,'0')}` });
   }
 
   const locMonthMap = {};
@@ -1231,9 +1302,10 @@ function renderHeatmap(rows) {
     locTotals[loc] = (locTotals[loc] || 0) + 1;
   });
 
-  const topLocs = Object.entries(locTotals)
+  const sortedLocs = Object.entries(locTotals)
     .filter(([k]) => k !== 'ไม่ระบุ')
-    .sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k]) => k);
+    .sort((a, b) => b[1] - a[1]).map(([k]) => k);
+  const topLocs = topLimit > 0 ? sortedLocs.slice(0, topLimit) : sortedLocs;
 
   const container = document.getElementById('heatmapContainer');
   if (topLocs.length === 0) {
@@ -1249,30 +1321,80 @@ function renderHeatmap(rows) {
   function cellStyle(count) {
     if (!count) return 'background:#f8fafc;color:#cbd5e1;';
     const t = count / maxCount;
-    const r = Math.round(219 + (29 - 219) * t);
-    const g = Math.round(234 + (78 - 234) * t);
-    const b = Math.round(254 + (216 - 254) * t);
-    return `background:rgb(${r},${g},${b});color:${t > .5 ? '#fff' : '#1e40af'};font-weight:600;`;
+    const r = Math.round(254 + (185 - 254) * t);
+    const g = Math.round(226 + (28  - 226) * t);
+    const b = Math.round(226 + (28  - 226) * t);
+    return `background:rgb(${r},${g},${b});color:${t > .5 ? '#fff' : '#7f1d1d'};font-weight:600;`;
   }
+
+  const selectedLoc = (document.querySelector('[data-col-filter="location"]')?.value || '').trim();
 
   let html = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:480px">';
   html += '<thead><tr>';
-  html += '<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:#94a3b8;font-weight:500;width:140px">อาคาร</th>';
+  html += '<th style="text-align:left;padding:4px 8px 4px 0;font-size:11px;color:#94a3b8;font-weight:500;width:160px">อาคาร</th>';
   months.forEach(m => { html += `<th style="text-align:center;padding:4px 2px;font-size:11px;color:#94a3b8;font-weight:500">${m.label}</th>`; });
-  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500">รวม</th></tr></thead>';
+  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500">รวม</th>';
+  html += '<th style="text-align:center;padding:4px 6px;font-size:11px;color:#94a3b8;font-weight:500" title="แนวโน้ม: เดือนล่าสุด vs เดือนก่อน">แนวโน้ม</th></tr></thead>';
   html += '<tbody>';
   topLocs.forEach(loc => {
-    html += '<tr>';
-    html += `<td style="padding:2px 8px 2px 0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px" title="${loc}">${loc}</td>`;
+    const isSel = selectedLoc && loc === selectedLoc;
+    const rowBg = isSel ? 'background:#fef2f2;box-shadow:inset 3px 0 0 #dc2626;' : '';
+    const lastM = months[months.length - 1];
+    const prevM = months[months.length - 2];
+    const lastC = locMonthMap[loc]?.[lastM.key] || 0;
+    const prevC = prevM ? (locMonthMap[loc]?.[prevM.key] || 0) : 0;
+    const diff  = lastC - prevC;
+    let trend = '<span style="color:#94a3b8;font-weight:400">—</span>';
+    if (prevM && (lastC || prevC)) {
+      if (diff > 0)      trend = `<span style="color:#dc2626;font-weight:600" title="เดือนล่าสุดเพิ่มขึ้น ${diff}">▲ ${diff}</span>`;
+      else if (diff < 0) trend = `<span style="color:#16a34a;font-weight:600" title="เดือนล่าสุดลดลง ${Math.abs(diff)}">▼ ${Math.abs(diff)}</span>`;
+      else               trend = '<span style="color:#94a3b8;font-weight:400" title="เท่าเดือนก่อน">→</span>';
+    }
+    html += `<tr style="${rowBg}">`;
+    html += `<td onclick="selectHeatmapBuilding('${loc.replace(/'/g,"\\'")}')" style="padding:2px 8px 2px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;cursor:pointer;color:${isSel ? '#b91c1c' : '#334155'};font-weight:${isSel ? '600' : '500'};" title="คลิกเพื่อดูงานทั้งหมดของ ${loc}">${loc}${isSel ? ' <span style=\"color:#dc2626;font-size:10px\">●</span>' : ''}</td>`;
     months.forEach(m => {
       const c = locMonthMap[loc]?.[m.key] || 0;
-      html += `<td class="hm-cell" style="${cellStyle(c)}">${c || ''}</td>`;
+      const clickable = c > 0 ? `onclick="selectHeatmapCell('${loc.replace(/'/g,"\\'")}',${m.y},${m.m})" style="${cellStyle(c)};cursor:pointer;" title="${loc} · ${m.label}: ${c} งาน (คลิกเพื่อดูเฉพาะเดือนนี้)"` : `style="${cellStyle(c)}"`;
+      html += `<td class="hm-cell" ${clickable}>${c || ''}</td>`;
     });
-    html += `<td style="text-align:center;font-size:12px;font-weight:700;color:#1d4ed8;padding:2px 6px">${locTotals[loc]}</td>`;
+    html += `<td style="text-align:center;font-size:12px;font-weight:700;color:#b91c1c;padding:2px 6px">${locTotals[loc]}</td>`;
+    html += `<td style="text-align:center;font-size:11px;padding:2px 6px">${trend}</td>`;
     html += '</tr>';
   });
   html += '</tbody></table>';
-  container.innerHTML = html;
+
+  const banner = selectedLoc
+    ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;color:#991b1b">
+         <span>🎯 กำลังกรองตึก: <b>${selectedLoc}</b></span>
+         <button onclick="selectHeatmapBuilding('')" style="margin-left:auto;padding:2px 10px;background:#fff;border:1px solid #fecaca;border-radius:6px;color:#dc2626;font-size:11px;cursor:pointer">ล้าง</button>
+       </div>` : '';
+  container.innerHTML = banner + html;
+}
+
+function selectHeatmapBuilding(loc) {
+  const el = document.querySelector('[data-col-filter="location"]');
+  if (!el) return;
+  el.value = loc;
+  el.classList.toggle('has-value', !!loc);
+  currentPage = 1;
+  render();
+  if (loc) {
+    document.getElementById('tableBody').closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function selectHeatmapCell(loc, year, monthIdx) {
+  const el = document.querySelector('[data-col-filter="location"]');
+  if (el) { el.value = loc; el.classList.toggle('has-value', !!loc); }
+  const toISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const from = new Date(year, monthIdx, 1);
+  const to   = new Date(year, monthIdx + 1, 0);
+  document.getElementById('dateFrom').value = toISO(from);
+  document.getElementById('dateTo').value   = toISO(to);
+  ['preset-all','preset-today','preset-week','preset-month','preset-last'].forEach(id => document.getElementById(id).classList.remove('active'));
+  currentPage = 1;
+  render();
+  document.getElementById('tableBody').closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ---- Quick Date Preset ---- */
@@ -1282,17 +1404,18 @@ function setDatePreset(preset) {
   document.getElementById('preset-' + preset).classList.add('active');
 
   const now   = new Date();
-  const toISO = d => d.toISOString().slice(0, 10);
+  const toISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   let from = '', to = '';
 
   if (preset === 'today') {
     from = to = toISO(now);
   } else if (preset === 'week') {
     const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    from = toISO(mon); to = toISO(now);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    from = toISO(mon); to = toISO(sun);
   } else if (preset === 'month') {
     from = toISO(new Date(now.getFullYear(), now.getMonth(), 1));
-    to   = toISO(now);
+    to   = toISO(new Date(now.getFullYear(), now.getMonth() + 1, 0));
   } else if (preset === 'last') {
     const f = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const t = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -1556,12 +1679,26 @@ document.querySelectorAll('.th-sort').forEach(th => {
 ['dateFrom','dateTo','pestFilter','groupFilter','searchBox'].forEach(id =>
   document.getElementById(id).addEventListener('input', () => { currentPage = 1; render(); }));
 
+document.querySelectorAll('[data-col-filter]').forEach(el => {
+  const evt = el.tagName === 'SELECT' ? 'change' : 'input';
+  el.addEventListener(evt, () => {
+    el.classList.toggle('has-value', !!el.value.trim());
+    currentPage = 1;
+    render();
+  });
+});
+
 document.getElementById('pageSize').addEventListener('change', () => { currentPage = 1; renderTable(getFiltered()); });
+
+['heatmapMonths','heatmapTopN'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => renderHeatmap(getFiltered()));
+});
 
 document.getElementById('clearFilter').addEventListener('click', () => {
   ['dateFrom','dateTo','searchBox'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('pestFilter').value  = '';
   document.getElementById('groupFilter').value = '';
+  document.querySelectorAll('[data-col-filter]').forEach(el => { el.value = ''; el.classList.remove('has-value'); });
   currentPage = 1;
   setStatus('');
   setSource('');
