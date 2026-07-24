@@ -386,6 +386,25 @@
     <div id="bldgFloorHeatmap" class="overflow-x-auto"></div>
   </div>
 
+  <!-- ชนิดสัตว์รบกวนแยกตามอาคาร (Stacked bar) -->
+  <div class="card p-4 mb-5">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+      <h3 class="text-sm font-semibold text-slate-600">ชนิดสัตว์รบกวน แยกตามอาคาร</h3>
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <label>แสดง</label>
+        <select id="bldgPestTopN" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+          <option value="8">8 อาคาร</option>
+          <option value="10" selected>10 อาคาร</option>
+          <option value="15">15 อาคาร</option>
+          <option value="0">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400 mb-3">แต่ละแท่ง = 1 อาคาร แบ่งสีตามชนิด · เห็นสัดส่วนชนิดสัตว์รบกวนของแต่ละอาคารในภาพเดียว · คลิกแท่งเพื่อกรองตาราง</p>
+    <div id="bldgPestLegend" class="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 text-xs"></div>
+    <canvas id="chartBldgPest" height="230"></canvas>
+  </div>
+
   <!-- Follow-up Stats -->
   <div class="card p-4 mb-5">
     <h3 class="text-sm font-semibold mb-1 text-slate-600">สถิติงานแจ้งซ้ำ (Follow-up)</h3>
@@ -1002,6 +1021,7 @@ function render() {
   renderMonthlyCatch(rows);
   renderBuildingFloorDrill(rows);
   renderBuildingFloorHeatmap(rows);
+  renderBuildingPestStack(rows);
   renderFollowupStats(rows);
   renderRepeatOffenders(rows);
   renderHeatmap(rows);
@@ -1292,6 +1312,79 @@ function renderBuildingFloorDrill(rows) {
       } } },
       scales: { x: { ticks: { precision: 0 } }, y: { ticks: { font: { size: 11, family: 'Noto Sans Thai' } } } },
       onClick: (e, el) => { if (el.length) showDrill(labels[el[0].index]); }
+    }
+  });
+}
+
+/* ---- ชนิดสัตว์รบกวน แยกตามอาคาร (Stacked bar) ---- */
+let _bldgPestChart = null;
+const PEST_PALETTE = ['#dc2626','#ea580c','#ca8a04','#16a34a','#0891b2','#7c3aed'];
+function renderBuildingPestStack(rows) {
+  const ctx = document.getElementById('chartBldgPest');
+  const legend = document.getElementById('bldgPestLegend');
+  const topN = parseInt(document.getElementById('bldgPestTopN')?.value);
+  const limit = isNaN(topN) ? 10 : topN;
+
+  const bldgTotals = {}, bldgPest = {}, pestTotals = {};
+  rows.forEach(r => {
+    const loc = r.location || 'ไม่ระบุ';
+    if (loc === 'ไม่ระบุ') return;
+    const pest = (r.pestType || '').trim() || 'ไม่ระบุ';
+    bldgTotals[loc] = (bldgTotals[loc] || 0) + 1;
+    (bldgPest[loc] = bldgPest[loc] || {})[pest] = (bldgPest[loc][pest] || 0) + 1;
+    pestTotals[pest] = (pestTotals[pest] || 0) + 1;
+  });
+
+  const sortedBldg = Object.entries(bldgTotals).sort((a, b) => b[1] - a[1]);
+  const topBldgs = (limit > 0 ? sortedBldg.slice(0, limit) : sortedBldg).map(e => e[0]);
+  // ชนิดยอดนิยม → ได้สีจาก palette, ที่เหลือรวมเป็น "อื่นๆ"
+  const topPests = Object.entries(pestTotals).sort((a, b) => b[1] - a[1])
+    .slice(0, PEST_PALETTE.length).map(e => e[0]);
+  const OTHER = 'อื่นๆ', OTHER_C = '#94a3b8';
+  const pestColor = {}; topPests.forEach((p, i) => pestColor[p] = PEST_PALETTE[i]);
+  const hasOther = Object.keys(pestTotals).some(p => !topPests.includes(p));
+  const cats = hasOther ? [...topPests, OTHER] : [...topPests];
+  const colorOf = c => c === OTHER ? OTHER_C : pestColor[c];
+  const catOf = p => topPests.includes(p) ? p : OTHER;
+
+  const datasets = cats.map(cat => ({
+    label: cat, backgroundColor: colorOf(cat), borderRadius: 2, barThickness: 20,
+    data: topBldgs.map(b => {
+      const pm = bldgPest[b] || {}; let s = 0;
+      Object.keys(pm).forEach(p => { if (catOf(p) === cat) s += pm[p]; });
+      return s;
+    })
+  }));
+
+  legend.innerHTML = cats.map(c =>
+    `<span style="display:flex;align-items:center;gap:5px;color:#475569"><span style="width:11px;height:11px;border-radius:2px;background:${colorOf(c)}"></span>${c}</span>`
+  ).join('');
+
+  if (_bldgPestChart) _bldgPestChart.destroy();
+  if (topBldgs.length === 0) {
+    const c = ctx.getContext('2d');
+    c.clearRect(0, 0, ctx.width, ctx.height);
+    c.font = '13px "Noto Sans Thai"'; c.fillStyle = MUTED(); c.textAlign = 'center';
+    c.fillText('ยังไม่มีข้อมูล', ctx.width / 2, 60);
+    legend.innerHTML = '';
+    return;
+  }
+
+  _bldgPestChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: topBldgs.map(l => l.length > 18 ? l.slice(0, 17) + '…' : l), datasets },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: c => [topBldgs[c[0].dataIndex]],
+        label: c => `${c.dataset.label}: ${c.raw} งาน`,
+        footer: c => 'รวม ' + c.reduce((t, x) => t + x.raw, 0) + ' งาน'
+      } } },
+      scales: {
+        x: { stacked: true, ticks: { precision: 0 } },
+        y: { stacked: true, ticks: { font: { size: 11, family: 'Noto Sans Thai' } } }
+      },
+      onClick: (e, el) => { if (el.length) selectHeatmapBuilding(topBldgs[el[0].index]); }
     }
   });
 }
@@ -1862,6 +1955,7 @@ document.getElementById('pageSize').addEventListener('change', () => { currentPa
 ['heatmapMonths','heatmapTopN'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => renderHeatmap(getFiltered()));
 });
+document.getElementById('bldgPestTopN').addEventListener('change', () => renderBuildingPestStack(getFiltered()));
 
 document.getElementById('clearFilter').addEventListener('click', () => {
   ['dateFrom','dateTo','searchBox'].forEach(id => document.getElementById(id).value = '');
