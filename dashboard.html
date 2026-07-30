@@ -175,6 +175,9 @@
     border-left-color:#3b82f6;
   }
   .sb-item .sb-badge { margin-left:auto; padding:1px 7px; border-radius:999px; font-size:9px; font-weight:700; background:#ef4444; color:#fff; }
+  .sb-item.sb-soon { opacity:.45; cursor:not-allowed; }
+  .sb-item.sb-soon:hover { background:transparent; color:#94a3b8; }
+  .sb-item .sb-soon-tag { margin-left:auto; font-size:8px; color:#64748b; border:1px solid #334155; border-radius:999px; padding:1px 6px; }
   .sb-footer {
     margin-top:auto; padding:10px 8px 4px; border-top:1px solid #1f2937;
     display:flex; align-items:center; gap:10px;
@@ -248,6 +251,9 @@
   .bpm-subtab.active { background:#3b82f6; color:#fff; font-weight:600; }
   .bpm-heat-scroll { overflow-x:auto; }
   .bpm-heat-scroll table { min-width:640px; }
+  /* กัน canvas ล้นกรอบ (Chart.js อาจตั้ง width คงที่) */
+  #tabBPM canvas { max-width:100% !important; }
+  #bpmSmallMult > div > div { width:100%; overflow:hidden; }
   @media (max-width:640px) {
     .bpm-kpi-grid { grid-template-columns:repeat(2,1fr) !important; }
     .bpm-small-mult { grid-template-columns:repeat(2,1fr) !important; }
@@ -257,18 +263,39 @@
     .bpm-controls { flex-wrap:wrap; }
   }
 
+  /* ---- Photo gallery thumbnails ---- */
+  .gallery-thumb { position:relative; display:block; border-radius:10px; overflow:hidden; background:#f1f5f9; cursor:pointer; aspect-ratio:1/1; border:1px solid #e2e8f0; }
+  .gallery-thumb img { width:100%; height:100%; object-fit:cover; transition:transform .2s; }
+  .gallery-thumb:hover img { transform:scale(1.06); }
+  .gallery-cap { position:absolute; left:0; right:0; bottom:0; padding:6px 8px; font-size:10px; line-height:1.25; color:#fff; text-align:left; background:linear-gradient(to top, rgba(0,0,0,.8), transparent); }
+  .gallery-loc { color:#cbd5e1; font-size:9px; }
+  body.dark .gallery-thumb { background:#0f172a; border-color:#334155; }
+
   /* หัวรายงานเฉพาะตอน print */
   #printHeader { display:none; }
 
   @media print {
-    body { background:#fff; }
+    body { background:#fff; color:#0f172a; }
+    /* ปิด shell/sidebar → เนื้อหาเต็มหน้ากระดาษ */
+    .app-sidebar, .sb-hamburger, .sb-backdrop { display:none !important; }
+    .app-shell { display:block !important; }
+    .app-main { display:block !important; width:100% !important; }
     header, #statusBar, .card.filter-panel, #tabBar,
-    #refreshBtn, #exportBtn, #exportPdfBtn, #clearFilter, #pagination { display:none !important; }
+    #refreshBtn, #exportBtn, #exportPdfBtn, #clearFilter, #pagination,
+    .bpm-controls, #shortcutHelp { display:none !important; }
     #printHeader { display:block !important; margin-bottom:16px; }
     .card { box-shadow:none; border:1px solid #e2e8f0; break-inside:avoid; }
     main { max-width:100% !important; padding:0 !important; }
     canvas { max-height:240px; }
     .no-print { display:none !important; }
+    /* หน้า BPM: บังคับ 1 คอลัมน์ ไม่ให้กราฟซ้อน/ล้น */
+    .bpm-row1, .bpm-row2 { display:block !important; }
+    .bpm-row1 > .card, .bpm-row2 > .card { width:100% !important; margin-bottom:12px; grid-column:auto !important; }
+    .bpm-kpi-grid { grid-template-columns:repeat(3,1fr) !important; }
+    .bpm-small-mult { grid-template-columns:repeat(4,1fr) !important; }
+    #tabBPM .card { break-inside:avoid; page-break-inside:avoid; }
+    .bpm-heat-scroll { overflow:visible !important; }
+    .bpm-heat-scroll table { min-width:0 !important; }
   }
 </style>
 </head>
@@ -295,14 +322,14 @@
 
     <div class="sb-group">งาน</div>
     <div class="sb-item" onclick="goSection('sectionTable')">📋 <span>Work Orders</span></div>
-    <div class="sb-item" onclick="showPhotoOnly()">📷 <span>รูปหลักฐาน</span></div>
+    <div class="sb-item" onclick="openPhotoGallery()">📷 <span>รูปหลักฐาน</span></div>
     <div class="sb-item" onclick="document.getElementById('exportBtn').click()">📁 <span>Export CSV</span></div>
     <div class="sb-item" onclick="document.getElementById('exportPdfBtn').click()">📄 <span>Export PDF</span></div>
 
     <div class="sb-group">ระบบ</div>
     <div class="sb-item" onclick="document.getElementById('shortcutHelp').classList.toggle('hidden')">⌨️ <span>Shortcuts</span></div>
-    <div class="sb-item" onclick="alert('ตั้งค่า — เร็วๆ นี้')">⚙️ <span>ตั้งค่า</span></div>
-    <div class="sb-item" onclick="alert('สมาชิก — เร็วๆ นี้')">👥 <span>สมาชิก</span></div>
+    <div class="sb-item sb-soon" title="เร็วๆ นี้">⚙️ <span>ตั้งค่า</span><span class="sb-soon-tag">เร็วๆนี้</span></div>
+    <div class="sb-item sb-soon" title="เร็วๆ นี้">👥 <span>สมาชิก</span><span class="sb-soon-tag">เร็วๆนี้</span></div>
 
     <div class="sb-footer">
       <div class="sb-tog" id="darkToggleSb" onclick="toggleDarkMode()" title="สลับ Dark/Light">🌙</div>
@@ -447,7 +474,6 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานตามชนิดสัตว์/แมลง</h3><canvas id="chartPest" height="180"></canvas></div>
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานตามพื้นที่/อาคาร (Top 10)</h3><canvas id="chartLocation" height="180"></canvas></div>
-    <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">งานตามความรุนแรง</h3><canvas id="chartSeverity" height="180"></canvas></div>
     <div class="card p-4"><h3 class="text-sm font-semibold mb-3 text-slate-600">แนวโน้มงานรายวัน (14 วันล่าสุด)</h3><canvas id="chartTrend" height="180"></canvas></div>
   </div>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
@@ -1307,7 +1333,6 @@ function render() {
   // Charts
   renderPie('chartPest',     countBy(rows, 'pestType'));
   renderBar('chartLocation', topN(countBy(rows, 'location'), 10));
-  renderPie('chartSeverity', countBy(rows, 'severity'), ['#ef4444','#f59e0b','#22c55e','#94a3b8']);
   renderTrend(rows);
   renderGroupChart(rows);
   renderSLAChart(rows);
@@ -2100,7 +2125,7 @@ function setTab(name) {
   document.getElementById('sb-vs').classList.toggle('active', name === 'vs');
   document.getElementById('sb-bpm').classList.toggle('active', name === 'bpm');
   if (name === 'vs')  { populateVS(); renderVS(); }
-  if (name === 'bpm') { renderBPM(); }
+  if (name === 'bpm') { requestAnimationFrame(renderBPM); }  // รอ layout reflow ก่อนวัดกราฟ
   // ปิด drawer บน mobile
   toggleSidebar(false);
 }
@@ -2121,16 +2146,37 @@ function goSection(id) {
     if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
   });
 }
-/* ---- filter table → rows ที่มีรูปหลักฐาน ---- */
-function showPhotoOnly() {
-  setTab('overview');
-  const box = document.getElementById('searchBox');
-  box.value = 'http'; // WO ที่มีรูปจะมี URL ในฟิลด์วิธีปิด → ค้นด้วย "http" ครอบทั้งรูป
-  box.dispatchEvent(new Event('input', { bubbles:true }));
-  requestAnimationFrame(() => {
-    const el = document.getElementById('sectionTable');
-    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+/* ---- แกลเลอรีรูปหลักฐาน (รวมรูปจากงานที่ผ่าน filter ปัจจุบัน) ---- */
+function openPhotoGallery() {
+  toggleSidebar(false);
+  const rows = getFiltered().filter(r => extractPhotoUrls(r.closeMethod).length > 0);
+  const grid = document.getElementById('galleryGrid');
+  const empty = document.getElementById('galleryEmpty');
+  const count = document.getElementById('galleryCount');
+
+  let items = [];
+  rows.forEach(r => {
+    const urls = extractPhotoUrls(r.closeMethod);
+    urls.forEach((u, i) => items.push({ url: u, wo: r.workOrderId, loc: r.location || '—', pest: r.pestType || '', all: urls, idx: i }));
   });
+
+  count.textContent = `${items.length} รูป · ${rows.length} งาน`;
+  if (items.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    grid.innerHTML = items.map(it => `
+      <button class="gallery-thumb" data-all='${JSON.stringify(it.all).replace(/'/g,"&#39;")}' data-idx="${it.idx}"
+              onclick="openPhotoModal(JSON.parse(this.dataset.all), Number(this.dataset.idx))">
+        <img loading="lazy" src="${it.url}" alt="รูปงาน ${it.wo}" />
+        <span class="gallery-cap">${it.wo} · ${it.pest}<br><span class="gallery-loc">${it.loc}</span></span>
+      </button>`).join('');
+  }
+  document.getElementById('photoGalleryModal').classList.remove('hidden');
+}
+function closePhotoGallery() {
+  document.getElementById('photoGalleryModal').classList.add('hidden');
 }
 
 // คืน key สำหรับ dimension ของ record (เดือน = "ปี-เดือน", อื่นๆ = ค่าฟิลด์)
@@ -2709,6 +2755,15 @@ function renderBPM() {
   });
 }
 
+/* resize → re-render BPM (debounce) เพื่อให้กราฟพอดีกรอบเมื่อหมุนจอ/ปรับขนาด */
+let _bpmResizeTimer = null;
+window.addEventListener('resize', () => {
+  const bpm = document.getElementById('tabBPM');
+  if (!bpm || bpm.classList.contains('hidden')) return;
+  clearTimeout(_bpmResizeTimer);
+  _bpmResizeTimer = setTimeout(renderBPM, 250);
+});
+
 /* bpmPest ตอนนี้เป็นปุ่ม multi-check (data-ms-col="pestType") — sync กับ colState.pestType
    render() ถูกเรียกอยู่แล้วเมื่อ toggle checkbox → เราแค่เรียก renderBPM เพิ่มด้วย
 */
@@ -2738,9 +2793,11 @@ document.addEventListener('keydown', e => {
   // ESC — ปิด modal หรือ help panel ก่อน
   if (e.key === 'Escape') {
     const modal = document.getElementById('photoModal');
+    const gallery = document.getElementById('photoGalleryModal');
     const help  = document.getElementById('shortcutHelp');
     const pop   = document.getElementById('colPopup');
     if (!modal.classList.contains('hidden')) { closePhotoModal(); return; }
+    if (gallery && !gallery.classList.contains('hidden')) { closePhotoGallery(); return; }
     if (pop && !pop.classList.contains('hidden')) { hideColPopup(); return; }
     if (!help.classList.contains('hidden'))  { help.classList.add('hidden'); return; }
   }
@@ -2788,6 +2845,23 @@ fetchData();
 </div><!-- /.app-shell -->
 
 <div class="sb-backdrop" id="sbBackdrop" onclick="toggleSidebar(false)"></div>
+
+<!-- Photo Gallery Modal -->
+<div id="photoGalleryModal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onclick="closePhotoGallery()">
+  <div class="card w-full max-w-5xl max-h-[88vh] flex flex-col" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between p-4 border-b border-slate-100">
+      <div>
+        <h3 class="font-semibold text-slate-700">📷 รูปหลักฐาน</h3>
+        <p id="galleryCount" class="text-xs text-slate-400">—</p>
+      </div>
+      <button onclick="closePhotoGallery()" class="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-lg">✕</button>
+    </div>
+    <div class="p-4 overflow-y-auto">
+      <p id="galleryEmpty" class="hidden text-center text-slate-400 py-12">ไม่มีรูปหลักฐานในงานที่กรองอยู่</p>
+      <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Photo Modal -->
 <div id="photoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75" onclick="closePhotoModal()">
