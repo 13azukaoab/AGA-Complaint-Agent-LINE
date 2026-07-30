@@ -249,6 +249,15 @@
   .bpm-kpi-hot { border:1px solid #f87171; box-shadow:0 0 20px -6px rgba(248,113,113,.6); }
   .bpm-subtab { padding:6px 14px; border-radius:8px; font-size:13px; cursor:pointer; color:#64748b; user-select:none; }
   .bpm-subtab.active { background:#3b82f6; color:#fff; font-weight:600; }
+  .bpm-png-btn { flex:none; border:1px solid #e2e8f0; border-radius:8px; padding:4px 10px; font-size:11px; color:#64748b; cursor:pointer; white-space:nowrap; transition:.15s; }
+  .bpm-png-btn:hover { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+  body.dark .bpm-png-btn { border-color:#334155; color:#94a3b8; }
+  body.dark .bpm-png-btn:hover { background:#3b82f6; color:#fff; }
+  /* drill-down modal rows */
+  .bpm-drill-row:nth-child(even) { background:rgba(148,163,184,.05); }
+  .clickable-row { cursor:pointer; transition:background .12s; }
+  .clickable-row:hover { background:rgba(59,130,246,.10) !important; }
+  body.dark .clickable-row td.text-blue-600, .clickable-row td.text-blue-600 { color:#60a5fa; }
   .bpm-heat-scroll { overflow-x:auto; }
   .bpm-heat-scroll table { min-width:640px; }
   /* กัน canvas ล้นกรอบ (Chart.js อาจตั้ง width คงที่) */
@@ -765,10 +774,17 @@
         <h1 class="text-xl font-bold text-slate-800">อาคาร × เดือน · การเปรียบเทียบ</h1>
         <p id="bpmSummary" class="text-xs text-slate-500">—</p>
       </div>
-      <div class="bpm-controls flex gap-2 items-center">
+      <div class="bpm-controls flex gap-2 items-center flex-wrap">
         <button type="button" id="bpmPest" class="ms-btn" data-ms-col="pestType" style="min-width:140px; height:34px; padding:0 10px;">
           <span class="ms-lbl">ทุกชนิด</span><span class="ms-caret">▼</span>
         </button>
+        <!-- ข้อ 4: เลือกช่วงเดือน -->
+        <div class="flex gap-1 card p-1" id="bpmRangeSeg">
+          <button class="bpm-subtab" data-bpm-range="3" onclick="setBpmRange(3)">3 ด.</button>
+          <button class="bpm-subtab" data-bpm-range="6" onclick="setBpmRange(6)">6 ด.</button>
+          <button class="bpm-subtab" data-bpm-range="12" onclick="setBpmRange(12)">12 ด.</button>
+          <button class="bpm-subtab active" data-bpm-range="0" onclick="setBpmRange(0)">ทั้งหมด</button>
+        </div>
         <div class="flex gap-1 card p-1">
           <button class="bpm-subtab active" data-bpm-view="overview" onclick="setBpmView('overview')">Overview</button>
           <button class="bpm-subtab" data-bpm-view="building" onclick="setBpmView('building')">อาคาร</button>
@@ -777,11 +793,19 @@
       </div>
     </div>
 
+    <!-- ข้อ 2: Auto-insight -->
+    <div id="bpmInsight" class="mb-4 p-4 rounded-xl" style="background:linear-gradient(135deg,rgba(59,130,246,.10),rgba(139,92,246,.06)); border:1px solid rgba(59,130,246,.35);">
+      <p class="text-sm text-slate-700 leading-relaxed">—</p>
+    </div>
+
     <!-- KPI ribbon -->
     <div class="bpm-kpi-grid grid grid-cols-6 gap-3 mb-4">
       <div class="card p-3">
         <p class="text-[10px] text-slate-400">งานรวม</p>
-        <p id="bpmKpiTotal" class="text-xl font-bold text-slate-800">0</p>
+        <div class="flex items-end justify-between gap-1">
+          <p id="bpmKpiTotal" class="text-xl font-bold text-slate-800">0</p>
+          <div style="width:60px;height:30px;flex:none;"><canvas id="bpmSpkTotal"></canvas></div>
+        </div>
         <p id="bpmKpiTotalDelta" class="text-[10px] bpm-flat">—</p>
       </div>
       <div class="card p-3">
@@ -791,12 +815,18 @@
       </div>
       <div class="card p-3">
         <p class="text-[10px] text-slate-400">Hotspot #1</p>
-        <p id="bpmKpiTop" class="text-sm font-bold text-slate-800">—</p>
+        <div class="flex items-end justify-between gap-1">
+          <p id="bpmKpiTop" class="text-sm font-bold text-slate-800">—</p>
+          <div style="width:60px;height:30px;flex:none;"><canvas id="bpmSpkTop"></canvas></div>
+        </div>
         <p id="bpmKpiTopCount" class="text-[10px] bpm-up">—</p>
       </div>
       <div class="card p-3 bpm-kpi-hot" id="bpmKpiHotBox">
         <p class="text-[10px] text-red-500">🚨 NEW HOTSPOT</p>
-        <p id="bpmKpiNew" class="text-sm font-bold text-slate-800">—</p>
+        <div class="flex items-end justify-between gap-1">
+          <p id="bpmKpiNew" class="text-sm font-bold text-slate-800">—</p>
+          <div style="width:60px;height:30px;flex:none;"><canvas id="bpmSpkNew"></canvas></div>
+        </div>
         <p id="bpmKpiNewDelta" class="text-[10px] bpm-up">—</p>
       </div>
       <div class="card p-3">
@@ -806,7 +836,10 @@
       </div>
       <div class="card p-3">
         <p class="text-[10px] text-slate-400">% ปิดงาน</p>
-        <p id="bpmKpiCloseRate" class="text-xl font-bold text-emerald-500">0%</p>
+        <div class="flex items-end justify-between gap-1">
+          <p id="bpmKpiCloseRate" class="text-xl font-bold text-emerald-500">0%</p>
+          <div style="width:60px;height:30px;flex:none;"><canvas id="bpmSpkClose"></canvas></div>
+        </div>
         <p id="bpmKpiCloseSub" class="text-[10px] text-slate-400">—</p>
       </div>
     </div>
@@ -856,8 +889,13 @@
     <!-- ROW 2: stacked + delta -->
     <div class="bpm-row2 grid grid-cols-3 gap-3 mb-3">
       <div class="card p-4 col-span-2">
-        <h2 class="font-semibold text-sm text-slate-700 mb-1">📊 Stacked Bar — เดือน × อาคาร</h2>
-        <p class="text-[10px] text-slate-400 mb-3">แต่ละแท่ง = 1 เดือน · ซ้อนสี = อาคาร (Top 6 + อื่นๆ)</p>
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <h2 class="font-semibold text-sm text-slate-700 mb-1">📊 Stacked Bar — เดือน × อาคาร</h2>
+            <p class="text-[10px] text-slate-400 mb-3">แต่ละแท่ง = 1 เดือน · ซ้อนสี = อาคาร (Top 6 + อื่นๆ)</p>
+          </div>
+          <button onclick="downloadChartPNG('bpmStack','stacked-bar')" class="bpm-png-btn no-print" title="ดาวน์โหลด PNG">⬇ PNG</button>
+        </div>
         <div style="height:280px; position:relative;"><canvas id="bpmStack"></canvas></div>
       </div>
       <div class="card p-4">
@@ -2504,13 +2542,19 @@ const BPM_BUILDINGS = [
   'ตึกชัยนาทนเรนทรานุสรณ์','ตึกชัยนาท','ตึกจุลชีววิทยา','ตึกอัษฎางค์',
   'ตึกอุบัติเหตุ','ศูนย์โรคหัวใจ','ตึกท่านผู้หญิงวิจิตรา',
   'ตึกวางแผนครอบครัว','หน่วยวางแผนครอบครัว','หอพักพยาบาล',
-  'ตึกสมาคมศิษย์เก่าแพทยศาสตร์ศิริราช','งานสิทธิ์ประกันสุขภาพ'
+  'ตึกสมาคมศิษย์เก่าแพทยศาสตร์ศิริราช','งานสิทธิ์ประกันสุขภาพ',
+  // เพิ่มรอบ 30/7/69 — อาคารที่หลุด normalize (แตกเป็นชื่อดิบ)
+  'ตึกนวมินทร์','ตึกนวมินทร','ตึกนวมิน','นวมินทร์',
+  'ตึกศรีสวรินทิรา','ตึกหอประชุมราชแพทยาลัย','ตึกปฏิบัติการสารสนเทศ',
+  'หอพักนักศึกษาแพทย์','ตึกอดุล','ตึก 10','ตึก 8'
 ].sort((a,b) => b.length - a.length);
 const BPM_ALIAS = {
   'ตึกสยามมินทร์':'ตึกสยามินทร์',
   'ตึกอนันทมหิดล':'ตึกอานันทมหิดล',
   'ตึกชัยนาทนเรนทรานุสรณ์':'ตึกชัยนาท',
-  'หน่วยวางแผนครอบครัว':'ตึกวางแผนครอบครัว'
+  'หน่วยวางแผนครอบครัว':'ตึกวางแผนครอบครัว',
+  // นวมินทร์ ทุกสะกด → ตึกนวมินทร์
+  'ตึกนวมินทร':'ตึกนวมินทร์','ตึกนวมิน':'ตึกนวมินทร์','นวมินทร์':'ตึกนวมินทร์'
 };
 function bpmBuildingOf(loc) {
   if (!loc) return 'ไม่ระบุ';
@@ -2557,19 +2601,144 @@ function setBpmView(v) {
   else if (v === 'movers'){ document.querySelector('.bpm-row2').classList.add('hidden'); }
 }
 
+/* ข้อ 4: ช่วงเดือน (0 = ทั้งหมด) */
+let bpmMonthRange = 0;
+function setBpmRange(n) {
+  bpmMonthRange = n;
+  document.querySelectorAll('[data-bpm-range]').forEach(b => b.classList.toggle('active', Number(b.dataset.bpmRange) === n));
+  renderBPM();
+}
+
+/* ข้อ 3: ดาวน์โหลดกราฟเป็น PNG (เติมพื้นหลังขาวก่อน export) */
+function downloadChartPNG(canvasId, filename) {
+  const src = document.getElementById(canvasId);
+  if (!src) return;
+  const tmp = document.createElement('canvas');
+  tmp.width = src.width; tmp.height = src.height;
+  const ctx = tmp.getContext('2d');
+  ctx.fillStyle = document.body.classList.contains('dark') ? '#1e293b' : '#ffffff';
+  ctx.fillRect(0, 0, tmp.width, tmp.height);
+  ctx.drawImage(src, 0, 0);
+  const a = document.createElement('a');
+  a.href = tmp.toDataURL('image/png');
+  a.download = (filename || 'chart') + '-' + new Date().toISOString().slice(0,10) + '.png';
+  a.click();
+}
+
+/* ข้อ 5: วาด sparkline เล็กในการ์ด KPI */
+let _bpmKpiSparks = [];
+function bpmDrawKpiSpark(id, vals, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const existing = Chart.getChart(el); if (existing) existing.destroy();  // กัน canvas ซ้ำ
+  _bpmKpiSparks.push(new Chart(el, {
+    type:'line',
+    data:{ labels:vals.map((_,i)=>i), datasets:[{ data:vals, borderColor:color, backgroundColor:color+'33', fill:true, tension:.35, pointRadius:0, borderWidth:1.5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}, animation:false }
+  }));
+}
+
+/* ข้อ 1: Drill-down — คลิกอาคาร → รายการงานของอาคารนั้น (ตาม filter ชนิด+ช่วงเดือนปัจจุบัน) */
+function openBpmDrill(buildingName) {
+  const pestSet = colState.pestType;
+  // เดือนที่มองเห็นอยู่ (ตาม range)
+  const visKeys = _bpmVisibleMonthKeys;
+  const rows = allRecords.filter(r => {
+    if (pestSet.size > 0 && !pestSet.has(r.pestType)) return false;
+    if (bpmBuildingOf(r.location) !== buildingName) return false;
+    const d = parseThai(r.timestamp);
+    if (visKeys && d) {
+      const k = `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}`;
+      if (!visKeys.has(k)) return false;
+    }
+    return true;
+  }).sort((a,b) => (parseThai(b.timestamp)||0) - (parseThai(a.timestamp)||0));
+
+  const openCnt = rows.filter(r => r.status !== 'ปิด').length;
+  document.getElementById('bpmDrillTitle').textContent = '🏢 ' + buildingName;
+  document.getElementById('bpmDrillSub').textContent = `${rows.length} งาน · ปิดแล้ว ${rows.length - openCnt} · ค้าง ${openCnt}`;
+  document.getElementById('bpmDrillBody').innerHTML = rows.map(r => {
+    const sla = getSlaInfo(r);
+    const photos = extractPhotoUrls(r.closeMethod);
+    const dt = parseThai(r.timestamp);
+    const dstr = dt ? `${dt.getDate()}/${dt.getMonth()+1}/${(dt.getFullYear()+543)%100}` : '—';
+    const stCls = r.status === 'ปิด' ? 'text-emerald-500' : 'text-amber-500';
+    return `<tr class="bpm-drill-row border-t border-slate-100">
+      <td class="py-1.5 pr-2 font-medium">${r.workOrderId || '—'}</td>
+      <td class="pr-2 whitespace-nowrap">${dstr}</td>
+      <td class="pr-2">${r.pestType || '—'}</td>
+      <td class="pr-2 whitespace-nowrap">${r.floor || '—'}</td>
+      <td class="pr-2 ${stCls} font-medium">${r.status || '—'}</td>
+      <td class="pr-2"><span class="sla-badge ${sla.cls}">${sla.label}</span></td>
+      <td class="text-center">${photos.length ? `<button class="text-blue-500 hover:text-blue-700" onclick='openPhotoModal(${JSON.stringify(photos).replace(/'/g,"&#39;")},0)'>📷${photos.length>1?photos.length:''}</button>` : '<span class="text-slate-300">—</span>'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="text-center py-6 text-slate-400">ไม่มีงาน</td></tr>';
+
+  document.getElementById('bpmDrillModal').classList.remove('hidden');
+}
+function closeBpmDrill() { document.getElementById('bpmDrillModal').classList.add('hidden'); }
+let _bpmVisibleMonthKeys = null;
+
+/* ข้อ 2: สร้างข้อความสรุปอัตโนมัติ */
+function bpmRenderInsight(d) {
+  const box = document.getElementById('bpmInsight').querySelector('p');
+  if (!d.months.length) { box.textContent = 'ยังไม่มีข้อมูลในช่วงที่เลือก'; return; }
+  const pestTxt = d.pestSet.size === 0 ? 'ทุกชนิด'
+    : d.pestSet.size === 1 ? [...d.pestSet][0] : `${d.pestSet.size} ชนิด`;
+  const latestLabel = d.months[d.months.length - 1].label;
+  const parts = [];
+
+  // เทรนด์รวม
+  if (d.months.length >= 2 && d.prevTotal > 0) {
+    const pct = Math.round((d.latestTotal - d.prevTotal) / d.prevTotal * 100);
+    const dir = pct > 0 ? `<span class="bpm-up">เพิ่มขึ้น +${pct}%</span>` : pct < 0 ? `<span class="bpm-down">ลดลง ${pct}%</span>` : 'ทรงตัว';
+    parts.push(`ปัญหา<b>${pestTxt}</b>เดือน <b class="text-slate-800">${latestLabel}</b> ${dir} จากเดือนก่อน (${d.prevTotal} → ${d.latestTotal} ครั้ง)`);
+  } else {
+    parts.push(`ช่วงที่เลือกมี <b class="text-slate-800">${d.total}</b> งาน (${pestTxt})`);
+  }
+  // hotspot ใหม่
+  if (d.newHot) {
+    parts.push(`มี <b class="text-red-600">${d.newHot.name}</b> เป็น hotspot ใหม่ (0 → ${d.newHot.cur} ครั้ง 🚨) ควรเข้าตรวจด่วน`);
+  }
+  // อันดับ 1
+  if (d.bTotals[0]) {
+    const top = d.bTotals[0];
+    let trend = '';
+    if (top.monthly.length >= 2) {
+      const c = top.monthly[top.monthly.length-1], p = top.monthly[top.monthly.length-2];
+      if (p > 0) { const tp = Math.round((c-p)/p*100); trend = tp < 0 ? ` แต่แนวโน้ม<span class="bpm-down">ลดลง ${tp}%</span>` : tp > 0 ? ` และยัง<span class="bpm-up">เพิ่ม +${tp}%</span>` : ''; }
+    }
+    parts.push(`<b class="text-slate-800">${top.name}</b> ครองอันดับ 1 (${top.total} ครั้ง)${trend}`);
+  }
+  // งานค้าง
+  const openN = d.total - d.closed;
+  if (openN > 0) parts.push(`ยังมีงานค้าง <b class="text-amber-600">${openN} งาน</b> ที่ยังไม่ปิด`);
+
+  box.innerHTML = '📊 <b class="text-slate-800">สรุป:</b> ' + parts.join(' · ');
+}
+
 function renderBPM() {
   bpmPopulatePestFilter();
   const pestSet = colState.pestType;
-  const src = allRecords.filter(r => pestSet.size === 0 || pestSet.has(r.pestType));
+  let src = allRecords.filter(r => pestSet.size === 0 || pestSet.has(r.pestType));
 
-  // เก็บ month key เรียงลำดับ
+  // เก็บ month key เรียงลำดับ (ทุกเดือนก่อน)
   const monthMap = new Map(); // key: YYYY-MM (0-based), val: {year, month, label}
   src.forEach(r => {
     const d = parseThai(r.timestamp); if (!d) return;
     const k = `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}`;
     if (!monthMap.has(k)) monthMap.set(k, { key:k, year:d.getFullYear(), month:d.getMonth(), label: `${BPM_TH_MONTH[d.getMonth()]} ${d.getFullYear()+543}` });
   });
-  const months = [...monthMap.values()].sort((a,b) => a.key.localeCompare(b.key));
+  const allMonths = [...monthMap.values()].sort((a,b) => a.key.localeCompare(b.key));
+  // ข้อ 4: ตัดเหลือ N เดือนล่าสุด (0 = ทั้งหมด)
+  const months = bpmMonthRange > 0 ? allMonths.slice(-bpmMonthRange) : allMonths;
+  const visKeys = new Set(months.map(m => m.key));
+  _bpmVisibleMonthKeys = visKeys;
+  // กรอง src ให้เหลือเฉพาะเดือนที่แสดง → KPI/นับทั้งหมดตรงกับช่วง
+  src = src.filter(r => {
+    const d = parseThai(r.timestamp); if (!d) return false;
+    return visKeys.has(`${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}`);
+  });
 
   // aggregate (building × month) count
   const bmap = new Map();
@@ -2619,6 +2788,27 @@ function renderBPM() {
   document.getElementById('bpmKpiNewDelta').textContent = newHot ? `0 → ${newHot.cur}` : '—';
   document.getElementById('bpmKpiHotBox').style.display = newHot ? '' : 'none';
 
+  // ===== ข้อ 5: KPI sparklines =====
+  _bpmKpiSparks.forEach(c => c.destroy()); _bpmKpiSparks = [];
+  const closedByMonth = months.map(m =>
+    src.filter(r => {
+      const d = parseThai(r.timestamp); if (!d) return false;
+      return `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}` === m.key && r.status === 'ปิด';
+    }).length
+  );
+  const closeRateByMonth = months.map((m, i) => monthTotals[i] ? Math.round(closedByMonth[i] / monthTotals[i] * 100) : 0);
+  const topMonthly = bTotals[0] ? bTotals[0].monthly : months.map(() => 0);
+  const newHotMonthly = newHot ? (bTotals.find(b => b.name === newHot.name)?.monthly || []) : [];
+  requestAnimationFrame(() => {
+    bpmDrawKpiSpark('bpmSpkTotal', monthTotals, '#3b82f6');
+    bpmDrawKpiSpark('bpmSpkTop', topMonthly, '#3b82f6');
+    if (newHot) bpmDrawKpiSpark('bpmSpkNew', newHotMonthly, '#ef4444');
+    bpmDrawKpiSpark('bpmSpkClose', closeRateByMonth, '#10b981');
+  });
+
+  // ===== ข้อ 2: Auto-insight =====
+  bpmRenderInsight({ months, monthTotals, latestTotal, prevTotal, bTotals, newHot, total, closed, pestSet });
+
   // ===== Heatmap =====
   const maxV = Math.max(1, ...bTotals.flatMap(b => b.monthly));
   document.getElementById('bpmHeatMax').textContent = maxV + '+';
@@ -2638,8 +2828,8 @@ function renderBPM() {
     const cells = b.monthly.map(v => `<td class="p-0.5"><div class="bpm-heat h${bpmHeatBucket(v, maxV)}">${v || 0}</div></td>`).join('');
     const sparkId = 'spk_' + b.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_');
     const hot = isNewHot(b.name, b.monthly);
-    return `<tr class="border-t ${hot ? 'bpm-hot-row' : ''}">
-      <td class="py-1 pl-1 font-medium">${b.name}${hot ? ' 🚨' : ''}</td>
+    return `<tr class="border-t ${hot ? 'bpm-hot-row' : ''} clickable-row" onclick="openBpmDrill(${JSON.stringify(b.name).replace(/"/g,'&quot;')})" title="คลิกดูรายการงาน">
+      <td class="py-1 pl-1 font-medium text-blue-600">▸ ${b.name}${hot ? ' 🚨' : ''}</td>
       ${cells}
       <td class="text-right pr-1 font-bold">${b.total}</td>
       <td class="text-right pr-1"><canvas id="${sparkId}" width="60" height="20" data-vals="${b.monthly.join(',')}"${hot ? ' data-red="1"' : ''}></canvas></td>
@@ -2659,6 +2849,7 @@ function renderBPM() {
     document.querySelectorAll('#bpmHeatBody canvas, #bpmHeatFoot canvas').forEach(c => {
       const vals = c.dataset.vals.split(',').map(Number);
       const red = c.dataset.red === '1';
+      const ex = Chart.getChart(c); if (ex) ex.destroy();
       new Chart(c, {
         type:'line',
         data:{ labels:vals.map((_,i)=>i), datasets:[{ data:vals, borderColor: red?'#ef4444':'#3b82f6', backgroundColor:(red?'#ef4444':'#3b82f6')+'33', fill:true, tension:.35, pointRadius:0, borderWidth:1.5 }] },
@@ -2797,6 +2988,8 @@ document.addEventListener('keydown', e => {
     const help  = document.getElementById('shortcutHelp');
     const pop   = document.getElementById('colPopup');
     if (!modal.classList.contains('hidden')) { closePhotoModal(); return; }
+    const drill = document.getElementById('bpmDrillModal');
+    if (drill && !drill.classList.contains('hidden')) { closeBpmDrill(); return; }
     if (gallery && !gallery.classList.contains('hidden')) { closePhotoGallery(); return; }
     if (pop && !pop.classList.contains('hidden')) { hideColPopup(); return; }
     if (!help.classList.contains('hidden'))  { help.classList.add('hidden'); return; }
@@ -2845,6 +3038,35 @@ fetchData();
 </div><!-- /.app-shell -->
 
 <div class="sb-backdrop" id="sbBackdrop" onclick="toggleSidebar(false)"></div>
+
+<!-- Drill-down Modal (คลิกอาคารใน heatmap) -->
+<div id="bpmDrillModal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onclick="closeBpmDrill()">
+  <div class="card w-full max-w-3xl max-h-[85vh] flex flex-col" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between p-4 border-b border-slate-100">
+      <div>
+        <h3 id="bpmDrillTitle" class="font-semibold text-slate-700">—</h3>
+        <p id="bpmDrillSub" class="text-xs text-slate-400">—</p>
+      </div>
+      <button onclick="closeBpmDrill()" class="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-lg">✕</button>
+    </div>
+    <div class="p-4 overflow-y-auto">
+      <table class="w-full text-xs">
+        <thead class="text-[10px] text-slate-500 border-b border-slate-200">
+          <tr>
+            <th class="text-left py-1.5 pr-2">WO</th>
+            <th class="text-left pr-2">วันที่แจ้ง</th>
+            <th class="text-left pr-2">ชนิด</th>
+            <th class="text-left pr-2">ชั้น</th>
+            <th class="text-left pr-2">สถานะ</th>
+            <th class="text-left pr-2">SLA</th>
+            <th class="text-center">รูป</th>
+          </tr>
+        </thead>
+        <tbody id="bpmDrillBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- Photo Gallery Modal -->
 <div id="photoGalleryModal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onclick="closePhotoGallery()">
