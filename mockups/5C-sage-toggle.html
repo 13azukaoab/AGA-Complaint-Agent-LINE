@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Mockup 5C — Sage Palette + Dark/Light Toggle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { font-family: 'Noto Sans Thai', system-ui, sans-serif; }
+
+  /* ===== SAGE PALETTE ===== */
+  /* #9CB080  #618764  #2B5748  #273338 */
+  :root[data-theme="dark"] {
+    --bg: #1e2628;
+    --bg-2: #273338;
+    --sidebar: #1a2224;
+    --card: #2B5748;
+    --card-2: #2f4c3e;
+    --border: #3a5a48;
+    --text: #e8ede6;
+    --text-2: #b5c4b1;
+    --text-3: #7a9280;
+    --accent: #9CB080;
+    --accent-strong: #b8cc9e;
+    --accent-dark: #618764;
+    --danger: #e78b7f;
+    --success: #9CB080;
+    --heat-0: #273338;
+    --heat-1: #2B5748;
+    --heat-2: #3d6b58;
+    --heat-3: #518169;
+    --heat-4: #618764;
+    --heat-5: #9CB080;
+    --heat-6: #b8cc9e;
+    --heat-txt: #e8ede6;
+    --hot-bg: #4a2a26;
+    --hot-border: #e78b7f;
+    --hot-txt: #f3b5ad;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f2e9;
+    --bg-2: #ebe8dc;
+    --sidebar: #273338;
+    --card: #ffffff;
+    --card-2: #f5f2e9;
+    --border: #d9dcc9;
+    --text: #273338;
+    --text-2: #4a5a4d;
+    --text-3: #7a9280;
+    --accent: #618764;
+    --accent-strong: #2B5748;
+    --accent-dark: #2B5748;
+    --danger: #a13d2f;
+    --success: #2B5748;
+    --heat-0: #f0ede0;
+    --heat-1: #dbe5cc;
+    --heat-2: #b8ccae;
+    --heat-3: #9CB080;
+    --heat-4: #7a9764;
+    --heat-5: #618764;
+    --heat-6: #2B5748;
+    --heat-txt: #ffffff;
+    --hot-bg: #fbe8e4;
+    --hot-border: #a13d2f;
+    --hot-txt: #7a2b1e;
+  }
+
+  body { background:var(--bg); color:var(--text); }
+  .sidebar { background:var(--sidebar); color:var(--text-2); border-right:1px solid var(--border); }
+  .sidebar .nav-item { padding:10px 12px; border-radius:10px; display:flex; gap:10px; align-items:center; cursor:pointer; font-size:13px; color:#b5c4b1; transition:.15s; }
+  .sidebar .nav-item:hover { background:rgba(156,176,128,.12); color:#fff; }
+  .sidebar .nav-item.active { background:linear-gradient(90deg,var(--accent-dark),var(--accent)); color:#fff; box-shadow:0 4px 14px -4px rgba(156,176,128,.5); border-left:3px solid var(--accent-strong); }
+  .sidebar .nav-group-title { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-3); padding:8px 12px 4px; }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; transition:.2s; }
+  :root[data-theme="light"] .card { box-shadow: 0 1px 3px rgba(39,51,56,.06); }
+
+  .subtab { padding:6px 14px; border-radius:8px; font-size:13px; cursor:pointer; color:var(--text-2); }
+  .subtab.active { background:var(--accent-dark); color:#fff; font-weight:600; }
+
+  .heat-cell { display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; height:30px; border-radius:5px; color:var(--heat-txt); }
+  .heat-0 { background:var(--heat-0); color:var(--text-3); }
+  .heat-1 { background:var(--heat-1); }
+  .heat-2 { background:var(--heat-2); }
+  .heat-3 { background:var(--heat-3); }
+  .heat-4 { background:var(--heat-4); }
+  .heat-5 { background:var(--heat-5); }
+  .heat-6 { background:var(--heat-6); }
+
+  .delta-up { color:var(--danger); font-weight:600; }
+  .delta-down { color:var(--success); font-weight:600; }
+  .delta-flat { color:var(--text-3); }
+  .badge { padding:2px 8px; border-radius:999px; font-size:10px; font-weight:600; }
+  .hot-row { background:var(--hot-bg); }
+  .hot-row td:first-child { color:var(--hot-txt); }
+  .kpi-hot { border:1px solid var(--hot-border); box-shadow:0 0 20px -6px var(--hot-border); }
+
+  .toggle-btn {
+    width:56px; height:28px; border-radius:999px; background:var(--card-2); border:1px solid var(--border);
+    position:relative; cursor:pointer; transition:.2s;
+  }
+  .toggle-btn::after {
+    content:''; position:absolute; top:2px; left:2px; width:22px; height:22px; border-radius:999px;
+    background:var(--accent); transition:.2s;
+  }
+  :root[data-theme="light"] .toggle-btn::after { transform:translateX(28px); background:var(--accent-dark); }
+
+  hr { border-color:var(--border); }
+  select { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; }
+  input, button { color:var(--text); }
+  .btn-primary { background:var(--accent-dark); color:#fff; padding:8px 16px; border-radius:8px; font-weight:600; font-size:13px; }
+  .btn-primary:hover { background:var(--accent-strong); }
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  .text-muted { color:var(--text-2); }
+  .text-faint { color:var(--text-3); }
+</style>
+</head>
+<body class="min-h-screen flex">
+
+<!-- SIDEBAR -->
+<aside class="sidebar w-56 min-h-screen p-3 flex flex-col gap-1 shrink-0">
+  <div class="flex items-center gap-2 mb-5 px-2 py-1">
+    <div class="w-9 h-9 rounded-lg text-white grid place-items-center font-bold" style="background:linear-gradient(135deg,#9CB080,#2B5748)">A</div>
+    <div>
+      <p class="text-white font-semibold text-sm">AGA Pest</p>
+      <p class="text-[10px]" style="color:var(--text-3)">Control Center</p>
+    </div>
+  </div>
+
+  <div class="nav-group-title">Dashboard</div>
+  <div class="nav-item">📊 <span>ภาพรวม</span></div>
+  <div class="nav-item">⚖️ <span>เปรียบเทียบ VS</span></div>
+  <div class="nav-item active">🏢 <span>อาคาร × เดือน</span></div>
+  <div class="nav-item">🗺️ <span>Heatmap ชั้น</span></div>
+
+  <div class="nav-group-title">งาน</div>
+  <div class="nav-item">📋 <span>Work Orders</span></div>
+  <div class="nav-item">📷 <span>รูปหลักฐาน</span></div>
+  <div class="nav-item">📁 <span>Export CSV/PDF</span></div>
+
+  <div class="nav-group-title">ระบบ</div>
+  <div class="nav-item">⚙️ <span>ตั้งค่า</span></div>
+  <div class="nav-item">👥 <span>สมาชิก</span></div>
+
+  <div class="mt-auto pt-3 border-t px-2 flex items-center justify-between" style="border-color:var(--border)">
+    <div>
+      <p class="text-xs text-white" id="modeLabel">Dark Mode</p>
+      <p class="text-[10px]" style="color:var(--text-3)">v2.1.0</p>
+    </div>
+    <div class="toggle-btn" onclick="toggleTheme()"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 p-5 overflow-x-auto">
+  <!-- top bar -->
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-xl font-bold">อาคาร × เดือน · การเปรียบเทียบ</h1>
+      <p class="text-xs text-muted">4 เดือน · 21 อาคาร · 128 งาน</p>
+    </div>
+    <div class="flex gap-2 items-center">
+      <select class="px-3 py-2 text-xs"><option>ทุกชนิด</option><option selected>หนู</option><option>แมลงสาบ</option></select>
+      <select class="px-3 py-2 text-xs"><option>เม.ย.–ก.ค. 2569</option></select>
+      <div class="flex gap-1 card p-1">
+        <button class="subtab active">Overview</button>
+        <button class="subtab">By Building</button>
+        <button class="subtab">Movers</button>
+      </div>
+      <button class="btn-primary">↻ รีเฟรช</button>
+    </div>
+  </div>
+
+  <!-- KPI ribbon -->
+  <div class="grid grid-cols-6 gap-3 mb-4">
+    <div class="card p-3">
+      <p class="text-[10px] text-faint">งานรวม</p>
+      <p class="text-xl font-bold">128</p>
+      <p class="text-[10px] delta-up">↑ 55% MoM</p>
+    </div>
+    <div class="card p-3">
+      <p class="text-[10px] text-faint">อาคาร</p>
+      <p class="text-xl font-bold">21</p>
+      <p class="text-[10px] text-faint">/ 30 ทั้งหมด</p>
+    </div>
+    <div class="card p-3">
+      <p class="text-[10px] text-faint">Hotspot #1</p>
+      <p class="text-sm font-bold">สยามินทร์</p>
+      <p class="text-[10px] delta-up">37 · 29%</p>
+    </div>
+    <div class="card p-3 kpi-hot">
+      <p class="text-[10px]" style="color:var(--hot-txt)">🚨 NEW HOTSPOT</p>
+      <p class="text-sm font-bold">ตึก 84 ปี</p>
+      <p class="text-[10px] delta-up">0 → 10</p>
+    </div>
+    <div class="card p-3">
+      <p class="text-[10px] text-faint">SLA เฉลี่ย</p>
+      <p class="text-xl font-bold">4.5 ชม.</p>
+      <p class="text-[10px] delta-down">↓ 18%</p>
+    </div>
+    <div class="card p-3">
+      <p class="text-[10px] text-faint">% ปิดงาน</p>
+      <p class="text-xl font-bold" style="color:var(--accent)">97%</p>
+      <p class="text-[10px] text-faint">124/128</p>
+    </div>
+  </div>
+
+  <!-- ROW 1: heatmap (span-2) + top movers -->
+  <div class="grid grid-cols-3 gap-3 mb-3">
+    <div class="card p-4 col-span-2">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h2 class="font-semibold text-sm">🔥 Heatmap อาคาร × เดือน</h2>
+          <p class="text-[10px] text-muted">สีเข้ม = แจ้งบ่อย</p>
+        </div>
+        <div class="flex items-center gap-1 text-[10px] text-muted">
+          <span>0</span>
+          <div class="flex gap-0.5">
+            <div class="w-5 h-3 heat-0"></div><div class="w-5 h-3 heat-1"></div><div class="w-5 h-3 heat-2"></div><div class="w-5 h-3 heat-3"></div><div class="w-5 h-3 heat-4"></div><div class="w-5 h-3 heat-5"></div><div class="w-5 h-3 heat-6"></div>
+          </div>
+          <span>18+</span>
+        </div>
+      </div>
+      <table class="w-full text-xs">
+        <thead class="text-[10px] text-faint">
+          <tr>
+            <th class="text-left py-1 pl-1">อาคาร</th>
+            <th>เม.ย.</th><th>พ.ค.</th><th>มิ.ย.</th><th>ก.ค.</th>
+            <th class="text-right pr-1">รวม</th>
+            <th class="text-right pr-1">เทรนด์</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1 font-medium">สยามินทร์</td>
+            <td class="p-0.5"><div class="heat-cell heat-1">1</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-5">10</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-6">18</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-4">8</div></td>
+            <td class="text-right pr-1 font-bold">37</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="1,10,18,8" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">100 ปี ศรีนครินทร์</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-5">10</div></td>
+            <td class="text-right pr-1 font-bold">16</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="0,3,3,10" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">72 ปี</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-1">2</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-3">4</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-3">5</div></td>
+            <td class="text-right pr-1 font-bold">11</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="0,2,4,5" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t hot-row" style="border-color:var(--border)"><td class="py-1 pl-1 font-medium">84 ปี 🚨</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-5">10</div></td>
+            <td class="text-right pr-1 font-bold">10</td>
+            <td class="text-right pr-1"><canvas class="spark red" data-vals="0,0,0,10" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">อานันทมหิดล</td>
+            <td class="p-0.5"><div class="heat-cell heat-1">1</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-2">3</div></td>
+            <td class="text-right pr-1 font-bold">7</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="1,3,0,3" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">เจ้าฟ้ามหาจักรี</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-1">1</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-3">5</div></td>
+            <td class="text-right pr-1 font-bold">6</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="0,0,1,5" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">อำนวยการ</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-1">2</div></td>
+            <td class="text-right pr-1 font-bold">5</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="0,0,3,2" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">เฉลิมพระเกียรติ</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-1">2</div></td>
+            <td class="text-right pr-1 font-bold">5</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="0,0,3,2" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1 pl-1">หอพักพยาบาล</td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-3">4</div></td>
+            <td class="p-0.5"><div class="heat-cell heat-1">1</div></td>
+            <td class="text-right pr-1 font-bold">5</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="0,0,4,1" width="60" height="20"></canvas></td>
+          </tr>
+          <tr class="border-t font-semibold" style="border-color:var(--border); background:var(--card-2)">
+            <td class="py-1.5 pl-1">รวม</td>
+            <td class="text-center">4</td><td class="text-center">22</td><td class="text-center">40</td><td class="text-center">62</td>
+            <td class="text-right pr-1">128</td>
+            <td class="text-right pr-1"><canvas class="spark" data-vals="4,22,40,62" width="60" height="20"></canvas></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card p-4">
+      <h2 class="font-semibold text-sm mb-3">🚀 Top Movers · มิ.ย.→ก.ค.</h2>
+      <p class="text-[10px] mb-2 font-semibold" style="color:var(--danger)">↑ เพิ่มมากสุด</p>
+      <div class="space-y-1.5 text-xs mb-4">
+        <div class="flex justify-between p-2 rounded border" style="background:var(--hot-bg); border-color:var(--hot-border)"><span>84 ปี</span><span class="delta-up">0 → 10</span></div>
+        <div class="flex justify-between p-2 rounded border" style="background:var(--hot-bg); border-color:var(--hot-border)"><span>100 ปี</span><span class="delta-up">3 → 10</span></div>
+        <div class="flex justify-between p-2 rounded" style="background:var(--card-2)"><span>เจ้าฟ้ามหาจักรี</span><span class="delta-up">1 → 5</span></div>
+        <div class="flex justify-between p-2 rounded" style="background:var(--card-2)"><span>จุลชีววิทยา</span><span class="delta-up">0 → 3</span></div>
+      </div>
+      <p class="text-[10px] mb-2 font-semibold" style="color:var(--success)">↓ ลดลงมากสุด</p>
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between p-2 rounded" style="background:var(--card-2)"><span>สยามินทร์</span><span class="delta-down">18 → 8</span></div>
+        <div class="flex justify-between p-2 rounded" style="background:var(--card-2)"><span>หอพักพยาบาล</span><span class="delta-down">4 → 1</span></div>
+        <div class="flex justify-between p-2 rounded" style="background:var(--card-2)"><span>อำนวยการ</span><span class="delta-down">3 → 2</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: stacked + delta -->
+  <div class="grid grid-cols-3 gap-3 mb-3">
+    <div class="card p-4 col-span-2">
+      <h2 class="font-semibold text-sm mb-1">📊 Stacked Bar — เดือน × อาคาร</h2>
+      <p class="text-[10px] text-muted mb-3">แต่ละแท่ง = 1 เดือน · ซ้อนสี = อาคาร</p>
+      <canvas id="stackChart" height="90"></canvas>
+    </div>
+    <div class="card p-4">
+      <h2 class="font-semibold text-sm mb-1">📈 Δ % vs เดือนก่อน</h2>
+      <p class="text-[10px] text-muted mb-3">แดง=เพิ่ม · เขียว=ลด</p>
+      <table class="w-full text-xs">
+        <thead class="text-[10px] text-faint border-b" style="border-color:var(--border)">
+          <tr><th class="text-left py-1">อาคาร</th><th>พ.ค.</th><th>มิ.ย.</th><th>ก.ค.</th></tr>
+        </thead>
+        <tbody>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1">สยามินทร์</td><td class="text-center delta-up text-[10px]">+900%</td><td class="text-center delta-up text-[10px]">+80%</td><td class="text-center delta-down text-[10px]">−56%</td></tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1">100 ปี</td><td class="text-center delta-up text-[10px]">+300%</td><td class="text-center delta-flat text-[10px]">0%</td><td class="text-center delta-up text-[10px]">+233%</td></tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1">72 ปี</td><td class="text-center delta-up text-[10px]">+200%</td><td class="text-center delta-up text-[10px]">+100%</td><td class="text-center delta-up text-[10px]">+25%</td></tr>
+          <tr class="border-t hot-row" style="border-color:var(--border)"><td class="py-1">84 ปี</td><td class="text-center delta-flat text-[10px]">—</td><td class="text-center delta-flat text-[10px]">—</td><td class="text-center delta-up text-[10px]">🚨 NEW</td></tr>
+          <tr class="border-t" style="border-color:var(--border)"><td class="py-1">อานันทมหิดล</td><td class="text-center delta-up text-[10px]">+200%</td><td class="text-center delta-down text-[10px]">−100%</td><td class="text-center delta-up text-[10px]">NEW</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ROW 3: small multiples -->
+  <div class="card p-4">
+    <h2 class="font-semibold text-sm mb-1">📉 Small Multiples · เทรนด์ 4 เดือน ต่ออาคาร</h2>
+    <p class="text-[10px] text-muted mb-3">เห็นเทรนด์ทุกอาคาร side-by-side</p>
+    <div class="grid grid-cols-6 gap-3">
+      <div><p class="text-[10px] mb-1">สยามินทร์ · 37</p><canvas class="mini" data-vals="1,10,18,8" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">100 ปี · 16</p><canvas class="mini" data-vals="0,3,3,10" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">72 ปี · 11</p><canvas class="mini" data-vals="0,2,4,5" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1" style="color:var(--danger)">84 ปี · 10 🚨</p><canvas class="mini red" data-vals="0,0,0,10" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">อานันท · 7</p><canvas class="mini" data-vals="1,3,0,3" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">เจ้าฟ้าฯ · 6</p><canvas class="mini" data-vals="0,0,1,5" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">อำนวยการ · 5</p><canvas class="mini" data-vals="0,0,3,2" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">เฉลิมฯ · 5</p><canvas class="mini" data-vals="0,0,3,2" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">หอพัก · 5</p><canvas class="mini" data-vals="0,0,4,1" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">ผู้ป่วยนอก · 4</p><canvas class="mini" data-vals="1,0,1,2" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">ชัยนาท · 3</p><canvas class="mini" data-vals="0,0,1,2" height="60"></canvas></div>
+      <div><p class="text-[10px] mb-1">จุลชีวฯ · 3</p><canvas class="mini" data-vals="0,0,0,3" height="60"></canvas></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const charts = [];
+function themeColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    accent: s.getPropertyValue('--accent').trim(),
+    accentDark: s.getPropertyValue('--accent-dark').trim(),
+    danger: s.getPropertyValue('--danger').trim(),
+    text2: s.getPropertyValue('--text-2').trim(),
+    border: s.getPropertyValue('--border').trim(),
+    text3: s.getPropertyValue('--text-3').trim(),
+  };
+}
+
+function drawAll() {
+  charts.forEach(c => c.destroy()); charts.length = 0;
+  const c = themeColors();
+  Chart.defaults.color = c.text2;
+  Chart.defaults.borderColor = c.border;
+
+  document.querySelectorAll('.spark').forEach(el => {
+    const vals = el.dataset.vals.split(',').map(Number);
+    const red = el.classList.contains('red');
+    charts.push(new Chart(el, {
+      type:'line',
+      data:{ labels:vals.map((_,i)=>i), datasets:[{ data:vals, borderColor: red?c.danger:c.accent, backgroundColor: (red?c.danger:c.accent)+'33', fill:true, tension:.35, pointRadius:0, borderWidth:1.5 }] },
+      options:{ responsive:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}, animation:false }
+    }));
+  });
+  document.querySelectorAll('.mini').forEach(el => {
+    const vals = el.dataset.vals.split(',').map(Number);
+    const red = el.classList.contains('red');
+    charts.push(new Chart(el, {
+      type:'line',
+      data:{ labels:['เม.ย.','พ.ค.','มิ.ย.','ก.ค.'], datasets:[{ data:vals, borderColor: red?c.danger:c.accent, backgroundColor: (red?c.danger:c.accent)+'33', fill:true, tension:.3, pointRadius:1.5, borderWidth:1.5 }] },
+      options:{ plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{font:{size:8}, color:c.text3}, grid:{color:c.border}}, x:{ticks:{font:{size:8}, color:c.text3}, grid:{display:false}}} }
+    }));
+  });
+  charts.push(new Chart(document.getElementById('stackChart'), {
+    type:'bar',
+    data:{ labels:['เม.ย. 2569','พ.ค. 2569','มิ.ย. 2569','ก.ค. 2569'],
+      datasets:[
+        { label:'สยามินทร์', data:[1,10,18,8], backgroundColor:'#9CB080' },
+        { label:'100 ปี', data:[0,3,3,10], backgroundColor:'#618764' },
+        { label:'72 ปี', data:[0,2,4,5], backgroundColor:'#2B5748' },
+        { label:'84 ปี', data:[0,0,0,10], backgroundColor:'#e78b7f' },
+        { label:'อานันทฯ', data:[1,3,0,3], backgroundColor:'#b8cc9e' },
+        { label:'อื่นๆ', data:[2,4,15,26], backgroundColor:'#7a9280' }
+      ]},
+    options:{ responsive:true, scales:{ x:{stacked:true, grid:{color:c.border}}, y:{stacked:true, grid:{color:c.border}} }, plugins:{ legend:{position:'bottom', labels:{font:{size:10}}} } }
+  }));
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('modeLabel').textContent = next === 'dark' ? 'Dark Mode' : 'Light Mode';
+  drawAll();
+}
+drawAll();
+</script>
+</body>
+</html>

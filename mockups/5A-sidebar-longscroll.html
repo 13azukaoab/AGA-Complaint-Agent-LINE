@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Mockup 5A — Sidebar + Long Scroll</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { font-family: 'Noto Sans Thai', system-ui, sans-serif; }
+  body { background:#f1f5f9; color:#0f172a; }
+  .sidebar { background:#0f172a; color:#cbd5e1; }
+  .sidebar .nav-item { padding:10px 14px; border-radius:10px; display:flex; gap:10px; align-items:center; cursor:pointer; font-size:14px; }
+  .sidebar .nav-item:hover { background:#1e293b; color:#fff; }
+  .sidebar .nav-item.active { background:linear-gradient(90deg,#3b82f6,#2563eb); color:#fff; box-shadow:0 4px 12px -2px rgba(59,130,246,.5); }
+  .sidebar .nav-group-title { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#64748b; padding:6px 14px; margin-top:10px; }
+  .card { background:#fff; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.03); }
+  .heat-cell { display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; height:34px; border-radius:6px; color:#fff; }
+  .heat-0 { background:#f1f5f9; color:#94a3b8; }
+  .heat-1 { background:#dbeafe; color:#1e40af; }
+  .heat-2 { background:#93c5fd; color:#1e3a8a; }
+  .heat-3 { background:#60a5fa; }
+  .heat-4 { background:#3b82f6; }
+  .heat-5 { background:#1d4ed8; }
+  .heat-6 { background:#1e40af; }
+  .delta-up { color:#dc2626; font-weight:600; }
+  .delta-down { color:#059669; font-weight:600; }
+  .delta-flat { color:#94a3b8; }
+  .kpi-box { padding:14px 16px; border-radius:12px; }
+  .badge { padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+</style>
+</head>
+<body class="min-h-screen flex">
+
+<!-- SIDEBAR -->
+<aside class="sidebar w-64 min-h-screen p-4 flex flex-col gap-1 shrink-0">
+  <div class="flex items-center gap-3 mb-6 px-2">
+    <div class="w-10 h-10 rounded-xl bg-blue-500 text-white grid place-items-center font-bold text-lg">A</div>
+    <div>
+      <p class="text-white font-semibold text-sm leading-tight">AGA Pest Control</p>
+      <p class="text-slate-500 text-xs">Advance Group Asia</p>
+    </div>
+  </div>
+
+  <div class="nav-group-title">Dashboard</div>
+  <div class="nav-item">📊 <span>ภาพรวม</span></div>
+  <div class="nav-item">⚖️ <span>เปรียบเทียบ (VS)</span></div>
+  <div class="nav-item active">🏢 <span>อาคาร × เดือน</span> <span class="ml-auto badge bg-red-500/20 text-red-300">NEW</span></div>
+
+  <div class="nav-group-title">งาน</div>
+  <div class="nav-item">📋 <span>Work Orders</span></div>
+  <div class="nav-item">📷 <span>รูปหลักฐาน</span></div>
+  <div class="nav-item">📁 <span>Export</span></div>
+
+  <div class="nav-group-title">ระบบ</div>
+  <div class="nav-item">⚙️ <span>ตั้งค่า</span></div>
+  <div class="nav-item">👥 <span>สมาชิก</span></div>
+
+  <div class="mt-auto pt-4 border-t border-slate-800 text-xs text-slate-500 px-2">
+    <p>v2.1.0</p>
+    <p>อัปเดต 10:35</p>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 p-6 overflow-x-auto">
+  <!-- header -->
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">อาคาร × เดือน</h1>
+      <p class="text-sm text-slate-500">เปรียบเทียบปัญหาสัตว์รบกวนแยกตามอาคาร ในแต่ละเดือน</p>
+    </div>
+    <div class="flex gap-2">
+      <select class="card px-3 py-2 text-sm">
+        <option>ทุกชนิดสัตว์</option>
+        <option selected>หนู</option>
+        <option>แมลงสาบ</option>
+        <option>มด</option>
+      </select>
+      <select class="card px-3 py-2 text-sm">
+        <option>เม.ย. 2569 – ก.ค. 2569</option>
+      </select>
+      <button class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium">↻ รีเฟรช</button>
+    </div>
+  </div>
+
+  <!-- KPI ribbon -->
+  <div class="grid grid-cols-4 gap-3 mb-6">
+    <div class="card kpi-box border-l-4 border-blue-500">
+      <p class="text-xs text-slate-500">งานแจ้งรวม</p>
+      <p class="text-2xl font-bold text-slate-800">128</p>
+      <p class="text-xs delta-up">↑ 55% vs 3 เดือนก่อน</p>
+    </div>
+    <div class="card kpi-box border-l-4 border-purple-500">
+      <p class="text-xs text-slate-500">อาคารที่พบ</p>
+      <p class="text-2xl font-bold text-slate-800">21</p>
+      <p class="text-xs text-slate-400">อาคาร</p>
+    </div>
+    <div class="card kpi-box border-l-4 border-red-500">
+      <p class="text-xs text-slate-500">Hotspot อันดับ 1</p>
+      <p class="text-base font-bold text-slate-800">ตึกสยามินทร์</p>
+      <p class="text-xs delta-up">37 ครั้ง · 29%</p>
+    </div>
+    <div class="card kpi-box border-l-4 border-amber-500">
+      <p class="text-xs text-slate-500">Hotspot ใหม่ (ก.ค.)</p>
+      <p class="text-base font-bold text-slate-800">ตึก 84 ปี</p>
+      <p class="text-xs delta-up">0 → 10 ครั้ง</p>
+    </div>
+  </div>
+
+  <!-- SECTION 1 — HEATMAP -->
+  <div class="card p-5 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="font-semibold text-slate-800">1️⃣ Heatmap — อาคาร × เดือน</h2>
+        <p class="text-xs text-slate-500">สีเข้ม = แจ้งบ่อย · เห็น pattern ทั้งหมดในภาพเดียว</p>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <span>น้อย</span>
+        <div class="flex gap-1">
+          <div class="w-6 h-4 rounded heat-0"></div>
+          <div class="w-6 h-4 rounded heat-1"></div>
+          <div class="w-6 h-4 rounded heat-2"></div>
+          <div class="w-6 h-4 rounded heat-3"></div>
+          <div class="w-6 h-4 rounded heat-4"></div>
+          <div class="w-6 h-4 rounded heat-5"></div>
+        </div>
+        <span>มาก</span>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-slate-500">
+          <tr>
+            <th class="text-left py-2 pl-2 w-64">อาคาร</th>
+            <th class="w-24">เม.ย.</th>
+            <th class="w-24">พ.ค.</th>
+            <th class="w-24">มิ.ย.</th>
+            <th class="w-24">ก.ค.</th>
+            <th class="w-20 text-right pr-2">รวม</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-t border-slate-100"><td class="py-1 pl-2 font-medium">ตึกสยามินทร์</td>
+            <td class="p-1"><div class="heat-cell heat-1">1</div></td>
+            <td class="p-1"><div class="heat-cell heat-5">10</div></td>
+            <td class="p-1"><div class="heat-cell heat-6">18</div></td>
+            <td class="p-1"><div class="heat-cell heat-4">8</div></td>
+            <td class="text-right pr-2 font-bold">37</td>
+          </tr>
+          <tr class="border-t border-slate-100"><td class="py-1 pl-2 font-medium">อาคาร 100 ปี ศรีนครินทร์</td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-1"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-1"><div class="heat-cell heat-5">10</div></td>
+            <td class="text-right pr-2 font-bold">16</td>
+          </tr>
+          <tr class="border-t border-slate-100"><td class="py-1 pl-2 font-medium">ตึก 72 ปี</td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-1">2</div></td>
+            <td class="p-1"><div class="heat-cell heat-3">4</div></td>
+            <td class="p-1"><div class="heat-cell heat-3">5</div></td>
+            <td class="text-right pr-2 font-bold">11</td>
+          </tr>
+          <tr class="border-t border-slate-100 bg-red-50">
+            <td class="py-1 pl-2 font-medium">ตึก 84 ปี <span class="badge bg-red-100 text-red-700">NEW HOTSPOT</span></td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-5">10</div></td>
+            <td class="text-right pr-2 font-bold">10</td>
+          </tr>
+          <tr class="border-t border-slate-100"><td class="py-1 pl-2 font-medium">ตึกอานันทมหิดล</td>
+            <td class="p-1"><div class="heat-cell heat-1">1</div></td>
+            <td class="p-1"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-2">3</div></td>
+            <td class="text-right pr-2 font-bold">7</td>
+          </tr>
+          <tr class="border-t border-slate-100"><td class="py-1 pl-2 font-medium">ตึกเจ้าฟ้ามหาจักรี</td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-1">1</div></td>
+            <td class="p-1"><div class="heat-cell heat-3">5</div></td>
+            <td class="text-right pr-2 font-bold">6</td>
+          </tr>
+          <tr class="border-t border-slate-100"><td class="py-1 pl-2 font-medium">ตึกอำนวยการ</td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-0">0</div></td>
+            <td class="p-1"><div class="heat-cell heat-2">3</div></td>
+            <td class="p-1"><div class="heat-cell heat-1">2</div></td>
+            <td class="text-right pr-2 font-bold">5</td>
+          </tr>
+          <tr class="border-t border-slate-100 bg-slate-50 font-semibold">
+            <td class="py-2 pl-2">รวมทุกอาคาร</td>
+            <td class="text-center">4</td><td class="text-center">22</td><td class="text-center">40</td><td class="text-center">62</td>
+            <td class="text-right pr-2">128</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 2 — TABLE + SPARKLINE -->
+  <div class="card p-5 mb-6">
+    <h2 class="font-semibold text-slate-800 mb-1">2️⃣ ตาราง + เทรนด์ย่อ (Sparkline)</h2>
+    <p class="text-xs text-slate-500 mb-4">เห็นตัวเลขและเส้นเทรนด์ในแถวเดียว</p>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-500 border-b">
+        <tr><th class="text-left py-2 pl-2">อาคาร</th><th>ล่าสุด (ก.ค.)</th><th>เทรนด์ 4 เดือน</th><th>รวม</th><th class="text-right pr-2">SLA เฉลี่ย</th></tr>
+      </thead>
+      <tbody>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">ตึกสยามินทร์</td><td class="text-center">8</td><td class="text-center"><canvas class="spark inline-block" data-vals="1,10,18,8" width="120" height="30"></canvas></td><td class="text-center font-bold">37</td><td class="text-right pr-2">4.2 ชม.</td></tr>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">อาคาร 100 ปี</td><td class="text-center">10</td><td class="text-center"><canvas class="spark inline-block" data-vals="0,3,3,10" width="120" height="30"></canvas></td><td class="text-center font-bold">16</td><td class="text-right pr-2">5.1 ชม.</td></tr>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">ตึก 72 ปี</td><td class="text-center">5</td><td class="text-center"><canvas class="spark inline-block" data-vals="0,2,4,5" width="120" height="30"></canvas></td><td class="text-center font-bold">11</td><td class="text-right pr-2">3.8 ชม.</td></tr>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">ตึก 84 ปี</td><td class="text-center">10</td><td class="text-center"><canvas class="spark inline-block" data-vals="0,0,0,10" width="120" height="30"></canvas></td><td class="text-center font-bold">10</td><td class="text-right pr-2">6.4 ชม.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3 — DELTA vs LAST MONTH -->
+  <div class="card p-5 mb-6">
+    <h2 class="font-semibold text-slate-800 mb-1">3️⃣ Δ vs เดือนก่อน — % เปลี่ยนแปลง</h2>
+    <p class="text-xs text-slate-500 mb-4">แดง = แจ้งเพิ่ม · เขียว = แจ้งลด · เห็น hotspot ใหม่ทันที</p>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-500 border-b">
+        <tr><th class="text-left py-2 pl-2">อาคาร</th><th>เม.ย.→พ.ค.</th><th>พ.ค.→มิ.ย.</th><th>มิ.ย.→ก.ค.</th></tr>
+      </thead>
+      <tbody>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">ตึกสยามินทร์</td><td class="text-center delta-up">↑ +900%</td><td class="text-center delta-up">↑ +80%</td><td class="text-center delta-down">↓ −56%</td></tr>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">อาคาร 100 ปี</td><td class="text-center delta-up">↑ +300%</td><td class="text-center delta-flat">→ 0%</td><td class="text-center delta-up">↑ +233%</td></tr>
+        <tr class="border-t"><td class="py-2 pl-2 font-medium">ตึก 72 ปี</td><td class="text-center delta-up">↑ +200%</td><td class="text-center delta-up">↑ +100%</td><td class="text-center delta-up">↑ +25%</td></tr>
+        <tr class="border-t bg-red-50"><td class="py-2 pl-2 font-medium">ตึก 84 ปี</td><td class="text-center delta-flat">—</td><td class="text-center delta-flat">—</td><td class="text-center delta-up">🚨 0 → 10</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4 — TOP MOVERS -->
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="card p-5">
+      <h2 class="font-semibold text-red-600 mb-1">4️⃣a ↑ เพิ่มมากสุด (มิ.ย.→ก.ค.)</h2>
+      <p class="text-xs text-slate-500 mb-4">อาคารที่ต้องรีบเข้าจัดการ</p>
+      <ol class="space-y-2 text-sm">
+        <li class="flex justify-between p-2 bg-red-50 rounded"><span>1. ตึก 84 ปี</span><span class="delta-up">0 → 10 (+∞)</span></li>
+        <li class="flex justify-between p-2 bg-red-50 rounded"><span>2. อาคาร 100 ปี</span><span class="delta-up">3 → 10 (+233%)</span></li>
+        <li class="flex justify-between p-2 bg-orange-50 rounded"><span>3. ตึกเจ้าฟ้ามหาจักรี</span><span class="delta-up">1 → 5 (+400%)</span></li>
+        <li class="flex justify-between p-2 bg-orange-50 rounded"><span>4. ตึกจุลชีววิทยา</span><span class="delta-up">0 → 3</span></li>
+        <li class="flex justify-between p-2 bg-orange-50 rounded"><span>5. ตึกอัษฎางค์</span><span class="delta-up">0 → 2</span></li>
+      </ol>
+    </div>
+    <div class="card p-5">
+      <h2 class="font-semibold text-emerald-600 mb-1">4️⃣b ↓ ลดลงมากสุด</h2>
+      <p class="text-xs text-slate-500 mb-4">อาคารที่ควบคุมได้แล้ว</p>
+      <ol class="space-y-2 text-sm">
+        <li class="flex justify-between p-2 bg-emerald-50 rounded"><span>1. ตึกสยามินทร์</span><span class="delta-down">18 → 8 (−56%)</span></li>
+        <li class="flex justify-between p-2 bg-emerald-50 rounded"><span>2. หอพักพยาบาล</span><span class="delta-down">4 → 1 (−75%)</span></li>
+        <li class="flex justify-between p-2 bg-emerald-50 rounded"><span>3. ตึกอำนวยการ</span><span class="delta-down">3 → 2 (−33%)</span></li>
+        <li class="flex justify-between p-2 bg-emerald-50 rounded"><span>4. อาคารเฉลิมพระเกียรติ</span><span class="delta-down">3 → 2 (−33%)</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- SECTION 5 — SMALL MULTIPLES -->
+  <div class="card p-5 mb-6">
+    <h2 class="font-semibold text-slate-800 mb-1">5️⃣ Small Multiples — mini chart ต่ออาคาร</h2>
+    <p class="text-xs text-slate-500 mb-4">เห็นเทรนด์แต่ละอาคารเทียบกันได้ทันที</p>
+    <div class="grid grid-cols-4 gap-4">
+      <div><p class="text-xs font-medium text-slate-700 mb-1">สยามินทร์</p><canvas class="mini" data-vals="1,10,18,8" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">100 ปี ศรีนครินทร์</p><canvas class="mini" data-vals="0,3,3,10" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">72 ปี</p><canvas class="mini" data-vals="0,2,4,5" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">84 ปี 🚨</p><canvas class="mini" data-vals="0,0,0,10" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">อานันทมหิดล</p><canvas class="mini" data-vals="1,3,0,3" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">เจ้าฟ้ามหาจักรี</p><canvas class="mini" data-vals="0,0,1,5" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">อำนวยการ</p><canvas class="mini" data-vals="0,0,3,2" height="80"></canvas></div>
+      <div><p class="text-xs font-medium text-slate-700 mb-1">เฉลิมพระเกียรติ</p><canvas class="mini" data-vals="0,0,3,2" height="80"></canvas></div>
+    </div>
+  </div>
+
+  <!-- SECTION 6 — STACKED BAR -->
+  <div class="card p-5 mb-6">
+    <h2 class="font-semibold text-slate-800 mb-1">6️⃣ Stacked Bar — จำนวนรวมต่อเดือน แยกอาคาร</h2>
+    <p class="text-xs text-slate-500 mb-4">เห็นทั้งภาพรวม+สัดส่วนต่อเดือน</p>
+    <canvas id="stackChart" height="90"></canvas>
+  </div>
+
+</main>
+
+<script>
+// sparkline
+document.querySelectorAll('.spark').forEach(c => {
+  const vals = c.dataset.vals.split(',').map(Number);
+  new Chart(c, { type:'line', data:{ labels:vals.map((_,i)=>i), datasets:[{ data:vals, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', fill:true, tension:.35, pointRadius:0, borderWidth:2 }] },
+    options:{ responsive:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}, animation:false }});
+});
+document.querySelectorAll('.mini').forEach(c => {
+  const vals = c.dataset.vals.split(',').map(Number);
+  new Chart(c, { type:'line', data:{ labels:['เม.ย.','พ.ค.','มิ.ย.','ก.ค.'], datasets:[{ data:vals, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.2)', fill:true, tension:.3, pointRadius:2, borderWidth:2 }] },
+    options:{ plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{font:{size:9}}}, x:{ticks:{font:{size:9}}}} }});
+});
+new Chart(document.getElementById('stackChart'), {
+  type:'bar',
+  data:{ labels:['เม.ย. 2569','พ.ค. 2569','มิ.ย. 2569','ก.ค. 2569'],
+    datasets:[
+      { label:'สยามินทร์', data:[1,10,18,8], backgroundColor:'#3b82f6' },
+      { label:'100 ปี', data:[0,3,3,10], backgroundColor:'#8b5cf6' },
+      { label:'72 ปี', data:[0,2,4,5], backgroundColor:'#ec4899' },
+      { label:'84 ปี', data:[0,0,0,10], backgroundColor:'#ef4444' },
+      { label:'อานันทมหิดล', data:[1,3,0,3], backgroundColor:'#f59e0b' },
+      { label:'อื่นๆ', data:[2,4,15,26], backgroundColor:'#94a3b8' }
+    ]},
+  options:{ responsive:true, scales:{ x:{stacked:true}, y:{stacked:true} }, plugins:{ legend:{position:'bottom'} } }
+});
+</script>
+</body>
+</html>
