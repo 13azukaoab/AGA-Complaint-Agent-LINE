@@ -291,11 +291,18 @@
     <div class="sb-item active" id="sb-overview" onclick="setTab('overview')">📊 <span>ภาพรวม</span></div>
     <div class="sb-item" id="sb-vs" onclick="setTab('vs')">⚖️ <span>เปรียบเทียบ VS</span></div>
     <div class="sb-item" id="sb-bpm" onclick="setTab('bpm')">🏢 <span>อาคาร × เดือน</span><span class="sb-badge">NEW</span></div>
+    <div class="sb-item" onclick="goSection('sectionFloorHeat')">🗺️ <span>Heatmap ชั้น</span></div>
 
-    <div class="sb-group">การใช้งาน</div>
+    <div class="sb-group">งาน</div>
+    <div class="sb-item" onclick="goSection('sectionTable')">📋 <span>Work Orders</span></div>
+    <div class="sb-item" onclick="showPhotoOnly()">📷 <span>รูปหลักฐาน</span></div>
     <div class="sb-item" onclick="document.getElementById('exportBtn').click()">📁 <span>Export CSV</span></div>
     <div class="sb-item" onclick="document.getElementById('exportPdfBtn').click()">📄 <span>Export PDF</span></div>
+
+    <div class="sb-group">ระบบ</div>
     <div class="sb-item" onclick="document.getElementById('shortcutHelp').classList.toggle('hidden')">⌨️ <span>Shortcuts</span></div>
+    <div class="sb-item" onclick="alert('ตั้งค่า — เร็วๆ นี้')">⚙️ <span>ตั้งค่า</span></div>
+    <div class="sb-item" onclick="alert('สมาชิก — เร็วๆ นี้')">👥 <span>สมาชิก</span></div>
 
     <div class="sb-footer">
       <div class="sb-tog" id="darkToggleSb" onclick="toggleDarkMode()" title="สลับ Dark/Light">🌙</div>
@@ -376,10 +383,10 @@
         </select>
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">ชนิด</label>
-        <select id="pestFilter" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-          <option value="">ทั้งหมด</option>
-        </select>
+        <label class="block text-xs text-slate-400 mb-1">ชนิด (เลือกได้หลายชนิด)</label>
+        <button type="button" id="pestFilter" class="ms-btn" data-ms-col="pestType" style="min-width:160px; height:34px; padding:0 10px;">
+          <span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span>
+        </button>
       </div>
       <div class="flex gap-2 ml-auto">
         <button id="clearFilter" class="text-sm text-slate-400 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg transition">ล้าง</button>
@@ -525,7 +532,7 @@
   </div>
 
   <!-- Heatmap อาคาร × ชั้น -->
-  <div class="card p-4 mb-5">
+  <div id="sectionFloorHeat" class="card p-4 mb-5">
     <h3 class="text-sm font-semibold mb-1 text-slate-600">Heatmap อาคาร × ชั้น</h3>
     <p class="text-xs text-slate-400 mb-3">สีเข้ม = แจ้งบ่อย · เปรียบเทียบจุดเสี่ยงข้ามอาคารในแต่ละชั้น</p>
     <div id="bldgFloorHeatmap" class="overflow-x-auto"></div>
@@ -618,7 +625,7 @@
   </div>
 
   <!-- Table -->
-  <div class="card p-4">
+  <div id="sectionTable" class="card p-4">
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
       <h3 class="text-sm font-semibold text-slate-700">
         รายการงาน <span id="tableCount" class="text-slate-400 font-normal text-xs"></span>
@@ -733,9 +740,9 @@
         <p id="bpmSummary" class="text-xs text-slate-500">—</p>
       </div>
       <div class="bpm-controls flex gap-2 items-center">
-        <select id="bpmPest" class="card px-3 py-2 text-xs border border-slate-200">
-          <option value="">ทุกชนิด</option>
-        </select>
+        <button type="button" id="bpmPest" class="ms-btn" data-ms-col="pestType" style="min-width:140px; height:34px; padding:0 10px;">
+          <span class="ms-lbl">ทุกชนิด</span><span class="ms-caret">▼</span>
+        </button>
         <div class="flex gap-1 card p-1">
           <button class="bpm-subtab active" data-bpm-view="overview" onclick="setBpmView('overview')">Overview</button>
           <button class="bpm-subtab" data-bpm-view="building" onclick="setBpmView('building')">อาคาร</button>
@@ -825,7 +832,7 @@
       <div class="card p-4 col-span-2">
         <h2 class="font-semibold text-sm text-slate-700 mb-1">📊 Stacked Bar — เดือน × อาคาร</h2>
         <p class="text-[10px] text-slate-400 mb-3">แต่ละแท่ง = 1 เดือน · ซ้อนสี = อาคาร (Top 6 + อื่นๆ)</p>
-        <canvas id="bpmStack" height="90"></canvas>
+        <div style="height:280px; position:relative;"><canvas id="bpmStack"></canvas></div>
       </div>
       <div class="card p-4">
         <h2 class="font-semibold text-sm text-slate-700 mb-1">📈 Δ % vs เดือนก่อน</h2>
@@ -1006,7 +1013,7 @@ async function fetchData() {
 }
 
 function populateDropdowns() {
-  populateSelect('pestFilter',  allRecords.map(r => r.pestType));
+  // pestFilter เป็น multi-check button — ไม่ต้อง populate options
   populateSelect('groupFilter', allRecords.map(r => r.groupName));
   populateColFilterSelects();
   _pestColors = null;      // ให้ pestColorFor คำนวณสีใหม่ตามข้อมูลล่าสุด
@@ -1045,12 +1052,14 @@ function positionColPopup(pop, btn) {
   pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 238)) + 'px';
 }
 function updateMsButton(col) {
-  const btn = document.querySelector(`[data-ms-col="${col}"]`);
-  if (!btn) return;
-  const set = colState[col], lbl = btn.querySelector('.ms-lbl');
-  if (set.size === 0)      { btn.classList.remove('has-value'); lbl.textContent = 'ทั้งหมด'; }
-  else if (set.size === 1) { btn.classList.add('has-value'); lbl.textContent = [...set][0] || '(ไม่ระบุ)'; }
-  else                     { btn.classList.add('has-value'); lbl.textContent = set.size + ' รายการ'; }
+  const btns = document.querySelectorAll(`[data-ms-col="${col}"]`);
+  const set = colState[col];
+  btns.forEach(btn => {
+    const lbl = btn.querySelector('.ms-lbl');
+    if (set.size === 0)      { btn.classList.remove('has-value'); lbl.textContent = 'ทั้งหมด'; }
+    else if (set.size === 1) { btn.classList.add('has-value'); lbl.textContent = [...set][0] || '(ไม่ระบุ)'; }
+    else                     { btn.classList.add('has-value'); lbl.textContent = set.size + ' ชนิด'; }
+  });
 }
 function updateDateRangeButton() {
   const btn = document.querySelector('[data-daterange]');
@@ -1140,7 +1149,6 @@ function populateSelect(id, values) {
 function getFiltered() {
   const from  = document.getElementById('dateFrom').value;
   const to    = document.getElementById('dateTo').value;
-  const pest  = document.getElementById('pestFilter').value;
   const group = document.getElementById('groupFilter').value;
   const q     = document.getElementById('searchBox').value.trim().toLowerCase();
   const fromD = from ? new Date(from + 'T00:00:00') : null;
@@ -1152,7 +1160,7 @@ function getFiltered() {
     if (toD   && d && d > toD)   return false;
     if (filterStatus && r.status    !== filterStatus) return false;
     if (filterSource && !r.workOrderId.startsWith(filterSource)) return false;
-    if (pest         && r.pestType  !== pest)          return false;
+    // ชนิด (pestType) จัดการโดย colState.pestType ใน passColFilters — multi-select
     if (group        && r.groupName !== group)         return false;
     if (q) {
       const hay = [r.workOrderId, r.pestType, r.location, r.floor, r.groupName, r.senderName]
@@ -2105,6 +2113,25 @@ function toggleSidebar(force) {
   sb.classList.toggle('show', show);
   bd.classList.toggle('show', show);
 }
+/* ---- scroll to section on Overview tab ---- */
+function goSection(id) {
+  setTab('overview');
+  requestAnimationFrame(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+}
+/* ---- filter table → rows ที่มีรูปหลักฐาน ---- */
+function showPhotoOnly() {
+  setTab('overview');
+  const box = document.getElementById('searchBox');
+  box.value = 'http'; // WO ที่มีรูปจะมี URL ในฟิลด์วิธีปิด → ค้นด้วย "http" ครอบทั้งรูป
+  box.dispatchEvent(new Event('input', { bubbles:true }));
+  requestAnimationFrame(() => {
+    const el = document.getElementById('sectionTable');
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+}
 
 // คืน key สำหรับ dimension ของ record (เดือน = "ปี-เดือน", อื่นๆ = ค่าฟิลด์)
 function vsKeyOf(r, dim) {
@@ -2330,7 +2357,7 @@ document.querySelectorAll('.th-sort').forEach(th => {
   });
 });
 
-['dateFrom','dateTo','pestFilter','groupFilter','searchBox'].forEach(id =>
+['dateFrom','dateTo','groupFilter','searchBox'].forEach(id =>
   document.getElementById(id).addEventListener('input', () => { currentPage = 1; render(); }));
 
 document.querySelectorAll('[data-col-filter]').forEach(el => {
@@ -2396,10 +2423,11 @@ document.getElementById('bpClear').addEventListener('click', () => {
 
 document.getElementById('clearFilter').addEventListener('click', () => {
   ['dateFrom','dateTo','searchBox'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('pestFilter').value  = '';
   document.getElementById('groupFilter').value = '';
   document.querySelectorAll('[data-col-filter]').forEach(el => { el.value = ''; el.classList.remove('has-value'); });
   Object.keys(MS_COLS).forEach(c => { colState[c].clear(); updateMsButton(c); });
+  // sync กับ BPM page ถ้าเปิดอยู่
+  if (typeof renderBPM === 'function' && !document.getElementById('tabBPM').classList.contains('hidden')) renderBPM();
   colState.dateFrom = ''; colState.dateTo = ''; updateDateRangeButton();
   hideColPopup();
   currentPage = 1;
@@ -2466,11 +2494,13 @@ function bpmPctLabel(prev, cur) {
 }
 
 function bpmPopulatePestFilter() {
-  const sel = document.getElementById('bpmPest');
-  const cur = sel.value;
-  const uniq = [...new Set(allRecords.map(r => r.pestType).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">ทุกชนิด</option>' + uniq.map(v => `<option value="${v}">${v}</option>`).join('');
-  if (uniq.includes(cur)) sel.value = cur;
+  // ปุ่ม multi-check ไม่ต้อง populate — ตัวเลือกอ่านจาก allRecords ตอน openMsPopup
+  // sync label ให้ตรง colState.pestType
+  const lbl = document.querySelector('#bpmPest .ms-lbl'); if (!lbl) return;
+  const set = colState.pestType;
+  if (set.size === 0)      lbl.textContent = 'ทุกชนิด';
+  else if (set.size === 1) lbl.textContent = [...set][0] || '(ไม่ระบุ)';
+  else                     lbl.textContent = set.size + ' ชนิด';
 }
 
 function setBpmView(v) {
@@ -2483,8 +2513,8 @@ function setBpmView(v) {
 
 function renderBPM() {
   bpmPopulatePestFilter();
-  const pest = document.getElementById('bpmPest').value;
-  const src = allRecords.filter(r => !pest || r.pestType === pest);
+  const pestSet = colState.pestType;
+  const src = allRecords.filter(r => pestSet.size === 0 || pestSet.has(r.pestType));
 
   // เก็บ month key เรียงลำดับ
   const monthMap = new Map(); // key: YYYY-MM (0-based), val: {year, month, label}
@@ -2518,8 +2548,9 @@ function renderBPM() {
   const latestLabel = months.length ? months[months.length - 1].label : '—';
   const closed = src.filter(r => r.status === 'ปิด').length;
 
+  const pestLabel = pestSet.size === 0 ? '' : pestSet.size === 1 ? ` · ชนิด: ${[...pestSet][0]}` : ` · ${pestSet.size} ชนิด`;
   document.getElementById('bpmSummary').textContent =
-    `${months.length} เดือน · ${bTotals.length} อาคาร · ${total} งาน${pest ? ' · ชนิด: ' + pest : ''}`;
+    `${months.length} เดือน · ${bTotals.length} อาคาร · ${total} งาน${pestLabel}`;
   document.getElementById('bpmKpiTotal').textContent = total;
   const totalDelta = bpmPctLabel(prevTotal, latestTotal);
   const dEl = document.getElementById('bpmKpiTotalDelta');
@@ -2662,7 +2693,7 @@ function renderBPM() {
     const nameShort = b.name.length > 18 ? b.name.slice(0, 16) + '…' : b.name;
     return `<div>
       <p class="text-[10px] mb-1 ${hot ? 'bpm-up' : 'text-slate-700'}" title="${b.name}">${nameShort} · ${b.total}${hot ? ' 🚨' : ''}</p>
-      <canvas id="bpm_mini_${i}" data-vals="${b.monthly.join(',')}" ${hot ? 'data-red="1"' : ''} height="60"></canvas>
+      <div style="height:80px; position:relative;"><canvas id="bpm_mini_${i}" data-vals="${b.monthly.join(',')}" ${hot ? 'data-red="1"' : ''}></canvas></div>
     </div>`;
   }).join('') || '<p class="text-slate-400 text-xs">— ไม่มีข้อมูล —</p>';
   smTop.forEach((_, i) => {
@@ -2678,10 +2709,21 @@ function renderBPM() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('bpmPest');
-  if (el) el.addEventListener('change', renderBPM);
-});
+/* bpmPest ตอนนี้เป็นปุ่ม multi-check (data-ms-col="pestType") — sync กับ colState.pestType
+   render() ถูกเรียกอยู่แล้วเมื่อ toggle checkbox → เราแค่เรียก renderBPM เพิ่มด้วย
+*/
+(function hookRenderBpmOnFilter() {
+  const orig = window.render;
+  if (typeof orig !== 'function') return;
+  window.render = function() {
+    orig.apply(this, arguments);
+    if (typeof renderBPM === 'function' &&
+        document.getElementById('tabBPM') &&
+        !document.getElementById('tabBPM').classList.contains('hidden')) {
+      renderBPM();
+    }
+  };
+})();
 
 /* ---- VS Mode events ---- */
 document.getElementById('vsDim').addEventListener('change', () => { populateVS(); renderVS(); });
