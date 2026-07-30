@@ -148,6 +148,115 @@
   body.dark .hm-cell[style*="background:#f8fafc"] { background:#1e293b !important; color:#475569 !important; }
   body.dark #drillHint { color:#64748b; }
 
+  /* ================== SIDEBAR ================== */
+  .app-shell { display:flex; min-height:100vh; }
+  .app-sidebar {
+    width:220px; flex:none; background:#111827; border-right:1px solid #1f2937;
+    display:flex; flex-direction:column; gap:2px; padding:14px 10px;
+    position:sticky; top:0; height:100vh; overflow-y:auto; z-index:15;
+  }
+  .app-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .sb-brand { display:flex; align-items:center; gap:10px; padding:2px 8px 14px; }
+  .sb-brand .sb-logo {
+    width:38px; height:38px; border-radius:10px; display:grid; place-items:center;
+    background:linear-gradient(135deg,#3b82f6,#6366f1); color:#fff; font-weight:700;
+  }
+  .sb-brand .sb-name { color:#fff; font-weight:600; font-size:13px; line-height:1.15; }
+  .sb-brand .sb-sub  { color:#64748b; font-size:10px; }
+  .sb-group { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:#475569; padding:10px 12px 4px; }
+  .sb-item {
+    padding:9px 12px; border-radius:9px; display:flex; align-items:center; gap:9px;
+    cursor:pointer; font-size:13px; color:#94a3b8; user-select:none; transition:background .15s, color .15s;
+    border-left:3px solid transparent;
+  }
+  .sb-item:hover { background:#1f2937; color:#fff; }
+  .sb-item.active {
+    background:#1e3a8a; color:#fff; font-weight:600;
+    border-left-color:#3b82f6;
+  }
+  .sb-item .sb-badge { margin-left:auto; padding:1px 7px; border-radius:999px; font-size:9px; font-weight:700; background:#ef4444; color:#fff; }
+  .sb-footer {
+    margin-top:auto; padding:10px 8px 4px; border-top:1px solid #1f2937;
+    display:flex; align-items:center; gap:10px;
+  }
+  .sb-footer .sb-tog {
+    width:32px; height:32px; border-radius:8px; background:#1f2937; color:#94a3b8;
+    display:grid; place-items:center; cursor:pointer; font-size:16px; transition:.15s;
+  }
+  .sb-footer .sb-tog:hover { background:#334155; color:#fff; }
+  .sb-footer .sb-info p { line-height:1.1; }
+  .sb-footer .sb-info .l1 { color:#e2e8f0; font-size:11px; font-weight:600; }
+  .sb-footer .sb-info .l2 { color:#64748b; font-size:9px; }
+
+  /* light mode sidebar: keep dark by design (5B look) */
+
+  /* ---- mobile drawer ---- */
+  .sb-backdrop {
+    position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:14; display:none;
+  }
+  .sb-backdrop.show { display:block; }
+  .sb-hamburger {
+    display:none; width:38px; height:38px; border-radius:10px;
+    background:#334155; color:#fff; align-items:center; justify-content:center;
+    font-size:20px; margin-right:8px; cursor:pointer;
+  }
+  @media (max-width: 900px) {
+    .app-sidebar {
+      position:fixed; top:0; left:0; height:100vh; z-index:30;
+      transform:translateX(-100%); transition:transform .2s ease;
+      box-shadow:4px 0 20px rgba(0,0,0,.3);
+    }
+    .app-sidebar.show { transform:translateX(0); }
+    .sb-hamburger { display:flex; }
+  }
+  @media (max-width: 640px) {
+    header .max-w-\[1400px\] { padding-left:12px !important; padding-right:12px !important; }
+    header h1 { font-size:13px !important; }
+    header p { display:none; }
+    main { padding-left:12px !important; padding-right:12px !important; }
+    .app-sidebar { width:80vw; max-width:280px; }
+  }
+
+  /* ================== BPM page ================== */
+  .bpm-heat { display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; height:28px; border-radius:5px; color:#fff; }
+  .bpm-heat.h0 { background:#f1f5f9; color:#94a3b8; }
+  .bpm-heat.h1 { background:#dbeafe; color:#1e40af; }
+  .bpm-heat.h2 { background:#93c5fd; color:#1e3a8a; }
+  .bpm-heat.h3 { background:#60a5fa; }
+  .bpm-heat.h4 { background:#3b82f6; }
+  .bpm-heat.h5 { background:#1d4ed8; }
+  .bpm-heat.h6 { background:#1e40af; }
+  body.dark .bpm-heat.h0 { background:#1f2937; color:#475569; }
+  body.dark .bpm-heat.h1 { background:#1e3a8a; color:#93c5fd; }
+  body.dark .bpm-heat.h2 { background:#1d4ed8; }
+  body.dark .bpm-heat.h3 { background:#2563eb; }
+  body.dark .bpm-heat.h4 { background:#3b82f6; }
+  body.dark .bpm-heat.h5 { background:#60a5fa; color:#0b1120; }
+  body.dark .bpm-heat.h6 { background:#93c5fd; color:#0b1120; }
+  .bpm-up   { color:#dc2626; font-weight:600; }
+  .bpm-down { color:#059669; font-weight:600; }
+  .bpm-flat { color:#94a3b8; }
+  body.dark .bpm-up   { color:#f87171; }
+  body.dark .bpm-down { color:#34d399; }
+  body.dark .bpm-flat { color:#64748b; }
+  .bpm-hot-row td:first-child { color:#b91c1c; font-weight:600; }
+  .bpm-hot-row { background:rgba(254,226,226,.5); }
+  body.dark .bpm-hot-row { background:rgba(127,29,29,.25); }
+  body.dark .bpm-hot-row td:first-child { color:#fca5a5; }
+  .bpm-kpi-hot { border:1px solid #f87171; box-shadow:0 0 20px -6px rgba(248,113,113,.6); }
+  .bpm-subtab { padding:6px 14px; border-radius:8px; font-size:13px; cursor:pointer; color:#64748b; user-select:none; }
+  .bpm-subtab.active { background:#3b82f6; color:#fff; font-weight:600; }
+  .bpm-heat-scroll { overflow-x:auto; }
+  .bpm-heat-scroll table { min-width:640px; }
+  @media (max-width:640px) {
+    .bpm-kpi-grid { grid-template-columns:repeat(2,1fr) !important; }
+    .bpm-small-mult { grid-template-columns:repeat(2,1fr) !important; }
+    .bpm-row1 { grid-template-columns:1fr !important; }
+    .bpm-row2 { grid-template-columns:1fr !important; }
+    .bpm-header { flex-direction:column; align-items:flex-start !important; }
+    .bpm-controls { flex-wrap:wrap; }
+  }
+
   /* หัวรายงานเฉพาะตอน print */
   #printHeader { display:none; }
 
@@ -166,10 +275,45 @@
 
 <body class="text-slate-700">
 
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="app-sidebar no-print">
+    <div class="sb-brand">
+      <div class="sb-logo">A</div>
+      <div>
+        <p class="sb-name">AGA Pest</p>
+        <p class="sb-sub">Control Center</p>
+      </div>
+    </div>
+
+    <div class="sb-group">Dashboard</div>
+    <div class="sb-item active" id="sb-overview" onclick="setTab('overview')">📊 <span>ภาพรวม</span></div>
+    <div class="sb-item" id="sb-vs" onclick="setTab('vs')">⚖️ <span>เปรียบเทียบ VS</span></div>
+    <div class="sb-item" id="sb-bpm" onclick="setTab('bpm')">🏢 <span>อาคาร × เดือน</span><span class="sb-badge">NEW</span></div>
+
+    <div class="sb-group">การใช้งาน</div>
+    <div class="sb-item" onclick="document.getElementById('exportBtn').click()">📁 <span>Export CSV</span></div>
+    <div class="sb-item" onclick="document.getElementById('exportPdfBtn').click()">📄 <span>Export PDF</span></div>
+    <div class="sb-item" onclick="document.getElementById('shortcutHelp').classList.toggle('hidden')">⌨️ <span>Shortcuts</span></div>
+
+    <div class="sb-footer">
+      <div class="sb-tog" id="darkToggleSb" onclick="toggleDarkMode()" title="สลับ Dark/Light">🌙</div>
+      <div class="sb-info">
+        <p class="l1">AGA Dashboard</p>
+        <p class="l2">v2.2 · <span id="updatedAtSb">—</span></p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- APP MAIN -->
+  <div class="app-main">
+
 <!-- Header -->
 <header class="bg-gradient-to-r from-slate-800 to-slate-700 text-white shadow-lg sticky top-0 z-20">
-  <div class="max-w-[1400px] mx-auto px-5 py-3 flex items-center justify-between flex-wrap gap-3">
+  <div class="mx-auto px-5 py-3 flex items-center justify-between flex-wrap gap-3">
     <div class="flex items-center gap-3">
+      <button class="sb-hamburger" onclick="toggleSidebar()" title="เมนู">☰</button>
       <div class="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-lg font-bold tracking-tight">A</div>
       <div>
         <h1 class="text-base font-bold leading-tight">AGA Pest Control — Dashboard</h1>
@@ -188,7 +332,7 @@
   </div>
 </header>
 
-<main class="max-w-[1400px] mx-auto px-5 py-5">
+<main class="w-full mx-auto px-5 py-5">
 
   <div id="statusBar" class="hidden mb-4 px-4 py-3 rounded-lg text-sm"></div>
 
@@ -254,10 +398,11 @@
     </div>
   </div>
 
-  <!-- แถบสลับโหมด -->
-  <div id="tabBar" class="flex gap-2 mb-5">
-    <button class="tab-btn active" id="tab-overview" onclick="setTab('overview')">📊 ภาพรวม</button>
-    <button class="tab-btn" id="tab-vs" onclick="setTab('vs')">⚖️ เปรียบเทียบ (VS)</button>
+  <!-- tabBar เดิม (ซ่อน — ย้ายไป sidebar แล้ว) -->
+  <div id="tabBar" class="hidden">
+    <button class="tab-btn active" id="tab-overview" onclick="setTab('overview')">ภาพรวม</button>
+    <button class="tab-btn" id="tab-vs" onclick="setTab('vs')">เปรียบเทียบ (VS)</button>
+    <button class="tab-btn" id="tab-bpm" onclick="setTab('bpm')">อาคาร × เดือน</button>
   </div>
 
   <!-- ========== โหมดภาพรวม ========== -->
@@ -578,6 +723,133 @@
     </div>
   </div><!-- /tabVS -->
 
+  <!-- ========== หน้าอาคาร × เดือน ========== -->
+  <div id="tabBPM" class="hidden">
+
+    <!-- Header + controls -->
+    <div class="bpm-header flex items-center justify-between mb-4 gap-3">
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">อาคาร × เดือน · การเปรียบเทียบ</h1>
+        <p id="bpmSummary" class="text-xs text-slate-500">—</p>
+      </div>
+      <div class="bpm-controls flex gap-2 items-center">
+        <select id="bpmPest" class="card px-3 py-2 text-xs border border-slate-200">
+          <option value="">ทุกชนิด</option>
+        </select>
+        <div class="flex gap-1 card p-1">
+          <button class="bpm-subtab active" data-bpm-view="overview" onclick="setBpmView('overview')">Overview</button>
+          <button class="bpm-subtab" data-bpm-view="building" onclick="setBpmView('building')">อาคาร</button>
+          <button class="bpm-subtab" data-bpm-view="movers" onclick="setBpmView('movers')">Movers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI ribbon -->
+    <div class="bpm-kpi-grid grid grid-cols-6 gap-3 mb-4">
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">งานรวม</p>
+        <p id="bpmKpiTotal" class="text-xl font-bold text-slate-800">0</p>
+        <p id="bpmKpiTotalDelta" class="text-[10px] bpm-flat">—</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">อาคาร</p>
+        <p id="bpmKpiBuildings" class="text-xl font-bold text-slate-800">0</p>
+        <p class="text-[10px] text-slate-400">อาคารที่พบปัญหา</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">Hotspot #1</p>
+        <p id="bpmKpiTop" class="text-sm font-bold text-slate-800">—</p>
+        <p id="bpmKpiTopCount" class="text-[10px] bpm-up">—</p>
+      </div>
+      <div class="card p-3 bpm-kpi-hot" id="bpmKpiHotBox">
+        <p class="text-[10px] text-red-500">🚨 NEW HOTSPOT</p>
+        <p id="bpmKpiNew" class="text-sm font-bold text-slate-800">—</p>
+        <p id="bpmKpiNewDelta" class="text-[10px] bpm-up">—</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">เดือนล่าสุด</p>
+        <p id="bpmKpiLatest" class="text-xl font-bold text-slate-800">0</p>
+        <p id="bpmKpiLatestLabel" class="text-[10px] text-slate-400">—</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">% ปิดงาน</p>
+        <p id="bpmKpiCloseRate" class="text-xl font-bold text-emerald-500">0%</p>
+        <p id="bpmKpiCloseSub" class="text-[10px] text-slate-400">—</p>
+      </div>
+    </div>
+
+    <!-- ROW 1: heatmap + top movers -->
+    <div class="bpm-row1 grid grid-cols-3 gap-3 mb-3">
+      <div class="card p-4 col-span-2">
+        <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <div>
+            <h2 class="font-semibold text-sm text-slate-700">🔥 Heatmap อาคาร × เดือน</h2>
+            <p class="text-[10px] text-slate-400">สีเข้ม = แจ้งบ่อย</p>
+          </div>
+          <div class="flex items-center gap-1 text-[10px] text-slate-400">
+            <span>0</span>
+            <div class="flex gap-0.5">
+              <div class="w-5 h-3 bpm-heat h0"></div>
+              <div class="w-5 h-3 bpm-heat h1"></div>
+              <div class="w-5 h-3 bpm-heat h2"></div>
+              <div class="w-5 h-3 bpm-heat h3"></div>
+              <div class="w-5 h-3 bpm-heat h4"></div>
+              <div class="w-5 h-3 bpm-heat h5"></div>
+              <div class="w-5 h-3 bpm-heat h6"></div>
+            </div>
+            <span id="bpmHeatMax">15+</span>
+          </div>
+        </div>
+        <div class="bpm-heat-scroll">
+          <table class="w-full text-xs">
+            <thead class="text-[10px] text-slate-500">
+              <tr id="bpmHeatHead"><th class="text-left py-1 pl-1 w-48">อาคาร</th></tr>
+            </thead>
+            <tbody id="bpmHeatBody"></tbody>
+            <tfoot id="bpmHeatFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="font-semibold text-sm text-slate-700 mb-3">🚀 Top Movers <span id="bpmMoversLabel" class="text-xs text-slate-400 font-normal"></span></h2>
+        <p class="text-[10px] bpm-up mb-2 font-semibold">↑ เพิ่มมากสุด</p>
+        <div id="bpmMoversUp" class="space-y-1.5 text-xs mb-4"></div>
+        <p class="text-[10px] bpm-down mb-2 font-semibold">↓ ลดลงมากสุด</p>
+        <div id="bpmMoversDown" class="space-y-1.5 text-xs"></div>
+      </div>
+    </div>
+
+    <!-- ROW 2: stacked + delta -->
+    <div class="bpm-row2 grid grid-cols-3 gap-3 mb-3">
+      <div class="card p-4 col-span-2">
+        <h2 class="font-semibold text-sm text-slate-700 mb-1">📊 Stacked Bar — เดือน × อาคาร</h2>
+        <p class="text-[10px] text-slate-400 mb-3">แต่ละแท่ง = 1 เดือน · ซ้อนสี = อาคาร (Top 6 + อื่นๆ)</p>
+        <canvas id="bpmStack" height="90"></canvas>
+      </div>
+      <div class="card p-4">
+        <h2 class="font-semibold text-sm text-slate-700 mb-1">📈 Δ % vs เดือนก่อน</h2>
+        <p class="text-[10px] text-slate-400 mb-3">แดง=เพิ่ม · เขียว=ลด</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead class="text-[10px] text-slate-500 border-b">
+              <tr id="bpmDeltaHead"><th class="text-left py-1">อาคาร</th></tr>
+            </thead>
+            <tbody id="bpmDeltaBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: small multiples -->
+    <div class="card p-4">
+      <h2 class="font-semibold text-sm text-slate-700 mb-1">📉 Small Multiples · เทรนด์ต่ออาคาร</h2>
+      <p class="text-[10px] text-slate-400 mb-3">Top 12 อาคาร side-by-side</p>
+      <div id="bpmSmallMult" class="bpm-small-mult grid grid-cols-6 gap-3"></div>
+    </div>
+
+  </div><!-- /tabBPM -->
+
   <p class="text-center text-xs text-slate-400 mt-5">AGA Complaint Agent · อัปเดตอัตโนมัติทุก 30 นาที</p>
 </main>
 
@@ -720,10 +992,12 @@ async function fetchData() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'unknown');
     allRecords = json.data || [];
-    document.getElementById('updatedAt').textContent =
-      'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+    const ts = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('updatedAt').textContent = 'อัปเดตล่าสุด: ' + ts;
+    const sbTs = document.getElementById('updatedAtSb'); if (sbTs) sbTs.textContent = ts;
     populateDropdowns();
     render();
+    if (vsMode === 'bpm') renderBPM();
   } catch (e) {
     showStatus('เชื่อมต่อข้อมูลไม่สำเร็จ: ' + e.message, 'error');
   } finally {
@@ -1809,9 +2083,27 @@ function setTab(name) {
   vsMode = name;
   document.getElementById('tab-overview').classList.toggle('active', name === 'overview');
   document.getElementById('tab-vs').classList.toggle('active', name === 'vs');
+  const tb = document.getElementById('tab-bpm'); if (tb) tb.classList.toggle('active', name === 'bpm');
   document.getElementById('tabOverview').classList.toggle('hidden', name !== 'overview');
   document.getElementById('tabVS').classList.toggle('hidden', name !== 'vs');
-  if (name === 'vs') { populateVS(); renderVS(); }
+  const tbpm = document.getElementById('tabBPM'); if (tbpm) tbpm.classList.toggle('hidden', name !== 'bpm');
+  // sidebar highlight
+  document.getElementById('sb-overview').classList.toggle('active', name === 'overview');
+  document.getElementById('sb-vs').classList.toggle('active', name === 'vs');
+  document.getElementById('sb-bpm').classList.toggle('active', name === 'bpm');
+  if (name === 'vs')  { populateVS(); renderVS(); }
+  if (name === 'bpm') { renderBPM(); }
+  // ปิด drawer บน mobile
+  toggleSidebar(false);
+}
+
+/* ---- sidebar drawer (mobile) ---- */
+function toggleSidebar(force) {
+  const sb = document.querySelector('.app-sidebar');
+  const bd = document.getElementById('sbBackdrop');
+  const show = typeof force === 'boolean' ? force : !sb.classList.contains('show');
+  sb.classList.toggle('show', show);
+  bd.classList.toggle('show', show);
 }
 
 // คืน key สำหรับ dimension ของ record (เดือน = "ปี-เดือน", อื่นๆ = ค่าฟิลด์)
@@ -2120,6 +2412,277 @@ document.getElementById('refreshBtn').addEventListener('click', fetchData);
 document.getElementById('exportBtn').addEventListener('click', exportCSV);
 document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
 
+/* ============================================================
+   BPM — Building × Month (หน้าอาคาร × เดือน)
+============================================================ */
+let bpmSubView = 'overview';
+let _bpmChartStack = null;
+let _bpmChartsMini = [];
+
+const BPM_TH_MONTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+// รวมชื่ออาคารสะกดไม่ตรง/มีคำต่อท้าย ให้เหลือชื่อหลัก (Top-N)
+const BPM_BUILDINGS = [
+  'อาคาร 100 ปี สมเด็จพระศรีนครินทร์','ตึกสยามินทร์','ตึกสยามมินทร์',
+  'ตึกอานันทมหิดล','ตึกอนันทมหิดล','ตึก 72 ปี','ตึก 84 ปี',
+  'ตึกเจ้าฟ้ามหาจักรี','ตึกอำนวยการ','อาคารเฉลิมพระเกียรติ',
+  'ตึกผู้ป่วยนอก','ตึกศรีสังวาลย์','ตึกธนาคารไทยพาณิชย์',
+  'ตึกชัยนาทนเรนทรานุสรณ์','ตึกชัยนาท','ตึกจุลชีววิทยา','ตึกอัษฎางค์',
+  'ตึกอุบัติเหตุ','ศูนย์โรคหัวใจ','ตึกท่านผู้หญิงวิจิตรา',
+  'ตึกวางแผนครอบครัว','หน่วยวางแผนครอบครัว','หอพักพยาบาล',
+  'ตึกสมาคมศิษย์เก่าแพทยศาสตร์ศิริราช','งานสิทธิ์ประกันสุขภาพ'
+].sort((a,b) => b.length - a.length);
+const BPM_ALIAS = {
+  'ตึกสยามมินทร์':'ตึกสยามินทร์',
+  'ตึกอนันทมหิดล':'ตึกอานันทมหิดล',
+  'ตึกชัยนาทนเรนทรานุสรณ์':'ตึกชัยนาท',
+  'หน่วยวางแผนครอบครัว':'ตึกวางแผนครอบครัว'
+};
+function bpmBuildingOf(loc) {
+  if (!loc) return 'ไม่ระบุ';
+  for (const b of BPM_BUILDINGS) {
+    if (loc.indexOf(b) !== -1) return BPM_ALIAS[b] || b;
+  }
+  return loc;
+}
+function bpmHeatBucket(v, max) {
+  if (!v) return 0;
+  if (max <= 0) return 0;
+  const r = v / max;
+  if (r > 0.85) return 6;
+  if (r > 0.65) return 5;
+  if (r > 0.45) return 4;
+  if (r > 0.25) return 3;
+  if (r > 0.10) return 2;
+  return 1;
+}
+function bpmPctLabel(prev, cur) {
+  if (prev === 0 && cur === 0) return { txt:'—', cls:'bpm-flat' };
+  if (prev === 0 && cur > 0)   return { txt:'🚨 NEW', cls:'bpm-up' };
+  if (prev > 0 && cur === 0)   return { txt:'−100%', cls:'bpm-down' };
+  const p = Math.round(((cur - prev) / prev) * 100);
+  if (p === 0) return { txt:'0%', cls:'bpm-flat' };
+  return { txt:(p>0?'+':'') + p + '%', cls: p>0 ? 'bpm-up' : 'bpm-down' };
+}
+
+function bpmPopulatePestFilter() {
+  const sel = document.getElementById('bpmPest');
+  const cur = sel.value;
+  const uniq = [...new Set(allRecords.map(r => r.pestType).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">ทุกชนิด</option>' + uniq.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (uniq.includes(cur)) sel.value = cur;
+}
+
+function setBpmView(v) {
+  bpmSubView = v;
+  document.querySelectorAll('[data-bpm-view]').forEach(b => b.classList.toggle('active', b.dataset.bpmView === v));
+  document.querySelectorAll('.bpm-row1, .bpm-row2, #bpmSmallMult').forEach(el => el.classList.remove('hidden'));
+  if (v === 'building')   { document.querySelector('.bpm-row1').classList.remove('hidden'); document.querySelector('.bpm-row2').classList.add('hidden'); }
+  else if (v === 'movers'){ document.querySelector('.bpm-row2').classList.add('hidden'); }
+}
+
+function renderBPM() {
+  bpmPopulatePestFilter();
+  const pest = document.getElementById('bpmPest').value;
+  const src = allRecords.filter(r => !pest || r.pestType === pest);
+
+  // เก็บ month key เรียงลำดับ
+  const monthMap = new Map(); // key: YYYY-MM (0-based), val: {year, month, label}
+  src.forEach(r => {
+    const d = parseThai(r.timestamp); if (!d) return;
+    const k = `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}`;
+    if (!monthMap.has(k)) monthMap.set(k, { key:k, year:d.getFullYear(), month:d.getMonth(), label: `${BPM_TH_MONTH[d.getMonth()]} ${d.getFullYear()+543}` });
+  });
+  const months = [...monthMap.values()].sort((a,b) => a.key.localeCompare(b.key));
+
+  // aggregate (building × month) count
+  const bmap = new Map();
+  src.forEach(r => {
+    const d = parseThai(r.timestamp); if (!d) return;
+    const b = bpmBuildingOf(r.location);
+    const mk = `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}`;
+    if (!bmap.has(b)) bmap.set(b, {});
+    bmap.get(b)[mk] = (bmap.get(b)[mk] || 0) + 1;
+  });
+  // total per building
+  const bTotals = [...bmap.entries()].map(([name, mv]) => ({
+    name, monthly: months.map(m => mv[m.key] || 0),
+    total: Object.values(mv).reduce((a,b) => a+b, 0)
+  })).sort((a,b) => b.total - a.total);
+
+  // ===== KPI =====
+  const total = src.length;
+  const monthTotals = months.map(m => bTotals.reduce((s,b) => s + (b.monthly[months.indexOf(m)] || 0), 0));
+  const latestTotal = monthTotals[monthTotals.length - 1] || 0;
+  const prevTotal   = monthTotals[monthTotals.length - 2] || 0;
+  const latestLabel = months.length ? months[months.length - 1].label : '—';
+  const closed = src.filter(r => r.status === 'ปิด').length;
+
+  document.getElementById('bpmSummary').textContent =
+    `${months.length} เดือน · ${bTotals.length} อาคาร · ${total} งาน${pest ? ' · ชนิด: ' + pest : ''}`;
+  document.getElementById('bpmKpiTotal').textContent = total;
+  const totalDelta = bpmPctLabel(prevTotal, latestTotal);
+  const dEl = document.getElementById('bpmKpiTotalDelta');
+  dEl.textContent = `${totalDelta.txt} MoM`; dEl.className = 'text-[10px] ' + totalDelta.cls;
+  document.getElementById('bpmKpiBuildings').textContent = bTotals.length;
+  document.getElementById('bpmKpiTop').textContent = bTotals[0]?.name || '—';
+  document.getElementById('bpmKpiTopCount').textContent = bTotals[0]
+    ? `${bTotals[0].total} ครั้ง · ${total ? Math.round(bTotals[0].total/total*100) : 0}%` : '—';
+  document.getElementById('bpmKpiLatest').textContent = latestTotal;
+  document.getElementById('bpmKpiLatestLabel').textContent = latestLabel;
+  document.getElementById('bpmKpiCloseRate').textContent = total ? Math.round(closed/total*100) + '%' : '0%';
+  document.getElementById('bpmKpiCloseSub').textContent = `${closed}/${total}`;
+
+  // NEW HOTSPOT = อาคารที่ prev=0 และ cur > 0 (มากสุด)
+  const newHot = bTotals
+    .map(b => ({ name:b.name, cur:b.monthly[months.length-1]||0, prev:b.monthly[months.length-2]||0 }))
+    .filter(x => x.prev === 0 && x.cur > 0)
+    .sort((a,b) => b.cur - a.cur)[0];
+  document.getElementById('bpmKpiNew').textContent = newHot ? newHot.name : '—';
+  document.getElementById('bpmKpiNewDelta').textContent = newHot ? `0 → ${newHot.cur}` : '—';
+  document.getElementById('bpmKpiHotBox').style.display = newHot ? '' : 'none';
+
+  // ===== Heatmap =====
+  const maxV = Math.max(1, ...bTotals.flatMap(b => b.monthly));
+  document.getElementById('bpmHeatMax').textContent = maxV + '+';
+  const head = document.getElementById('bpmHeatHead');
+  head.innerHTML = '<th class="text-left py-1 pl-1 w-48">อาคาร</th>' +
+    months.map(m => `<th class="w-20 text-center">${m.label}</th>`).join('') +
+    '<th class="text-right pr-1 w-16">รวม</th><th class="text-right pr-1 w-20">เทรนด์</th>';
+
+  const HEAT_LIMIT = 15;  // แสดง top 15 อาคาร
+  const heatRows = bTotals.slice(0, HEAT_LIMIT);
+  const isNewHot = (name, monthly) => {
+    if (monthly.length < 2) return false;
+    return monthly[monthly.length-2] === 0 && monthly[monthly.length-1] > 0
+        && monthly.slice(0, monthly.length-1).every(v => v === 0);
+  };
+  document.getElementById('bpmHeatBody').innerHTML = heatRows.map(b => {
+    const cells = b.monthly.map(v => `<td class="p-0.5"><div class="bpm-heat h${bpmHeatBucket(v, maxV)}">${v || 0}</div></td>`).join('');
+    const sparkId = 'spk_' + b.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_');
+    const hot = isNewHot(b.name, b.monthly);
+    return `<tr class="border-t ${hot ? 'bpm-hot-row' : ''}">
+      <td class="py-1 pl-1 font-medium">${b.name}${hot ? ' 🚨' : ''}</td>
+      ${cells}
+      <td class="text-right pr-1 font-bold">${b.total}</td>
+      <td class="text-right pr-1"><canvas id="${sparkId}" width="60" height="20" data-vals="${b.monthly.join(',')}"${hot ? ' data-red="1"' : ''}></canvas></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="${months.length+3}" class="text-center py-6 text-slate-400">ไม่มีข้อมูล</td></tr>`;
+
+  document.getElementById('bpmHeatFoot').innerHTML = `
+    <tr class="border-t font-semibold" style="background:rgba(148,163,184,.08)">
+      <td class="py-1.5 pl-1">รวม</td>
+      ${monthTotals.map(v => `<td class="text-center">${v}</td>`).join('')}
+      <td class="text-right pr-1">${total}</td>
+      <td class="text-right pr-1"><canvas id="spk__total" width="60" height="20" data-vals="${monthTotals.join(',')}"></canvas></td>
+    </tr>`;
+
+  // sparklines
+  setTimeout(() => {
+    document.querySelectorAll('#bpmHeatBody canvas, #bpmHeatFoot canvas').forEach(c => {
+      const vals = c.dataset.vals.split(',').map(Number);
+      const red = c.dataset.red === '1';
+      new Chart(c, {
+        type:'line',
+        data:{ labels:vals.map((_,i)=>i), datasets:[{ data:vals, borderColor: red?'#ef4444':'#3b82f6', backgroundColor:(red?'#ef4444':'#3b82f6')+'33', fill:true, tension:.35, pointRadius:0, borderWidth:1.5 }] },
+        options:{ responsive:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}, animation:false }
+      });
+    });
+  }, 0);
+
+  // ===== Top movers (compare last 2 months) =====
+  const moversLabel = months.length >= 2 ? `· ${months[months.length-2].label} → ${months[months.length-1].label}` : '';
+  document.getElementById('bpmMoversLabel').textContent = moversLabel;
+  let movers = [];
+  if (months.length >= 2) {
+    movers = bTotals.map(b => {
+      const cur = b.monthly[months.length-1] || 0;
+      const prev = b.monthly[months.length-2] || 0;
+      const diff = cur - prev;
+      const pct = prev === 0 ? (cur > 0 ? Infinity : 0) : (cur - prev) / prev;
+      return { name:b.name, cur, prev, diff, pct };
+    }).filter(x => x.diff !== 0);
+  }
+  const up   = movers.filter(x => x.diff > 0).sort((a,b) => (b.pct === Infinity ? 1e9 : b.pct) - (a.pct === Infinity ? 1e9 : a.pct) || b.diff - a.diff).slice(0, 5);
+  const down = movers.filter(x => x.diff < 0).sort((a,b) => a.pct - b.pct).slice(0, 5);
+  const moverHtml = x => {
+    const bg = x.diff > 0 ? 'bg-red-50' : 'bg-emerald-50';
+    const arrow = x.diff > 0 ? 'bpm-up' : 'bpm-down';
+    const label = x.prev === 0 ? `0 → ${x.cur} 🚨` : `${x.prev} → ${x.cur}`;
+    return `<div class="flex justify-between p-2 ${bg} rounded"><span class="truncate mr-2" title="${x.name}">${x.name}</span><span class="${arrow} shrink-0">${label}</span></div>`;
+  };
+  document.getElementById('bpmMoversUp').innerHTML = up.map(moverHtml).join('') || '<p class="text-slate-400 text-xs">— ไม่มี —</p>';
+  document.getElementById('bpmMoversDown').innerHTML = down.map(moverHtml).join('') || '<p class="text-slate-400 text-xs">— ไม่มี —</p>';
+
+  // ===== Δ% table =====
+  const deltaMonths = months.slice(1); // เดือนที่ 2 เป็นต้นไป
+  document.getElementById('bpmDeltaHead').innerHTML = '<th class="text-left py-1">อาคาร</th>' +
+    deltaMonths.map(m => `<th class="text-center">${m.label.split(' ')[0]}</th>`).join('');
+  document.getElementById('bpmDeltaBody').innerHTML = bTotals.slice(0, 10).map(b => {
+    const cells = deltaMonths.map((_, i) => {
+      const prev = b.monthly[i] || 0;
+      const cur = b.monthly[i+1] || 0;
+      const p = bpmPctLabel(prev, cur);
+      return `<td class="text-center ${p.cls} text-[10px]">${p.txt}</td>`;
+    }).join('');
+    const hot = isNewHot(b.name, b.monthly);
+    return `<tr class="border-t ${hot ? 'bpm-hot-row' : ''}"><td class="py-1">${b.name}${hot ? ' 🚨' : ''}</td>${cells}</tr>`;
+  }).join('') || `<tr><td colspan="${deltaMonths.length+1}" class="text-center py-6 text-slate-400">ต้องมีข้อมูล ≥ 2 เดือน</td></tr>`;
+
+  // ===== Stacked bar =====
+  if (_bpmChartStack) { _bpmChartStack.destroy(); _bpmChartStack = null; }
+  const stackTop = bTotals.slice(0, 6);
+  const stackOther = bTotals.slice(6);
+  const stackColors = ['#3b82f6','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#64748b'];
+  const stackDatasets = stackTop.map((b, i) => ({
+    label: b.name.length > 18 ? b.name.slice(0, 16) + '…' : b.name,
+    data: b.monthly,
+    backgroundColor: stackColors[i]
+  }));
+  if (stackOther.length) {
+    const otherMonthly = months.map((_, mi) => stackOther.reduce((s, b) => s + (b.monthly[mi] || 0), 0));
+    stackDatasets.push({ label: 'อื่นๆ (' + stackOther.length + ')', data: otherMonthly, backgroundColor: stackColors[6] });
+  }
+  _bpmChartStack = new Chart(document.getElementById('bpmStack'), {
+    type: 'bar',
+    data: { labels: months.map(m => m.label), datasets: stackDatasets },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: { x: { stacked:true }, y: { stacked:true, beginAtZero:true } },
+      plugins: { legend: { position:'bottom', labels: { font:{ size:10 }, boxWidth:12 } } }
+    }
+  });
+
+  // ===== Small multiples =====
+  _bpmChartsMini.forEach(c => c.destroy()); _bpmChartsMini = [];
+  const smWrap = document.getElementById('bpmSmallMult');
+  const smTop = bTotals.slice(0, 12);
+  smWrap.innerHTML = smTop.map((b, i) => {
+    const hot = isNewHot(b.name, b.monthly);
+    const nameShort = b.name.length > 18 ? b.name.slice(0, 16) + '…' : b.name;
+    return `<div>
+      <p class="text-[10px] mb-1 ${hot ? 'bpm-up' : 'text-slate-700'}" title="${b.name}">${nameShort} · ${b.total}${hot ? ' 🚨' : ''}</p>
+      <canvas id="bpm_mini_${i}" data-vals="${b.monthly.join(',')}" ${hot ? 'data-red="1"' : ''} height="60"></canvas>
+    </div>`;
+  }).join('') || '<p class="text-slate-400 text-xs">— ไม่มีข้อมูล —</p>';
+  smTop.forEach((_, i) => {
+    const c = document.getElementById('bpm_mini_' + i);
+    if (!c) return;
+    const vals = c.dataset.vals.split(',').map(Number);
+    const red = c.dataset.red === '1';
+    _bpmChartsMini.push(new Chart(c, {
+      type:'line',
+      data:{ labels: months.map(m => m.label.split(' ')[0]), datasets:[{ data:vals, borderColor: red?'#ef4444':'#3b82f6', backgroundColor:(red?'#ef4444':'#3b82f6')+'33', fill:true, tension:.3, pointRadius:1.5, borderWidth:1.5 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{font:{size:8}}}, x:{ticks:{font:{size:8}}, grid:{display:false}}} }
+    }));
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('bpmPest');
+  if (el) el.addEventListener('change', renderBPM);
+});
+
 /* ---- VS Mode events ---- */
 document.getElementById('vsDim').addEventListener('change', () => { populateVS(); renderVS(); });
 document.getElementById('vsA').addEventListener('change', renderVS);
@@ -2145,6 +2708,7 @@ document.addEventListener('keydown', e => {
 
   if (e.key === '1') { e.preventDefault(); setTab('overview'); }
   if (e.key === '2') { e.preventDefault(); setTab('vs'); }
+  if (e.key === '3') { e.preventDefault(); setTab('bpm'); }
 
   if (e.key === '/' ) {
     e.preventDefault();
@@ -2177,6 +2741,11 @@ if (localStorage.getItem('darkMode') === '1') {
 }
 fetchData();
 </script>
+
+  </div><!-- /.app-main -->
+</div><!-- /.app-shell -->
+
+<div class="sb-backdrop" id="sbBackdrop" onclick="toggleSidebar(false)"></div>
 
 <!-- Photo Modal -->
 <div id="photoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75" onclick="closePhotoModal()">
@@ -2226,6 +2795,10 @@ fetchData();
     <div class="flex justify-between items-center py-1 border-b border-slate-50">
       <span class="text-slate-500">Tab เปรียบเทียบ (VS)</span>
       <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">2</kbd>
+    </div>
+    <div class="flex justify-between items-center py-1 border-b border-slate-50">
+      <span class="text-slate-500">Tab อาคาร × เดือน</span>
+      <kbd class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono">3</kbd>
     </div>
     <div class="flex justify-between items-center py-1 border-b border-slate-50">
       <span class="text-slate-500">ค้นหา</span>
