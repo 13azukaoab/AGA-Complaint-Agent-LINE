@@ -1063,6 +1063,8 @@ async function fetchData() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'unknown');
     allRecords = json.data || [];
+    // เพิ่มฟิลด์ building = ชื่ออาคารมาตรฐาน (normalize จาก location ดิบ) ใช้ group/filter ทั้ง dashboard
+    allRecords.forEach(r => { r.building = bpmBuildingOf(r.location); });
     const ts = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
     document.getElementById('updatedAt').textContent = 'อัปเดตล่าสุด: ' + ts;
     const sbTs = document.getElementById('updatedAtSb'); if (sbTs) sbTs.textContent = ts;
@@ -1137,7 +1139,9 @@ function updateDateRangeButton() {
 function openMsPopup(col, btn) {
   const pop = getColPopup();
   const set = colState[col];
-  const opts = [...new Set(allRecords.map(r => (r[col] || '').trim()))]
+  // "พื้นที่" แสดงชื่ออาคารมาตรฐาน (building) แทน location ดิบ
+  const valOf = r => col === 'location' ? (r.building || bpmBuildingOf(r.location)) : r[col];
+  const opts = [...new Set(allRecords.map(r => (valOf(r) || '').trim()))]
     .sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'th'));
   pop.innerHTML =
     `<input class="cp-search" placeholder="ค้นหา..." />` +
@@ -1250,7 +1254,9 @@ function passColFilters(r) {
   for (const col of Object.keys(MS_COLS)) {
     const set = colState[col];
     if (set.size === 0) continue;
-    const raw = (r[col] == null ? '' : String(r[col])).trim();
+    // "พื้นที่" ใช้ชื่ออาคารมาตรฐาน (building) ไม่ใช่ location ดิบ → เลือกอาคารเดียวได้งานทุกหน่วยย่อย
+    const src = col === 'location' ? (r.building || bpmBuildingOf(r.location)) : r[col];
+    const raw = (src == null ? '' : String(src)).trim();
     if (!set.has(raw)) return false;
   }
   // date range (คอลัมน์ วันที่แจ้ง)
@@ -1370,7 +1376,7 @@ function render() {
 
   // Charts
   renderPie('chartPest',     countBy(rows, 'pestType'));
-  renderBar('chartLocation', topN(countBy(rows, 'location'), 10));
+  renderBar('chartLocation', topN(countBy(rows, 'building'), 10));
   renderTrend(rows);
   renderGroupChart(rows);
   renderSLAChart(rows);
@@ -1510,7 +1516,7 @@ function sumCatchBy(rows, field) {
   return m;
 }
 function renderCatchChart(rows) {
-  const data = topN(sumCatchBy(rows, 'location'), 10);
+  const data = topN(sumCatchBy(rows, 'building'), 10);
   const ctx = document.getElementById('chartCatch');
   if (charts.chartCatch) charts.chartCatch.destroy();
   if (Object.keys(data).length === 0) {
@@ -1637,7 +1643,7 @@ function renderBuildingFloorDrill(rows) {
   _drillData = {};
   const bldgTotals = {};
   rows.forEach(r => {
-    const loc = r.location || 'ไม่ระบุ';
+    const loc = r.building || 'ไม่ระบุ';
     const fl = r.floor || 'ไม่ระบุ';
     if (loc === 'ไม่ระบุ') return;
     if (!_drillData[loc]) _drillData[loc] = {};
@@ -1709,7 +1715,7 @@ function renderBuildingPestStack(rows) {
   const usePestFilter = bpState.pests.size > 0;
   const bldgTotals = {}, bldgPest = {}, pestTotals = {};
   rows2.forEach(r => {
-    const loc = r.location || 'ไม่ระบุ';
+    const loc = r.building || 'ไม่ระบุ';
     if (loc === 'ไม่ระบุ') return;
     const pest = (r.pestType || '').trim() || 'ไม่ระบุ';
     if (usePestFilter && !bpState.pests.has(pest)) return;
@@ -1816,7 +1822,7 @@ function populateBpMonth() {
 function openBpPopup(kind, btn) {
   const pop = getColPopup();
   const set = bpState[kind];
-  const field = kind === 'buildings' ? 'location' : 'pestType';
+  const field = kind === 'buildings' ? 'building' : 'pestType';
   const opts = [...new Set(getFiltered().map(r => (r[field] || '').trim()))]
     .filter(v => v && v !== 'ไม่ระบุ' || (field === 'pestType' && v))
     .sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'th'));
@@ -1867,7 +1873,7 @@ function renderBuildingFloorHeatmap(rows) {
   const bldgTotals = {};
   const floorSet = new Set();
   rows.forEach(r => {
-    const loc = r.location || 'ไม่ระบุ';
+    const loc = r.building || 'ไม่ระบุ';
     const fl = r.floor || '';
     if (loc === 'ไม่ระบุ' || !fl) return;
     if (!bldgFloor[loc]) bldgFloor[loc] = {};
@@ -1929,7 +1935,7 @@ function renderFollowupStats(rows) {
   document.getElementById('fuTotal').textContent = fuCount;
   document.getElementById('fuRate').textContent = total ? Math.round(fuCount / total * 100) + '%' : '0%';
 
-  const bldgCount = countBy(fuRows, 'location');
+  const bldgCount = countBy(fuRows, 'building');
   const pestCount = countBy(fuRows, 'pestType');
   const topBldg = Object.entries(bldgCount).sort((a, b) => b[1] - a[1])[0];
   const topPest = Object.entries(pestCount).sort((a, b) => b[1] - a[1])[0];
@@ -1962,7 +1968,7 @@ function renderFollowupStats(rows) {
 
 /* ---- อาคารปัญหาซ้ำ (แจ้ง ≥ 2 ครั้ง) ---- */
 function renderRepeatOffenders(rows) {
-  const counts = Object.entries(countBy(rows, 'location'))
+  const counts = Object.entries(countBy(rows, 'building'))
     .filter(([k, v]) => v >= 2 && k !== 'ไม่ระบุ')
     .sort((a, b) => b[1] - a[1]);
   const box = document.getElementById('repeatList');
@@ -2002,7 +2008,7 @@ function renderHeatmap(rows) {
   rows.forEach(r => {
     const o = parseThai(r.timestamp);
     if (!o) return;
-    const loc      = r.location || 'ไม่ระบุ';
+    const loc      = r.building || 'ไม่ระบุ';
     const monthKey = `${o.getFullYear()}-${o.getMonth()}`;
     if (!locMonthMap[loc]) locMonthMap[loc] = {};
     locMonthMap[loc][monthKey] = (locMonthMap[loc][monthKey] || 0) + 1;
