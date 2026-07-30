@@ -1,6 +1,6 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 24 กรกฎาคม 2569
+อัปเดตล่าสุด: 30 กรกฎาคม 2569
 
 ---
 
@@ -128,6 +128,45 @@
 
 **⚠️ ค้างตรวจเอง:** Cloud Build deploy ของ commit `01f239d` (summary column M — backend) — ดูที่ Cloud Build History (gcloud ไม่ได้ติดตั้งบนเครื่อง local จึงเช็คแทนไม่ได้)
 
+### Phase 14 — Dashboard: Sidebar redesign + หน้า "อาคาร × เดือน" + Building Normalize (30 ก.ค. 2569)
+
+**Sidebar layout ใหม่ (แทน tab bar เดิม) — mockup 5B ที่ user เลือก:**
+- Sidebar ซ้าย: ภาพรวม / เปรียบเทียบ VS / **อาคาร × เดือน (ใหม่)** / Heatmap ชั้น / Work Orders / รูปหลักฐาน / Export CSV-PDF / Shortcuts / ตั้งค่า-สมาชิก (placeholder)
+- Mobile responsive (ทดสอบ iPhone 15 Pro 393×852): sidebar → drawer + hamburger ☰, grid ปรับเป็น 1-2 คอลัมน์
+- commit `00234cc`, `b096de2`
+
+**หน้าใหม่ "อาคาร × เดือน" — 6 มุมมอง + ฟีเจอร์เสริม 1-5 (ตาม mockup ที่ user เลือกทำทั้งหมด):**
+- Heatmap อาคาร×เดือน (Top 15, ไล่สี 7 ระดับ) + Stacked Bar (Top 6 + อื่นๆ) + Δ% vs เดือนก่อน + Top Movers ↑↓ + Small Multiples 12 อาคาร
+- **[1] Drill-down** — คลิกแถวอาคาร → modal รายการงาน (WO/วันที่/ชั้น/สถานะ/SLA/รูป)
+- **[2] Auto-insight** — สรุปข้อความอัตโนมัติ (เทรนด์ MoM, hotspot ใหม่, อันดับ 1, งานค้าง)
+- **[3] ดาวน์โหลด PNG** ปุ่ม ⬇ บน stacked bar
+- **[4] เลือกช่วงเดือน** segment 3/6/12/ทั้งหมด
+- **[5] KPI sparkline** ในการ์ด (งานรวม/hotspot#1/hotspot ใหม่/%ปิด)
+- Filter ชนิดสัตว์แบบ **multi-select checkbox** (ใช้ร่วมกับ filter บนตารางหลัก ผ่าน `colState.pestType`)
+- commit `00234cc`, `5ab777d`
+
+**Bug fixes (แจ้งจาก user):**
+- กราฟใน BPM โตไม่หยุด (Chart.js `responsive:true` บน canvas ที่ parent ไม่มี height ตายตัว) → wrap ด้วย `<div style="height:Xpx">` — commit `b096de2`
+- PDF export กระจาย → print CSS หน้า BPM บังคับ 1 คอลัมน์ + ซ่อน sidebar
+- ปุ่ม "รูปหลักฐาน" กดแล้วตารางว่าง (bug: search ไม่ครอบ closeMethod) → เปลี่ยนเป็น **แกลเลอรีรูป** (modal grid รวมรูปจากงานที่กรองอยู่)
+- Small multiples ล้นกรอบมือถือ (canvas วัดค้าง 300px ตอน layout ยังไม่ reflow) → `max-width:100%` + `requestAnimationFrame` + resize handler
+- เอากราฟ "งานตามความรุนแรง" ออกตามคำขอ
+- commit `f652db3`
+
+**Building Normalization — แก้ปัญหาอาคารซ้ำถูกแยกเป็นคนละพื้นที่ (สำคัญมาก):**
+- User ส่งทะเบียนอาคารทางการ **67 อาคาร (Bldg_001–067, 5 กลุ่ม)** มาเทียบ
+- สร้าง `docs/building-registry.md` — **single source of truth** (ทะเบียนเต็ม + คำ/สะกดที่ map เข้า + คู่ชื่อห้ามสับสน เช่น ศรีสังวาลย์≠ศรีสวรินทิรา)
+- เพิ่มฟิลด์ `r.building` (normalize จาก `r.location`) ตอนโหลดข้อมูลครั้งเดียว ผ่าน `bpmBuildingOf()`
+- **แก้ทั่วทั้ง dashboard ไม่ใช่แค่หน้า BPM** — filter คอลัมน์ "พื้นที่", กราฟ Top 10 พื้นที่, อาคาร×ชั้น (drill+heatmap), ชนิด×อาคาร, งานแจ้งซ้ำ ทั้งหมดเปลี่ยนมาใช้ `building`
+- คง `location` ดิบไว้ที่ตาราง/ค้นหา/แกลเลอรีรูป/Export CSV (เก็บรายละเอียดหน่วยย่อย)
+- ผลลัพธ์ verified: 90 ชื่อดิบ → 32 อาคารมาตรฐาน, total 186 ครบ, filter "ตึก 72 ปี" ได้ครบ 15 งานทุกหน่วยย่อย
+- การตัดสินใจ: "หอพักพยาบาล" เดี่ยว→หอ 1 · หอพักนักศึกษาแพทย์≠ตึกปฏิบัติการสารสนเทศ (แยก) · ตึกวางแผนครอบครัวเก็บแยก · นอกทะเบียน→"อื่นๆ (นอกทะเบียน)"
+- commit `bc1f48e`, `773ed52`
+
+ไฟล์ที่แก้: `dashboard.html`, `docs/building-registry.md` (ใหม่), `mockups/5A-5B-5C-6*.html` (ใหม่)
+
+**🔜 ยังไม่ทำ (แนะนำต่อ):** เอา `docs/building-registry.md` ไปใส่ prompt ของ `src/gemini.js` เพื่อให้ AI จับคู่ชื่ออาคารให้ตรงทะเบียนตั้งแต่ต้นทาง (ตอนนี้ normalize อยู่ที่ dashboard ฝั่ง frontend เท่านั้น ข้อมูลดิบใน Sheet ยังไม่ถูกแก้)
+
 ---
 
 ## 📋 สถานะระบบปัจจุบัน (18 มิ.ย. 2569)
@@ -158,6 +197,7 @@
 | `CLAUDE.md` | กฎ deploy + commit |
 | `docs/deploy.md` | ขั้นตอน deploy แบบละเอียด |
 | `docs/task.md` | ไฟล์นี้ — tracking งาน |
+| `docs/building-registry.md` | ทะเบียนอาคารมาตรฐาน 67 อาคาร — ใช้ normalize dashboard + อ้างอิง train บอท |
 
 ---
 
