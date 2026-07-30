@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Mockup 6 — ตัวอย่างฟีเจอร์เพิ่มเติม 1-5</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { font-family:'Noto Sans Thai', system-ui, sans-serif; }
+  body { background:#0b1120; color:#e2e8f0; padding:24px; }
+  .card { background:#1e293b; border:1px solid #334155; border-radius:14px; }
+  .feat-num { width:30px; height:30px; border-radius:8px; background:#3b82f6; color:#fff; display:grid; place-items:center; font-weight:700; font-size:14px; flex:none; }
+  .heat { display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; height:30px; border-radius:5px; color:#fff; }
+  .h0{background:#1f2937;color:#475569;} .h1{background:#1e3a8a;color:#93c5fd;} .h2{background:#1d4ed8;} .h3{background:#2563eb;} .h4{background:#3b82f6;} .h5{background:#60a5fa;color:#0b1120;} .h6{background:#93c5fd;color:#0b1120;}
+  .up{color:#f87171;font-weight:600;} .down{color:#34d399;font-weight:600;}
+  .clickable-row { cursor:pointer; transition:background .15s; }
+  .clickable-row:hover { background:rgba(59,130,246,.15); }
+  .drill { border-left:3px solid #3b82f6; }
+  .btn-ghost { border:1px solid #334155; border-radius:8px; padding:5px 10px; font-size:12px; color:#94a3b8; cursor:pointer; display:inline-flex; gap:5px; align-items:center; }
+  .btn-ghost:hover { background:#334155; color:#fff; }
+  .seg { display:flex; gap:4px; background:#0f172a; border:1px solid #334155; border-radius:8px; padding:3px; }
+  .seg button { padding:4px 12px; border-radius:6px; font-size:12px; color:#94a3b8; cursor:pointer; }
+  .seg button.active { background:#3b82f6; color:#fff; font-weight:600; }
+  .insight { background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(139,92,246,.08)); border:1px solid #3b5a9a; border-radius:12px; }
+</style>
+</head>
+<body>
+
+<div class="max-w-5xl mx-auto">
+  <h1 class="text-2xl font-bold text-white mb-1">ตัวอย่างฟีเจอร์เพิ่มเติม (1–5)</h1>
+  <p class="text-sm text-slate-400 mb-6">ดูภาพก่อนตัดสินใจ · แต่ละอันทำแยกได้ เลือกเฉพาะที่ต้องการ</p>
+
+  <!-- 1 -->
+  <div class="card p-5 mb-5">
+    <div class="flex items-start gap-3 mb-3">
+      <div class="feat-num">1</div>
+      <div>
+        <h2 class="font-semibold text-white">คลิกแถวอาคาร → ดูรายการงานของอาคารนั้น (Drill-down)</h2>
+        <p class="text-xs text-slate-400">คลิกที่ชื่ออาคารในตาราง heatmap → แสดง panel รายการงานเฉพาะอาคารนั้น</p>
+      </div>
+    </div>
+    <table class="w-full text-xs mb-3">
+      <thead class="text-[10px] text-slate-500"><tr><th class="text-left py-1 pl-1">อาคาร (คลิกได้)</th><th>เม.ย.</th><th>พ.ค.</th><th>มิ.ย.</th><th>ก.ค.</th><th class="text-right pr-1">รวม</th></tr></thead>
+      <tbody>
+        <tr class="clickable-row border-t border-slate-700" onclick="toggleDrill()"><td class="py-1.5 pl-1 font-medium text-blue-300">▸ ตึกสยามินทร์</td><td class="p-0.5"><div class="heat h1">1</div></td><td class="p-0.5"><div class="heat h5">10</div></td><td class="p-0.5"><div class="heat h6">18</div></td><td class="p-0.5"><div class="heat h4">8</div></td><td class="text-right pr-1 font-bold">37</td></tr>
+        <tr id="drillPanel" class="hidden"><td colspan="6" class="p-0"><div class="drill bg-slate-900/60 p-3 m-1 rounded">
+          <p class="text-xs text-slate-300 mb-2 font-semibold">📋 งานของ ตึกสยามินทร์ (37 งาน · คลิกอีกครั้งเพื่อปิด)</p>
+          <table class="w-full text-[11px]">
+            <thead class="text-slate-500"><tr><th class="text-left py-1">WO</th><th class="text-left">วันที่</th><th class="text-left">ชั้น</th><th class="text-left">สถานะ</th><th class="text-left">SLA</th></tr></thead>
+            <tbody class="text-slate-300">
+              <tr class="border-t border-slate-800"><td class="py-1">W003</td><td>16/6/69</td><td>ชั้น 9</td><td><span class="text-emerald-400">ปิด</span></td><td>0.7 ชม.</td></tr>
+              <tr class="border-t border-slate-800"><td class="py-1">W005</td><td>16/6/69</td><td>ชั้น 15</td><td><span class="text-emerald-400">ปิด</span></td><td>3.2 ชม.</td></tr>
+              <tr class="border-t border-slate-800"><td class="py-1">W006</td><td>17/6/69</td><td>ชั้น 1</td><td><span class="text-emerald-400">ปิด</span></td><td>26 ชม.</td></tr>
+              <tr class="border-t border-slate-800"><td class="py-1 text-slate-500" colspan="5">… อีก 34 งาน</td></tr>
+            </tbody>
+          </table>
+        </div></td></tr>
+        <tr class="clickable-row border-t border-slate-700"><td class="py-1.5 pl-1 font-medium text-blue-300">▸ อาคาร 100 ปี</td><td class="p-0.5"><div class="heat h0">0</div></td><td class="p-0.5"><div class="heat h2">3</div></td><td class="p-0.5"><div class="heat h2">3</div></td><td class="p-0.5"><div class="heat h5">10</div></td><td class="text-right pr-1 font-bold">16</td></tr>
+      </tbody>
+    </table>
+    <p class="text-[11px] text-slate-500">👆 ลองคลิกแถว "ตึกสยามินทร์"</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="card p-5 mb-5">
+    <div class="flex items-start gap-3 mb-3">
+      <div class="feat-num">2</div>
+      <div>
+        <h2 class="font-semibold text-white">Auto-Insight — สรุปข้อความอัตโนมัติ</h2>
+        <p class="text-xs text-slate-400">ระบบวิเคราะห์ตัวเลขแล้วเขียนสรุปให้เอง · อัปเดตตาม filter</p>
+      </div>
+    </div>
+    <div class="insight p-4">
+      <p class="text-sm text-slate-200 leading-relaxed">
+        📊 <b class="text-white">สรุปเดือน ก.ค. 2569:</b> ปัญหาหนูเพิ่มขึ้น
+        <span class="up">+55%</span> จากเดือนก่อน (40 → 62 ครั้ง)
+        โดยมี <b class="text-red-300">ตึก 84 ปี</b> เป็น hotspot ใหม่ (0 → 10 ครั้ง 🚨) ที่ควรเข้าตรวจด่วน ·
+        <b class="text-white">ตึกสยามินทร์</b> ยังครองอันดับ 1 (37 ครั้ง) แต่แนวโน้ม
+        <span class="down">ลดลง −56%</span> เดือนล่าสุด แสดงว่ามาตรการเริ่มได้ผล
+      </p>
+    </div>
+    <p class="text-[11px] text-slate-500 mt-2">ข้อความสร้างจากข้อมูลจริง — เปลี่ยนตามชนิด/ช่วงเวลาที่เลือก</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="card p-5 mb-5">
+    <div class="flex items-start gap-3 mb-3">
+      <div class="feat-num">3</div>
+      <div>
+        <h2 class="font-semibold text-white">ปุ่มดาวน์โหลด PNG ของกราฟ</h2>
+        <p class="text-xs text-slate-400">เซฟกราฟเป็นรูป → แชร์เข้า LINE / ใส่รายงานได้ทันที</p>
+      </div>
+    </div>
+    <div class="bg-slate-900/50 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-sm font-semibold text-slate-200">🔥 Heatmap อาคาร × เดือน</h3>
+        <button class="btn-ghost" onclick="alert('ตัวอย่าง: จะดาวน์โหลดไฟล์ heatmap.png')">⬇ <span>PNG</span></button>
+      </div>
+      <div style="height:120px; position:relative;"><canvas id="demoChart"></canvas></div>
+    </div>
+    <p class="text-[11px] text-slate-500 mt-2">👆 ปุ่ม "⬇ PNG" จะโผล่มุมขวาบนของทุกกราฟ</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="card p-5 mb-5">
+    <div class="flex items-start gap-3 mb-3">
+      <div class="feat-num">4</div>
+      <div>
+        <h2 class="font-semibold text-white">เลือกช่วงเดือน</h2>
+        <p class="text-xs text-slate-400">โฟกัสเฉพาะช่วงที่สนใจ (ตอนนี้แสดงทุกเดือนเสมอ)</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="text-xs text-slate-400">ช่วงเดือน:</span>
+      <div class="seg">
+        <button>3 เดือน</button>
+        <button class="active">6 เดือน</button>
+        <button>12 เดือน</button>
+        <button>ทั้งหมด</button>
+      </div>
+      <span class="text-slate-500 text-xs">หรือ</span>
+      <select class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs"><option>เม.ย. 2569</option></select>
+      <span class="text-slate-500 text-xs">ถึง</span>
+      <select class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs"><option>ก.ค. 2569</option></select>
+    </div>
+    <p class="text-[11px] text-slate-500 mt-3">heatmap + กราฟทั้งหมดจะปรับตามช่วงที่เลือก</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="card p-5 mb-5">
+    <div class="flex items-start gap-3 mb-3">
+      <div class="feat-num">5</div>
+      <div>
+        <h2 class="font-semibold text-white">การ์ด KPI แสดง sparkline ในตัว</h2>
+        <p class="text-xs text-slate-400">เห็นเทรนด์ย่อในการ์ด KPI เลย ไม่ต้องเลื่อนดูกราฟ</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">งานรวม</p>
+        <div class="flex items-end justify-between">
+          <p class="text-xl font-bold text-white">128</p>
+          <div style="width:70px;height:34px;"><canvas id="sp1"></canvas></div>
+        </div>
+        <p class="text-[10px] up">↑ 55% MoM</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">ตึกสยามินทร์</p>
+        <div class="flex items-end justify-between">
+          <p class="text-xl font-bold text-white">37</p>
+          <div style="width:70px;height:34px;"><canvas id="sp2"></canvas></div>
+        </div>
+        <p class="text-[10px] down">↓ 56% ล่าสุด</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">ตึก 84 ปี 🚨</p>
+        <div class="flex items-end justify-between">
+          <p class="text-xl font-bold text-white">10</p>
+          <div style="width:70px;height:34px;"><canvas id="sp3"></canvas></div>
+        </div>
+        <p class="text-[10px] up">↑ NEW</p>
+      </div>
+      <div class="card p-3">
+        <p class="text-[10px] text-slate-400">% ปิดงาน</p>
+        <div class="flex items-end justify-between">
+          <p class="text-xl font-bold text-emerald-400">97%</p>
+          <div style="width:70px;height:34px;"><canvas id="sp4"></canvas></div>
+        </div>
+        <p class="text-[10px] text-slate-500">124/128</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-4 text-center text-sm text-slate-400">
+    เลือกที่อยากได้ (เช่น "เอา 1, 2, 5") หรือ "เอาทั้งหมด" · แต่ละอันทำแยกได้
+  </div>
+</div>
+
+<script>
+Chart.defaults.color = '#94a3b8'; Chart.defaults.borderColor = '#334155';
+new Chart(document.getElementById('demoChart'), {
+  type:'bar',
+  data:{ labels:['เม.ย.','พ.ค.','มิ.ย.','ก.ค.'], datasets:[
+    {label:'สยามินทร์',data:[1,10,18,8],backgroundColor:'#3b82f6'},
+    {label:'84 ปี',data:[0,0,0,10],backgroundColor:'#ef4444'},
+    {label:'อื่นๆ',data:[3,12,22,44],backgroundColor:'#64748b'}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true}},plugins:{legend:{labels:{font:{size:9},boxWidth:10}}}}
+});
+function spark(id,vals,red){
+  new Chart(document.getElementById(id),{type:'line',
+    data:{labels:vals.map((_,i)=>i),datasets:[{data:vals,borderColor:red?'#ef4444':'#60a5fa',backgroundColor:(red?'#ef4444':'#60a5fa')+'33',fill:true,tension:.35,pointRadius:0,borderWidth:1.5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+}
+spark('sp1',[4,22,40,62]); spark('sp2',[1,10,18,8]); spark('sp3',[0,0,0,10],true); spark('sp4',[100,95,98,97]);
+function toggleDrill(){ document.getElementById('drillPanel').classList.toggle('hidden'); }
+</script>
+</body>
+</html>
