@@ -244,8 +244,31 @@ async function getOpenWorkOrders() {
   }
 }
 
+// ขยายจำนวนแถวของแท็บ (เมื่อกริดเต็ม) — เพิ่มให้พอถึง neededRow + เผื่อ buffer
+async function ensureGridCapacity(sheets, neededRow) {
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: SHEET_ID,
+    fields: 'sheets(properties(sheetId,title,gridProperties(rowCount)))',
+  });
+  const sh = (meta.data.sheets || []).find(s => s.properties.title === SHEET_NAME);
+  if (!sh) throw new Error(`ไม่พบแท็บ "${SHEET_NAME}"`);
+  const rowCount = sh.properties.gridProperties.rowCount || 0;
+  if (neededRow <= rowCount) return;
+  const addRows = (neededRow - rowCount) + 500; // เผื่อ 500 แถว จะได้ไม่ต้องขยายบ่อย
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: {
+      requests: [{
+        appendDimension: { sheetId: sh.properties.sheetId, dimension: 'ROWS', length: addRows },
+      }],
+    },
+  });
+  console.log(`   ➕ ขยายกริด +${addRows} แถว (เดิม ${rowCount} → ${rowCount + addRows})`);
+}
+
 // เพิ่ม complaint ใหม่ลง Sheet (columns A-T)
 // ใช้ .update() แทน .append() เพื่อหลีกเลี่ยง ghost rows ทำให้ข้อมูลไปผิด row
+// ถ้ากริดเต็ม (แถวหมด) → ensureGridCapacity ขยายอัตโนมัติ
 async function appendComplaint(data) {
   try {
     await withRetry(async () => {
@@ -290,12 +313,24 @@ async function appendComplaint(data) {
         '',                // U — จำนวนที่ติด
       ];
 
-      await sheets.spreadsheets.values.update({
+      const doUpdate = () => sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
         range: `${SHEET_NAME}!A${nextRow}:U${nextRow}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [row] },
       });
+
+      try {
+        await doUpdate();
+      } catch (e) {
+        // กริดเต็ม (แถวหมด) → ขยายกริดอัตโนมัติแล้วเขียนใหม่
+        if (/exceeds grid limits/i.test(e.message || '')) {
+          await ensureGridCapacity(sheets, nextRow);
+          await doUpdate();
+        } else {
+          throw e;
+        }
+      }
 
       console.log(`   📊 บันทึกลง Google Sheet [${data.workOrderId}] row ${nextRow} ✅`);
     }, 'appendComplaint');
