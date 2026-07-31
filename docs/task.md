@@ -165,7 +165,16 @@
 
 ไฟล์ที่แก้: `dashboard.html`, `docs/building-registry.md` (ใหม่), `mockups/5A-5B-5C-6*.html` (ใหม่)
 
-**🔜 ยังไม่ทำ (แนะนำต่อ):** เอา `docs/building-registry.md` ไปใส่ prompt ของ `src/gemini.js` เพื่อให้ AI จับคู่ชื่ออาคารให้ตรงทะเบียนตั้งแต่ต้นทาง (ตอนนี้ normalize อยู่ที่ dashboard ฝั่ง frontend เท่านั้น ข้อมูลดิบใน Sheet ยังไม่ถูกแก้)
+**🔜 ยังไม่ทำ (แนะนำต่อ — user ตัดสินใจรอ):** เอา `docs/building-registry.md` ไปใส่ prompt ของ `src/gemini.js` เพื่อให้ AI จับคู่ชื่ออาคารให้ตรงทะเบียนตั้งแต่ต้นทาง (ตอนนี้ normalize อยู่ที่ dashboard ฝั่ง frontend เท่านั้น ข้อมูลดิบใน Sheet ยังไม่ถูกแก้)
+
+**เงื่อนไขที่ user ต้องการก่อนทำ (31 ก.ค. 2569):**
+- รอ **deploy รอบใหญ่ครั้งถัดไปที่มีคนทดสอบ** (นอกเวลางาน) ค่อยทำ — เพราะ `gemini.js` เป็นหัวใจของระบบเปิดงาน แก้พลาดคือบอทเปิดงานไม่ได้ทั้งหมด
+- **ก่อนทำ ต้อง:** (1) เตรียม rollback ไว้ (git revert commit), (2) ทดสอบใน dev/local ก่อน push, (3) เช็ค Cloud Build ก่อน tag ok, (4) เช็คว่าไม่มี regression บน `findOriginalWO` (`src/index.js:262`) — ตอนนี้เทียบ location แบบ normalize key เท่านั้น, ถ้า gemini ส่งชื่อ normalized เข้า Sheet แล้ว key ควรตรงกันโดยตรง
+
+**ความเสี่ยงที่ประเมินไว้:**
+- Gemini prompt ยาวขึ้น (67 อาคาร + alias ~30 คำ) → cost เพิ่มจาก ~฿3 เป็น ~฿5-8/เดือน
+- AI อาจ over-normalize (เจอ "ห้องยา 103" แล้ว map ไปตึกผู้ป่วยนอก ทั้งที่หมายอาคารอื่น) → ต้อง prompt แบบ **conservative** = ตรงชื่อชัดเจนเท่านั้น ไม่รู้ให้เก็บชื่อดิบไว้
+- Sheet จะมี 2 สไตล์ปน (ก่อน/หลัง deploy) → dashboard normalize ครอบอยู่แล้วไม่พัง
 
 ---
 
