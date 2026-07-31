@@ -1,6 +1,6 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 30 กรกฎาคม 2569
+อัปเดตล่าสุด: 31 กรกฎาคม 2569
 
 ---
 
@@ -178,18 +178,35 @@
 
 ---
 
-## 📋 สถานะระบบปัจจุบัน (18 มิ.ย. 2569)
+## 📋 สถานะระบบปัจจุบัน (30 ก.ค. 2569)
 
 | Component | สถานะ |
 |-----------|-------|
-| Cloud Run Backend | ✅ revision 00052-dvm (commit b61dee1) |
-| Netlify Dashboard | ✅ auto-deploy |
+| Cloud Run Backend | ✅ commit `7f6ba9a` (deploy ล่าสุดที่มีผล: `26c7fb2` — grid auto-expand fix) |
+| Netlify Dashboard | ✅ auto-deploy — sidebar redesign + หน้า "อาคาร × เดือน" (Phase 14) |
+| Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning | ✅ 08:30 — ส่ง 2 กลุ่ม |
 | Cloud Scheduler check | ✅ 12:00 |
 | Cloud Scheduler daily | ✅ 17:30 |
 | ALLOWED_GROUP_IDS | ✅ 2 กลุ่ม: ศิริราช + Test |
 | Security `/notify` | ✅ X-Notify-Key header |
-| Building Name Normalize | ✅ 6 อาคาร (เพิ่มได้ทีหลัง) |
+| Building Name Normalize (Dashboard) | ✅ 32 อาคารมาตรฐาน จากทะเบียน 67 อาคาร — `docs/building-registry.md` |
+| Building Name Normalize (gemini.js / ต้นทาง) | ⏳ ยังไม่ทำ — รอ deploy รอบมีคนทดสอบ (ดู Phase 14 ด้านบน) |
+
+---
+
+## 🩹 ประวัติปัญหา (Incident Log)
+
+> บันทึกปัญหาที่เจอจริงในระบบ production พร้อมสาเหตุ+วิธีแก้ — เผื่อเกิดซ้ำจะได้เช็ค pattern ได้เร็ว
+
+### 31 ก.ค. 2569 — บอทตอบ "บันทึก Work Order ไม่สำเร็จ (ระบบขัดข้อง)" ทุกครั้ง
+
+- **อาการ:** ทุกข้อความแจ้งงานใหม่ในกลุ่ม LINE ได้รับ `⚠️ บันทึก Work Order ไม่สำเร็จ (ระบบขัดข้อง)` — Gemini วิเคราะห์ได้ปกติ (เห็นข้อมูลครบ) แต่บันทึกไม่ติด
+- **วิธีเช็คตอนเจอ:** `gcloud run services logs read aga-complaint-agent --region asia-southeast1 --limit=30 | grep "บันทึก Sheet ไม่สำเร็จ"`
+- **สาเหตุจริง (จาก log):** `Range ('ชีต1'!A188:U188) exceeds grid limits. Max rows: 187` — **Google Sheet มีกริดแค่ 187 แถว เต็มพอดี** (header + 186 งาน) ไม่ใช่ปัญหาสิทธิ์ Service Account (เป็น Editor อยู่แล้ว) — อ่าน Sheet ได้ปกติ (dashboard โชว์ข้อมูลได้) แต่เขียนแถวใหม่ไม่ได้เพราะ grid ไม่มีที่ว่าง
+- **แก้ทันที:** เพิ่มแถวใน Google Sheet UI (เพิ่ม 1000 แถว)
+- **แก้ถาวร:** commit `26c7fb2` — เพิ่ม `ensureGridCapacity()` ใน `src/sheets.js`: ดัก error "exceeds grid limits" → `appendDimension` ขยายกริด +500 แถวอัตโนมัติ แล้วเขียนใหม่ (ไม่ต้องเพิ่มแถวเองอีกตลอดไป)
+- **บทเรียน:** "อ่านได้ เขียนไม่ได้" ไม่ได้แปลว่าสิทธิ์เสมอไป — เช็ค log จริงก่อนสรุป root cause
 
 ---
 
