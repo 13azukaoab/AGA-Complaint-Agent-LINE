@@ -185,15 +185,15 @@
 | Cloud Run Backend | ✅ commit `7f6ba9a` (deploy ล่าสุดที่มีผล: `26c7fb2` — grid auto-expand fix) |
 | Netlify Dashboard | ✅ auto-deploy — sidebar redesign + หน้า "อาคาร × เดือน" (Phase 14) |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
-| Cloud Scheduler morning (08:30) | ⏸️ **Paused** (เช็คจริง 31 ก.ค. — Cloud Scheduler console) |
-| Cloud Scheduler check (12:00) | ⏸️ **Paused** (เช็คจริง 31 ก.ค. — Cloud Scheduler console) |
+| Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
+| Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler daily (17:30) | ✅ Enabled — Success (last run 30 Jul, next run 31 Jul) |
 | ALLOWED_GROUP_IDS | ✅ 2 กลุ่ม: ศิริราช + Test |
 | Security `/notify` | ✅ X-Notify-Key header |
 | Building Name Normalize (Dashboard) | ✅ 32 อาคารมาตรฐาน จากทะเบียน 67 อาคาร — `docs/building-registry.md` |
 | Building Name Normalize (gemini.js / ต้นทาง) | ⏳ ยังไม่ทำ — รอ deploy รอบมีคนทดสอบ (ดู Phase 14 ด้านบน) |
 
-> ⚠️ **หมายเหตุ 31 ก.ค.:** เดิม task.md เขียนว่า morning/check เป็น ✅ Enabled ทั้งคู่ — แต่เช็คจริงใน Cloud Scheduler console พบว่าถูก **Pause ไว้** (ไม่ทราบสาเหตุ/ผู้ pause — ต้องถามทีมงานว่าตั้งใจปิดหรือลืมเปิดกลับ) มีแค่ **daily (17:30)** ที่ยังทำงานปกติ
+> ✅ **หมายเหตุ 31 ก.ค.:** user ยืนยันแล้วว่า pause morning (08:30) + check (12:00) **เป็นการตั้งใจ** ไม่ใช่ bug/ลืมเปิด — ตอนนี้กลุ่ม LINE จะได้รับแจ้งเตือนแค่สรุปรายวันตอนเย็น (17:30) เท่านั้น ถ้าต้องการเปิด morning/check กลับมาในอนาคต ไปที่ Cloud Scheduler console → เลือก job → กด Resume
 
 ---
 
