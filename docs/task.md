@@ -165,33 +165,45 @@
 
 ไฟล์ที่แก้: `dashboard.html`, `docs/building-registry.md` (ใหม่), `mockups/5A-5B-5C-6*.html` (ใหม่)
 
-**🔜 ยังไม่ทำ (แนะนำต่อ — user ตัดสินใจรอ):** เอา `docs/building-registry.md` ไปใส่ prompt ของ `src/gemini.js` เพื่อให้ AI จับคู่ชื่ออาคารให้ตรงทะเบียนตั้งแต่ต้นทาง (ตอนนี้ normalize อยู่ที่ dashboard ฝั่ง frontend เท่านั้น ข้อมูลดิบใน Sheet ยังไม่ถูกแก้)
+### Phase 15 — gemini.js normalize + upgrade 3.6-flash (2 ส.ค. 2569) ✅ DONE
 
-**เงื่อนไขที่ user ต้องการก่อนทำ (31 ก.ค. 2569):**
-- รอ **deploy รอบใหญ่ครั้งถัดไปที่มีคนทดสอบ** (นอกเวลางาน) ค่อยทำ — เพราะ `gemini.js` เป็นหัวใจของระบบเปิดงาน แก้พลาดคือบอทเปิดงานไม่ได้ทั้งหมด
-- **ก่อนทำ ต้อง:** (1) เตรียม rollback ไว้ (git revert commit), (2) ทดสอบใน dev/local ก่อน push, (3) เช็ค Cloud Build ก่อน tag ok, (4) เช็คว่าไม่มี regression บน `findOriginalWO` (`src/index.js:262`) — ตอนนี้เทียบ location แบบ normalize key เท่านั้น, ถ้า gemini ส่งชื่อ normalized เข้า Sheet แล้ว key ควรตรงกันโดยตรง
+**สิ่งที่ทำ (commit `4b36b7d`):**
+1. เพิ่ม normalize table 30+ alias เข้า prompt `src/gemini.js` (ครอบคลุมทะเบียน 67 อาคาร ที่ใช้จริง)
+2. Warning คู่ชื่อคล้าย: ศรีสังวาลย์≠ศรีสวรินทิรา, อานันทมหิดล≠อานันทราช, ตึก 10≠อาคาร 100 ปี, ตึกนวมินทร์≠ตึก 84 ปี, หอพักนศพ.≠ปฏิบัติการสารสนเทศ
+3. Conservative rule: ตรงชัดเจนเท่านั้น, สงสัย = คงชื่อดิบ (กัน over-normalize เช่น "ห้องยา 103")
+4. Upgrade model `gemini-3.5-flash` → `gemini-3.6-flash` (Jul 21, 2026, output ถูกกว่า 17%)
 
-**ความเสี่ยงที่ประเมินไว้:**
-- Gemini prompt ยาวขึ้น (67 อาคาร + alias ~30 คำ) → cost เพิ่มจาก ~฿3 เป็น ~฿5-8/เดือน
-- AI อาจ over-normalize (เจอ "ห้องยา 103" แล้ว map ไปตึกผู้ป่วยนอก ทั้งที่หมายอาคารอื่น) → ต้อง prompt แบบ **conservative** = ตรงชื่อชัดเจนเท่านั้น ไม่รู้ให้เก็บชื่อดิบไว้
-- Sheet จะมี 2 สไตล์ปน (ก่อน/หลัง deploy) → dashboard normalize ครอบอยู่แล้วไม่พัง
+**Test:**
+- Local (`scratchpad/test_normalize.js`, 14 samples): 3.5-flash 12/14 OK + 2 correct fallback · 3.6-flash 12/14 OK + 2 correct fallback (identical)
+- Production verified (2 ส.ค. 14:31): ข้อความจริง "ตึกสยามินทร์ ชั้น 2 ห้องจดหมายเหตุ" → Sheet บันทึก `location=ตึกสยามินทร์`, `floor=ชั้น 2` ถูกต้อง · W176 เปิด+ปิด+สรุปงานค้าง ครบรอบ
+
+**Decision log (grill-me session):**
+- Q1 quality vs cost → **quality** (ค่าใช้จ่ายจริง ~฿3/mo, mis-normalize เสียหายกว่าเซฟ)
+- Q2 3.6 vs 3.5 flash → **3.6** (ใหม่กว่า, output ถูกกว่า, งานเป็น one-shot ไม่ใช่ agentic)
+- Q3 rollout → **prompt + model รวม commit เดียว** (test local pass ทั้งคู่)
+- Q4 timing → **deploy ทันที** (user online monitoring, blast ต่ำ, rollback = `git revert 4b36b7d`)
+
+**ไฟล์ที่แก้:** `src/gemini.js`
+
+**หมายเหตุ regression `findOriginalWO`:** followup ที่พิมพ์ alias เดิม (เช่น "ธนาคารเลือด") หลัง deploy → normalize เป็น "ตึก 72 ปี", จะไม่ match กับ WO เก่าที่เก็บ "ธนาคารเลือด" → สร้าง WO ใหม่แทน tag เป็น followup. Not fatal — พลาดแค่ flag, ระบบเปิดงานปกติ. รอข้อมูลเก่าอายุครบไม่ต้อง fix
 
 ---
 
-## 📋 สถานะระบบปัจจุบัน (31 ก.ค. 2569)
+## 📋 สถานะระบบปัจจุบัน (2 ส.ค. 2569)
 
 | Component | สถานะ |
 |-----------|-------|
-| Cloud Run Backend | ✅ commit `7f6ba9a` (deploy ล่าสุดที่มีผล: `26c7fb2` — grid auto-expand fix) |
+| Cloud Run Backend | ✅ commit `4b36b7d` (Phase 15 — gemini.js normalize + 3.6-flash) |
+| Gemini Model | ✅ `gemini-3.6-flash` (upgrade จาก 3.5-flash, 2 ส.ค.) |
 | Netlify Dashboard | ✅ auto-deploy — sidebar redesign + หน้า "อาคาร × เดือน" (Phase 14) |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
-| Cloud Scheduler daily (17:30) | ✅ Enabled — Success (last run 30 Jul, next run 31 Jul) |
+| Cloud Scheduler daily (17:30) | ✅ Enabled |
 | ALLOWED_GROUP_IDS | ✅ 2 กลุ่ม: ศิริราช + Test |
 | Security `/notify` | ✅ X-Notify-Key header |
 | Building Name Normalize (Dashboard) | ✅ 32 อาคารมาตรฐาน จากทะเบียน 67 อาคาร — `docs/building-registry.md` |
-| Building Name Normalize (gemini.js / ต้นทาง) | ⏳ ยังไม่ทำ — รอ deploy รอบมีคนทดสอบ (ดู Phase 14 ด้านบน) |
+| Building Name Normalize (gemini.js / ต้นทาง) | ✅ Deploy 2 ส.ค. — production verified (W176 = ตึกสยามินทร์) |
 
 > ✅ **หมายเหตุ 31 ก.ค.:** user ยืนยันแล้วว่า pause morning (08:30) + check (12:00) **เป็นการตั้งใจ** ไม่ใช่ bug/ลืมเปิด — ตอนนี้กลุ่ม LINE จะได้รับแจ้งเตือนแค่สรุปรายวันตอนเย็น (17:30) เท่านั้น ถ้าต้องการเปิด morning/check กลับมาในอนาคต ไปที่ Cloud Scheduler console → เลือก job → กด Resume
 
