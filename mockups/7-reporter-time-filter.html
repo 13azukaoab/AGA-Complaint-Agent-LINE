@@ -1,0 +1,636 @@
+<title>Mockup 7 — ผู้แจ้ง + ช่วงเวลา + Filter enhance</title>
+<style>
+  :root{
+    --bg:#0F172A; --panel:#1E293B; --panel2:#334155;
+    --border:rgba(148,163,184,.18); --border-strong:rgba(148,163,184,.35);
+    --text:#F1F5F9; --muted:#94A3B8; --dim:#64748B;
+    --accent:#3B82F6; --accent2:#22D3EE;
+    --warn:#F59E0B; --danger:#EF4444; --success:#10B981;
+    --pest-rat:#EF4444; --pest-termite:#F97316; --pest-ant:#EAB308;
+    --pest-roach:#22C55E; --pest-mosquito:#8B5CF6; --pest-fly:#EC4899; --pest-other:#94A3B8;
+    --radius:12px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#F8FAFC; --panel:#FFFFFF; --panel2:#F1F5F9;
+      --border:rgba(15,23,42,.08); --border-strong:rgba(15,23,42,.16);
+      --text:#0F172A; --muted:#475569; --dim:#94A3B8; }
+  }
+  :root[data-theme="dark"]{ --bg:#0F172A; --panel:#1E293B; --panel2:#334155;
+    --border:rgba(148,163,184,.18); --border-strong:rgba(148,163,184,.35);
+    --text:#F1F5F9; --muted:#94A3B8; --dim:#64748B; }
+  :root[data-theme="light"]{ --bg:#F8FAFC; --panel:#FFFFFF; --panel2:#F1F5F9;
+    --border:rgba(15,23,42,.08); --border-strong:rgba(15,23,42,.16);
+    --text:#0F172A; --muted:#475569; --dim:#94A3B8; }
+  *{box-sizing:border-box; font-family:"Noto Sans Thai","Prompt","IBM Plex Sans Thai",Tahoma,-apple-system,sans-serif;}
+  body{ background:var(--bg); color:var(--text); margin:0; padding:32px 24px 80px;
+    font-size:14px; line-height:1.55; font-feature-settings:"tnum"; }
+  .wrap{ max-width:1280px; margin:0 auto; }
+  header.top{ display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:20px; border-bottom:1px solid var(--border); margin-bottom:32px; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{ width:36px; height:36px; border-radius:10px; background:var(--accent);
+    display:grid; place-items:center; color:#fff; font-weight:700; font-size:16px; }
+  .brand h1{ font-size:16px; margin:0; font-weight:600; }
+  .brand p{ font-size:12px; color:var(--muted); margin:0; }
+  .theme-toggle{ background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; }
+  h2.sec{ font-size:20px; font-weight:600; margin:48px 0 8px; letter-spacing:-.01em; }
+  h2.sec .num{ color:var(--muted); font-weight:400; margin-right:8px; }
+  p.sec-desc{ color:var(--muted); font-size:13px; margin:0 0 20px; max-width:700px; }
+  .badge-rec{ display:inline-block; background:rgba(59,130,246,.15); color:var(--accent);
+    padding:2px 10px; border-radius:999px; font-size:11px; font-weight:500; margin-left:6px; }
+  /* Filter compare */
+  .filter-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .opt-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px; display:flex; flex-direction:column; gap:12px; }
+  .opt-card.rec{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+  .opt-head{ display:flex; align-items:center; justify-content:space-between; }
+  .opt-title{ font-weight:600; font-size:14px; }
+  .opt-tag{ font-size:11px; color:var(--muted); }
+  .opt-preview{ background:var(--panel2); border-radius:8px; padding:14px;
+    min-height:110px; display:flex; align-items:center; justify-content:center; }
+  .opt-pros{ font-size:12px; color:var(--muted); line-height:1.6; }
+  .opt-pros b{ color:var(--text); font-weight:500; }
+  /* mini controls */
+  .sel{ background:var(--panel); color:var(--text); border:1px solid var(--border-strong);
+    padding:6px 10px; border-radius:6px; font-size:12px; min-width:110px; }
+  .chip-row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .chip{ background:var(--panel); border:1px solid var(--border-strong); color:var(--text);
+    padding:5px 12px; border-radius:999px; font-size:11px; cursor:pointer; }
+  .chip.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-row{ display:flex; gap:8px; align-items:center; font-size:11px; color:var(--muted); }
+  .date-in{ background:var(--panel); color:var(--text); border:1px solid var(--border-strong);
+    padding:4px 8px; border-radius:6px; font-size:11px; width:110px; }
+  /* Dashboard mock */
+  .dash{ display:grid; grid-template-columns:220px 1fr; background:var(--panel);
+    border:1px solid var(--border); border-radius:16px; overflow:hidden; min-height:640px; }
+  .sb{ background:var(--bg); border-right:1px solid var(--border); padding:16px 10px; }
+  .sb-brand{ display:flex; align-items:center; gap:10px; padding:8px 10px 16px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+  .sb-logo{ width:32px; height:32px; border-radius:8px; background:var(--accent); color:#fff;
+    display:grid; place-items:center; font-weight:700; }
+  .sb-brand p{ margin:0; font-size:13px; font-weight:600; }
+  .sb-brand span{ font-size:11px; color:var(--muted); }
+  .sb-group{ font-size:10px; color:var(--dim); letter-spacing:.1em; padding:8px 10px 4px;
+    text-transform:uppercase; }
+  .sb-item{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px;
+    font-size:13px; color:var(--text); cursor:default; margin-bottom:2px; }
+  .sb-item:hover{ background:var(--panel2); }
+  .sb-item.active{ background:rgba(59,130,246,.15); color:var(--accent); font-weight:500;
+    border-left:2px solid var(--accent); padding-left:10px; }
+  .sb-item .ic{ width:18px; text-align:center; font-size:14px; }
+  .sb-badge{ margin-left:auto; background:var(--accent); color:#fff; font-size:9px;
+    padding:1px 6px; border-radius:999px; letter-spacing:.05em; }
+  .main{ padding:24px 28px; }
+  .main-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .main-title{ font-size:20px; font-weight:600; margin:0; }
+  .main-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .filter-bar{ display:flex; gap:8px; flex-wrap:wrap; padding:12px; background:var(--bg);
+    border-radius:10px; margin-bottom:20px; align-items:center; font-size:12px; }
+  .filter-bar label{ color:var(--muted); font-size:11px; }
+  /* KPI cards */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi{ background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .kpi-lbl{ font-size:11px; color:var(--muted); margin-bottom:6px; letter-spacing:.02em; }
+  .kpi-num{ font-size:24px; font-weight:600; letter-spacing:-.02em; }
+  .kpi-delta{ font-size:11px; margin-top:4px; }
+  .kpi-delta.up{ color:var(--danger); }
+  .kpi-delta.down{ color:var(--success); }
+  .kpi-delta.flat{ color:var(--muted); }
+  .kpi-spark{ margin-top:6px; height:24px; }
+  /* Card grid */
+  .grid-2{ display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-bottom:16px; }
+  .grid-3{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .card{ background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .card-title{ font-size:13px; font-weight:600; }
+  .card-hint{ font-size:11px; color:var(--muted); }
+  /* Reporter bar chart */
+  .rp-bar{ display:flex; align-items:center; gap:8px; padding:6px 0; font-size:12px; }
+  .rp-name{ width:110px; color:var(--muted); flex-shrink:0; }
+  .rp-track{ flex:1; height:22px; background:var(--panel2); border-radius:4px; position:relative;
+    overflow:hidden; }
+  .rp-fill{ position:absolute; left:0; top:0; bottom:0; background:var(--accent);
+    border-radius:4px; display:flex; align-items:center; padding-left:8px; color:#fff; font-size:11px; font-weight:500; }
+  .rp-val{ width:32px; text-align:right; color:var(--text); font-weight:500; }
+  /* Reporter × Building heatmap-style stacked */
+  .rp-b-row{ display:grid; grid-template-columns:100px 1fr; gap:8px; align-items:center;
+    padding:4px 0; font-size:11px; }
+  .rp-b-name{ color:var(--muted); }
+  .rp-b-track{ display:flex; height:20px; border-radius:4px; overflow:hidden; background:var(--panel2); }
+  .rp-b-cell{ display:grid; place-items:center; font-size:10px; color:#fff; font-weight:500; }
+  /* Table */
+  table.tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+  .tbl th{ text-align:left; padding:8px 10px; color:var(--muted); font-weight:500;
+    border-bottom:1px solid var(--border); font-size:11px; letter-spacing:.02em; }
+  .tbl td{ padding:9px 10px; border-bottom:1px solid var(--border); }
+  .tbl tr:hover td{ background:var(--panel2); }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:500; }
+  .pill-rat{ background:rgba(239,68,68,.15); color:#F87171; }
+  .pill-ant{ background:rgba(234,179,8,.15); color:#EAB308; }
+  .pill-roach{ background:rgba(34,197,94,.15); color:#22C55E; }
+  .pill-termite{ background:rgba(249,115,22,.15); color:#FB923C; }
+  .pill-mosq{ background:rgba(139,92,246,.15); color:#A78BFA; }
+  .pill-fly{ background:rgba(236,72,153,.15); color:#F472B6; }
+  /* Time heatmap */
+  .hm-wrap{ overflow-x:auto; }
+  .hm{ display:grid; grid-template-columns:40px repeat(24,1fr); gap:2px; min-width:640px;
+    font-size:9px; }
+  .hm-h{ text-align:center; color:var(--muted); font-size:9px; padding:2px 0; }
+  .hm-d{ color:var(--muted); text-align:right; padding-right:6px; font-size:10px;
+    display:grid; place-items:center; }
+  .hm-c{ height:22px; border-radius:2px; display:grid; place-items:center; font-size:9px;
+    color:rgba(255,255,255,.85); font-weight:500; }
+  /* Bar list */
+  .barlist{ display:flex; flex-direction:column; gap:6px; }
+  .bl-row{ display:flex; align-items:center; gap:8px; font-size:11px; }
+  .bl-lbl{ width:38px; color:var(--muted); text-align:right; }
+  .bl-track{ flex:1; height:18px; background:var(--panel2); border-radius:3px; overflow:hidden; }
+  .bl-fill{ height:100%; background:var(--accent2); border-radius:3px; }
+  .bl-val{ width:28px; text-align:right; color:var(--text); font-weight:500; }
+  /* Line chart */
+  .linechart{ height:140px; width:100%; }
+  /* Sparkline */
+  .spark{ height:32px; width:100%; }
+  /* Legend */
+  .legend{ display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--muted);
+    margin-top:8px; }
+  .legend-dot{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px;
+    vertical-align:middle; }
+  .callout{ background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.3);
+    border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:16px; }
+  .callout b{ color:var(--accent); }
+  @media (max-width:900px){
+    .filter-grid,.kpi-grid,.grid-2,.grid-3{ grid-template-columns:1fr; }
+    .dash{ grid-template-columns:1fr; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark">A</div>
+    <div>
+      <h1>Mockup 7 — Reporter + Time + Filter</h1>
+      <p>AGA Complaint Dashboard · Preview เพื่อรีวิวก่อน implement</p>
+    </div>
+  </div>
+  <button class="theme-toggle" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='light'?'dark':'light'">🌓 สลับ Theme</button>
+</header>
+
+<!-- ============ SECTION 1: FILTER ENHANCE ============ -->
+<h2 class="sec"><span class="num">1</span>Filter "อาคาร × เดือน" — 3 ทางเลือก</h2>
+<p class="sec-desc">ตอนนี้กราฟ "ชนิดสัตว์รบกวน แยกตามอาคาร" มีแค่ dropdown เดือน · เพิ่มให้เลือกช่วงวันที่ได้ · ทั้ง 3 ตัวเลือกทำงานร่วมกับ filter อาคาร/ชนิดเดิม</p>
+
+<div class="filter-grid">
+
+  <div class="opt-card">
+    <div class="opt-head">
+      <div class="opt-title">A · Dropdown + Custom Range</div>
+      <span class="opt-tag">เสริม option ล่าง</span>
+    </div>
+    <div class="opt-preview">
+      <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+        <select class="sel">
+          <option>ทั้งหมด</option>
+          <option>ส.ค. 69</option>
+          <option>ก.ค. 69</option>
+          <option>— กำหนดเอง —</option>
+        </select>
+        <div class="date-row">
+          <input type="date" class="date-in" value="2026-07-01">
+          <span>→</span>
+          <input type="date" class="date-in" value="2026-08-02">
+        </div>
+      </div>
+    </div>
+    <div class="opt-pros">
+      <b>ข้อดี:</b> คงพฤติกรรมเดิม, ผู้ใช้ที่ใช้แบบเดือนไม่ต้องเรียนใหม่<br>
+      <b>ข้อเสีย:</b> คลิก 2 ครั้ง (dropdown → date), 2 UI ปนกัน
+    </div>
+  </div>
+
+  <div class="opt-card rec">
+    <div class="opt-head">
+      <div class="opt-title">B · Preset Chips + Custom<span class="badge-rec">แนะนำ</span></div>
+      <span class="opt-tag">แบบ Google Analytics</span>
+    </div>
+    <div class="opt-preview">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="chip-row">
+          <div class="chip">7 วัน</div>
+          <div class="chip active">30 วัน</div>
+          <div class="chip">90 วัน</div>
+          <div class="chip">เดือนนี้</div>
+          <div class="chip">ทั้งหมด</div>
+          <div class="chip">📅 กำหนดเอง</div>
+        </div>
+        <div class="date-row" style="opacity:.5">
+          <input type="date" class="date-in" value="2026-07-04" disabled>
+          <span>→</span>
+          <input type="date" class="date-in" value="2026-08-02" disabled>
+        </div>
+      </div>
+    </div>
+    <div class="opt-pros">
+      <b>ข้อดี:</b> ใช้ง่ายสุด, 1 คลิก, mobile-friendly, มี "30 วัน" เป็นค่า default ใช้บ่อย<br>
+      <b>ข้อเสีย:</b> กินพื้นที่ใน filter bar มากกว่า
+    </div>
+  </div>
+
+  <div class="opt-card">
+    <div class="opt-head">
+      <div class="opt-title">C · Dual Month Dropdown</div>
+      <span class="opt-tag">ช่วงเดือน (from → to)</span>
+    </div>
+    <div class="opt-preview">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div style="text-align:center;">
+          <label style="font-size:10px; color:var(--muted); display:block; margin-bottom:4px;">ตั้งแต่</label>
+          <select class="sel"><option>เม.ย. 69</option></select>
+        </div>
+        <span style="color:var(--muted); margin-top:14px;">→</span>
+        <div style="text-align:center;">
+          <label style="font-size:10px; color:var(--muted); display:block; margin-bottom:4px;">ถึง</label>
+          <select class="sel"><option>ส.ค. 69</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="opt-pros">
+      <b>ข้อดี:</b> ตรงประเด็น "ช่วงเดือน", compact, ตรงกับ mental model เดิม<br>
+      <b>ข้อเสีย:</b> ยืดหยุ่นน้อย (ระดับเดือน ไม่ใช่วัน), ไม่ตอบโจทย์ถ้าอยากดู "7 วันล่าสุด"
+    </div>
+  </div>
+
+</div>
+
+<div class="callout" style="margin-top:20px;">
+  💡 <b>เหตุผลแนะนำ B:</b> user ที่ใช้ dashboard ปกติมองข้อมูล "30 วันล่าสุด" มากที่สุด · chip คลิกเดียวจบ · custom range รองรับกรณีเจาะข้อมูลย้อนหลัง · ตรงกับ pattern ที่ user เคยใช้ใน filter ตาราง Excel-style
+</div>
+
+<!-- ============ SECTION 2: REPORTER PAGE ============ -->
+<h2 class="sec"><span class="num">2</span>หน้าใหม่ "ผู้แจ้ง" — Reporter Analytics</h2>
+<p class="sec-desc">ดูผู้แจ้งบ่อยที่สุด, ผู้แจ้งกระจายตามอาคาร/ชนิดสัตว์, พบผู้แจ้งซ้ำที่อาจต้องดูแลพิเศษ</p>
+
+<div class="dash">
+  <aside class="sb">
+    <div class="sb-brand">
+      <div class="sb-logo">A</div>
+      <div><p>AGA Pest</p><span>Control Center</span></div>
+    </div>
+    <div class="sb-group">Dashboard</div>
+    <div class="sb-item"><span class="ic">📊</span>ภาพรวม</div>
+    <div class="sb-item"><span class="ic">⚖️</span>เปรียบเทียบ VS</div>
+    <div class="sb-item"><span class="ic">🏢</span>อาคาร × เดือน</div>
+    <div class="sb-item"><span class="ic">🗺️</span>Heatmap ชั้น</div>
+    <div class="sb-item active"><span class="ic">👤</span>ผู้แจ้ง<span class="sb-badge">NEW</span></div>
+    <div class="sb-item"><span class="ic">⏰</span>ช่วงเวลาการแจ้ง<span class="sb-badge">NEW</span></div>
+    <div class="sb-group">งาน</div>
+    <div class="sb-item"><span class="ic">📋</span>Work Orders</div>
+    <div class="sb-item"><span class="ic">📷</span>รูปหลักฐาน</div>
+  </aside>
+
+  <div class="main">
+    <div class="main-head">
+      <div>
+        <h3 class="main-title">👤 ผู้แจ้ง (Reporter Analytics)</h3>
+        <p class="main-sub">วิเคราะห์ผู้แจ้งปัญหา — ความถี่ · อาคาร · ชนิดสัตว์</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="chip active">30 วัน</button>
+        <button class="chip">90 วัน</button>
+        <button class="chip">ทั้งหมด</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <span style="font-size:11px; color:var(--muted);">🔎 กรอง:</span>
+      <label>อาคาร:</label>
+      <select class="sel"><option>ทั้งหมด</option></select>
+      <label>ชนิด:</label>
+      <select class="sel"><option>ทั้งหมด</option></select>
+      <button class="chip" style="margin-left:auto;">↻ ล้าง</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-lbl">ผู้แจ้งทั้งหมด</div>
+        <div class="kpi-num">24</div>
+        <div class="kpi-delta up">↑ 3 คนใหม่ในเดือนนี้</div>
+        <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <polyline points="0,18 15,15 30,17 45,12 60,10 75,7 90,8 100,4" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">แอคทีฟ 30 วัน</div>
+        <div class="kpi-num">11</div>
+        <div class="kpi-delta flat">= เท่าเดือนก่อน</div>
+        <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <polyline points="0,10 15,11 30,10 45,12 60,9 75,10 90,11 100,10" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">แจ้งบ่อยที่สุด</div>
+        <div class="kpi-num" style="font-size:16px; padding-top:6px;">คุณโบว์</div>
+        <div class="kpi-delta up">28 งาน · 8 อาคาร</div>
+        <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <polyline points="0,20 15,18 30,14 45,15 60,10 75,7 90,6 100,4" fill="none" stroke="var(--danger)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">เฉลี่ยต่อคน</div>
+        <div class="kpi-num">7.8</div>
+        <div class="kpi-delta down">↓ 0.4 vs เดือนก่อน</div>
+        <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <polyline points="0,6 15,8 30,7 45,10 60,11 75,13 90,12 100,14" fill="none" stroke="var(--success)" stroke-width="1.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Top 10 ผู้แจ้ง (30 วัน)</div>
+          <span class="card-hint">คลิกชื่อเพื่อกรอง</span>
+        </div>
+        <div>
+          <div class="rp-bar"><div class="rp-name">คุณโบว์</div><div class="rp-track"><div class="rp-fill" style="width:100%">02-4198286</div></div><div class="rp-val">28</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณแข</div><div class="rp-track"><div class="rp-fill" style="width:75%; background:#60A5FA;">02-4197245</div></div><div class="rp-val">21</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณ TOR</div><div class="rp-track"><div class="rp-fill" style="width:60%; background:#60A5FA;"></div></div><div class="rp-val">17</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณอ้อ</div><div class="rp-track"><div class="rp-fill" style="width:50%; background:#60A5FA;"></div></div><div class="rp-val">14</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณกิต</div><div class="rp-track"><div class="rp-fill" style="width:39%; background:#60A5FA;"></div></div><div class="rp-val">11</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณเบียร์</div><div class="rp-track"><div class="rp-fill" style="width:32%; background:#60A5FA;"></div></div><div class="rp-val">9</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณกิ๊บ</div><div class="rp-track"><div class="rp-fill" style="width:25%; background:#60A5FA;"></div></div><div class="rp-val">7</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณโอ๊ต</div><div class="rp-track"><div class="rp-fill" style="width:21%; background:#60A5FA;"></div></div><div class="rp-val">6</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณโบ๊ท</div><div class="rp-track"><div class="rp-fill" style="width:18%; background:#60A5FA;"></div></div><div class="rp-val">5</div></div>
+          <div class="rp-bar"><div class="rp-name">คุณอาร์ต</div><div class="rp-track"><div class="rp-fill" style="width:14%; background:#60A5FA;"></div></div><div class="rp-val">4</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">ผู้แจ้ง × ชนิดสัตว์</div>
+          <span class="card-hint">Top 5 ผู้แจ้ง</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <div class="rp-b-row"><div class="rp-b-name">คุณโบว์</div><div class="rp-b-track">
+            <div class="rp-b-cell" style="width:36%; background:var(--pest-rat);">หนู 10</div>
+            <div class="rp-b-cell" style="width:25%; background:var(--pest-ant);">มด 7</div>
+            <div class="rp-b-cell" style="width:21%; background:var(--pest-roach);">แมลงสาบ 6</div>
+            <div class="rp-b-cell" style="width:18%; background:var(--pest-fly);">ยุง 5</div>
+          </div></div>
+          <div class="rp-b-row"><div class="rp-b-name">คุณแข</div><div class="rp-b-track">
+            <div class="rp-b-cell" style="width:48%; background:var(--pest-termite);">ปลวก 10</div>
+            <div class="rp-b-cell" style="width:29%; background:var(--pest-ant);">มด 6</div>
+            <div class="rp-b-cell" style="width:23%; background:var(--pest-rat);">หนู 5</div>
+          </div></div>
+          <div class="rp-b-row"><div class="rp-b-name">คุณ TOR</div><div class="rp-b-track">
+            <div class="rp-b-cell" style="width:59%; background:var(--pest-roach);">แมลงสาบ 10</div>
+            <div class="rp-b-cell" style="width:24%; background:var(--pest-ant);">มด 4</div>
+            <div class="rp-b-cell" style="width:17%; background:var(--pest-fly);">ยุง 3</div>
+          </div></div>
+          <div class="rp-b-row"><div class="rp-b-name">คุณอ้อ</div><div class="rp-b-track">
+            <div class="rp-b-cell" style="width:43%; background:var(--pest-rat);">หนู 6</div>
+            <div class="rp-b-cell" style="width:36%; background:var(--pest-termite);">ปลวก 5</div>
+            <div class="rp-b-cell" style="width:21%; background:var(--pest-mosquito);">ยุง 3</div>
+          </div></div>
+          <div class="rp-b-row"><div class="rp-b-name">คุณกิต</div><div class="rp-b-track">
+            <div class="rp-b-cell" style="width:64%; background:var(--pest-ant);">มด 7</div>
+            <div class="rp-b-cell" style="width:36%; background:var(--pest-roach);">แมลงสาบ 4</div>
+          </div></div>
+        </div>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:var(--pest-rat)"></span>หนู</span>
+          <span><span class="legend-dot" style="background:var(--pest-termite)"></span>ปลวก</span>
+          <span><span class="legend-dot" style="background:var(--pest-ant)"></span>มด</span>
+          <span><span class="legend-dot" style="background:var(--pest-roach)"></span>แมลงสาบ</span>
+          <span><span class="legend-dot" style="background:var(--pest-mosquito)"></span>ยุง</span>
+          <span><span class="legend-dot" style="background:var(--pest-fly)"></span>แมลงวัน</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">ตารางรายชื่อ (คลิกหัวคอลัมน์เพื่อจัดเรียง · คลิกชื่อเพื่อดูรายการงาน)</div>
+        <span class="card-hint">แสดง 5 จาก 24</span>
+      </div>
+      <table class="tbl">
+        <thead><tr>
+          <th>ผู้แจ้ง</th><th>เบอร์</th><th style="text-align:right">งานทั้งหมด</th>
+          <th style="text-align:right">อาคาร</th><th>ชนิดที่แจ้งบ่อย</th><th>ล่าสุด</th><th style="text-align:right">%ปิด</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><b>คุณโบว์</b></td><td>02-4198286</td><td style="text-align:right">28</td><td style="text-align:right">8</td>
+            <td><span class="pill pill-rat">หนู</span> <span class="pill pill-ant">มด</span></td>
+            <td>2 ส.ค. 14:31</td><td style="text-align:right; color:var(--success)">96%</td></tr>
+          <tr><td><b>คุณแข</b></td><td>02-4197245</td><td style="text-align:right">21</td><td style="text-align:right">6</td>
+            <td><span class="pill pill-termite">ปลวก</span> <span class="pill pill-ant">มด</span></td>
+            <td>1 ส.ค. 09:15</td><td style="text-align:right; color:var(--success)">100%</td></tr>
+          <tr><td><b>คุณ TOR</b></td><td>02-4194180</td><td style="text-align:right">17</td><td style="text-align:right">5</td>
+            <td><span class="pill pill-roach">แมลงสาบ</span></td>
+            <td>31 ก.ค. 16:22</td><td style="text-align:right; color:var(--warn)">88%</td></tr>
+          <tr><td><b>คุณอ้อ</b></td><td>—</td><td style="text-align:right">14</td><td style="text-align:right">4</td>
+            <td><span class="pill pill-rat">หนู</span> <span class="pill pill-termite">ปลวก</span></td>
+            <td>29 ก.ค. 11:04</td><td style="text-align:right; color:var(--success)">93%</td></tr>
+          <tr><td><b>คุณกิต</b></td><td>02-4193812</td><td style="text-align:right">11</td><td style="text-align:right">3</td>
+            <td><span class="pill pill-ant">มด</span> <span class="pill pill-roach">แมลงสาบ</span></td>
+            <td>28 ก.ค. 08:47</td><td style="text-align:right; color:var(--success)">100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 3: TIME PAGE ============ -->
+<h2 class="sec"><span class="num">3</span>หน้าใหม่ "ช่วงเวลาการแจ้ง" — Time Analytics</h2>
+<p class="sec-desc">ดูว่าปัญหาถูกแจ้งช่วงเวลาไหนบ่อย · วัน/ชั่วโมงพีค · เทรนด์รายวัน · จัดตาราง service ให้ตรง peak</p>
+
+<div class="dash">
+  <aside class="sb">
+    <div class="sb-brand">
+      <div class="sb-logo">A</div>
+      <div><p>AGA Pest</p><span>Control Center</span></div>
+    </div>
+    <div class="sb-group">Dashboard</div>
+    <div class="sb-item"><span class="ic">📊</span>ภาพรวม</div>
+    <div class="sb-item"><span class="ic">⚖️</span>เปรียบเทียบ VS</div>
+    <div class="sb-item"><span class="ic">🏢</span>อาคาร × เดือน</div>
+    <div class="sb-item"><span class="ic">🗺️</span>Heatmap ชั้น</div>
+    <div class="sb-item"><span class="ic">👤</span>ผู้แจ้ง<span class="sb-badge">NEW</span></div>
+    <div class="sb-item active"><span class="ic">⏰</span>ช่วงเวลาการแจ้ง<span class="sb-badge">NEW</span></div>
+    <div class="sb-group">งาน</div>
+    <div class="sb-item"><span class="ic">📋</span>Work Orders</div>
+    <div class="sb-item"><span class="ic">📷</span>รูปหลักฐาน</div>
+  </aside>
+
+  <div class="main">
+    <div class="main-head">
+      <div>
+        <h3 class="main-title">⏰ ช่วงเวลาการแจ้ง (Time Analytics)</h3>
+        <p class="main-sub">แจ้งเวลาไหน · วันไหน · เดือนไหน — เพื่อวางแผน service team</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="chip">7 วัน</button>
+        <button class="chip active">30 วัน</button>
+        <button class="chip">90 วัน</button>
+        <button class="chip">ทั้งหมด</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-lbl">งานที่แจ้ง (30 วัน)</div>
+        <div class="kpi-num">87</div>
+        <div class="kpi-delta up">↑ 12 vs เดือนก่อน</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">ชั่วโมงพีค</div>
+        <div class="kpi-num">10:00</div>
+        <div class="kpi-delta flat">18 งาน · 21%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">วันพีค</div>
+        <div class="kpi-num" style="font-size:16px; padding-top:6px;">จันทร์</div>
+        <div class="kpi-delta flat">18 งาน · 21%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">ในเวลาทำการ (8-17)</div>
+        <div class="kpi-num">78%</div>
+        <div class="kpi-delta flat">68/87 งาน</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <div class="card-title">Heatmap: ชั่วโมง × วันในสัปดาห์</div>
+        <span class="card-hint">เข้ม = แจ้งเยอะ · คลิกเซลล์เพื่อ drill-down</span>
+      </div>
+      <div class="hm-wrap">
+        <div class="hm" id="heatmap"></div>
+      </div>
+      <div class="legend">
+        <span style="color:var(--muted);">น้อย</span>
+        <span class="legend-dot" style="background:#1E3A5F"></span>
+        <span class="legend-dot" style="background:#2563EB"></span>
+        <span class="legend-dot" style="background:#3B82F6"></span>
+        <span class="legend-dot" style="background:#60A5FA"></span>
+        <span class="legend-dot" style="background:#F59E0B"></span>
+        <span class="legend-dot" style="background:#EF4444"></span>
+        <span style="color:var(--muted);">มาก</span>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-head"><div class="card-title">แจกแจงตามชั่วโมง</div><span class="card-hint">24 ชม.</span></div>
+        <div class="barlist" id="hourbars"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">แจกแจงตามวันในสัปดาห์</div><span class="card-hint">7 วัน</span></div>
+        <div class="barlist">
+          <div class="bl-row"><div class="bl-lbl">จันทร์</div><div class="bl-track"><div class="bl-fill" style="width:100%; background:var(--danger)"></div></div><div class="bl-val">18</div></div>
+          <div class="bl-row"><div class="bl-lbl">อังคาร</div><div class="bl-track"><div class="bl-fill" style="width:83%; background:var(--warn)"></div></div><div class="bl-val">15</div></div>
+          <div class="bl-row"><div class="bl-lbl">พุธ</div><div class="bl-track"><div class="bl-fill" style="width:78%"></div></div><div class="bl-val">14</div></div>
+          <div class="bl-row"><div class="bl-lbl">พฤหัสฯ</div><div class="bl-track"><div class="bl-fill" style="width:72%"></div></div><div class="bl-val">13</div></div>
+          <div class="bl-row"><div class="bl-lbl">ศุกร์</div><div class="bl-track"><div class="bl-fill" style="width:67%"></div></div><div class="bl-val">12</div></div>
+          <div class="bl-row"><div class="bl-lbl">เสาร์</div><div class="bl-track"><div class="bl-fill" style="width:44%"></div></div><div class="bl-val">8</div></div>
+          <div class="bl-row"><div class="bl-lbl">อาทิตย์</div><div class="bl-track"><div class="bl-fill" style="width:39%"></div></div><div class="bl-val">7</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">เทรนด์รายวัน (30 วันย้อนหลัง)</div>
+        <span class="card-hint">เฉลี่ย 2.9 งาน/วัน · พีค 8 งาน (28 ก.ค.)</span>
+      </div>
+      <svg class="linechart" viewBox="0 0 600 140" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g stroke="var(--border)" stroke-width="0.5">
+          <line x1="0" y1="35" x2="600" y2="35"/>
+          <line x1="0" y1="70" x2="600" y2="70"/>
+          <line x1="0" y1="105" x2="600" y2="105"/>
+        </g>
+        <path d="M0,105 L20,88 L40,110 L60,72 L80,95 L100,60 L120,82 L140,50 L160,75 L180,45 L200,68 L220,58 L240,85 L260,42 L280,65 L300,38 L320,55 L340,72 L360,48 L380,25 L400,50 L420,62 L440,35 L460,58 L480,45 L500,68 L520,52 L540,38 L560,55 L580,42 L600,60 L600,140 L0,140 Z" fill="url(#area)"/>
+        <path d="M0,105 L20,88 L40,110 L60,72 L80,95 L100,60 L120,82 L140,50 L160,75 L180,45 L200,68 L220,58 L240,85 L260,42 L280,65 L300,38 L320,55 L340,72 L360,48 L380,25 L400,50 L420,62 L440,35 L460,58 L480,45 L500,68 L520,52 L540,38 L560,55 L580,42 L600,60" fill="none" stroke="#3B82F6" stroke-width="1.5"/>
+        <circle cx="380" cy="25" r="4" fill="#EF4444"/>
+        <text x="385" y="20" font-size="10" fill="#EF4444">พีค 8 งาน · 28 ก.ค.</text>
+      </svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ RECOMMEND EXTRAS ============ -->
+<h2 class="sec"><span class="num">+</span>ข้อเสนอเพิ่มเติม</h2>
+<p class="sec-desc">features เสริมที่จะทำงานร่วมกันดีกับ 2 หน้าใหม่ · เลือก opt-in ตามที่ต้องการ</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px;">🚨 Alert ผู้แจ้งซ้ำ</div>
+    <div class="opt-pros">แจ้งเตือนบน dashboard เมื่อคนเดียวแจ้ง ≥5 งาน/สัปดาห์ ในอาคารเดียว — อาจต้องเข้าตรวจสอบพิเศษ</div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px;">📅 Compare period</div>
+    <div class="opt-pros">เทียบข้อมูล 30 วันนี้ vs 30 วันก่อน (Δ% ต่อผู้แจ้ง/ต่อชั่วโมง) — เห็นเทรนด์เปลี่ยนแปลง</div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:6px;">📤 Export ผู้แจ้ง</div>
+    <div class="opt-pros">Export ตาราง Reporter เป็น CSV/PDF สำหรับส่งรายงาน monthly (ต่อยอด Export CSV เดิม)</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  // build hour × day heatmap (7×24 mock)
+  const days = ['จ','อ','พ','พฤ','ศ','ส','อา'];
+  const hmData = [
+    // hours 0-23 for each day (0=จันทร์)
+    [0,0,0,0,0,0,1,2,3,4,5,7,4,3,4,3,4,2,1,0,0,0,0,0],
+    [0,0,0,0,0,0,1,2,3,4,5,6,4,3,3,3,3,2,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,2,3,4,5,3,3,3,2,3,2,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,2,3,4,5,4,3,3,3,3,2,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,2,3,4,5,4,3,3,3,3,2,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,1,1,2,3,2,2,2,2,2,1,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,1,1,2,2,1,1,1,1,1,1,0,0,0,0,0],
+  ];
+  const hm = document.getElementById('heatmap');
+  const color = v => {
+    if (v === 0) return 'rgba(148,163,184,.08)';
+    if (v <= 1) return '#1E3A5F';
+    if (v <= 2) return '#2563EB';
+    if (v <= 3) return '#3B82F6';
+    if (v <= 4) return '#60A5FA';
+    if (v <= 5) return '#F59E0B';
+    return '#EF4444';
+  };
+  let html = '<div></div>';
+  for (let h = 0; h < 24; h++) html += `<div class="hm-h">${h}</div>`;
+  days.forEach((d, di) => {
+    html += `<div class="hm-d">${d}</div>`;
+    for (let h = 0; h < 24; h++) {
+      const v = hmData[di][h];
+      html += `<div class="hm-c" style="background:${color(v)}" title="${d} ${h}:00 — ${v} งาน">${v || ''}</div>`;
+    }
+  });
+  hm.innerHTML = html;
+
+  // hour bars (aggregate by hour)
+  const hourAgg = new Array(24).fill(0);
+  hmData.forEach(row => row.forEach((v, h) => hourAgg[h] += v));
+  const maxH = Math.max(...hourAgg);
+  const hb = document.getElementById('hourbars');
+  const peakHours = [10, 11, 14];
+  hourAgg.forEach((v, h) => {
+    if (v === 0 && (h < 6 || h > 20)) return;
+    const w = v > 0 ? Math.round((v / maxH) * 100) : 0;
+    const bg = peakHours.includes(h) ? 'var(--warn)' : 'var(--accent2)';
+    hb.innerHTML += `<div class="bl-row"><div class="bl-lbl">${String(h).padStart(2,'0')}:00</div><div class="bl-track"><div class="bl-fill" style="width:${w}%; background:${bg}"></div></div><div class="bl-val">${v}</div></div>`;
+  });
+</script>
