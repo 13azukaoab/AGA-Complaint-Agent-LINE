@@ -1,6 +1,6 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 31 กรกฎาคม 2569
+อัปเดตล่าสุด: 4 สิงหาคม 2569
 
 ---
 
@@ -214,6 +214,51 @@
 
 ไฟล์ที่แก้: `dashboard.html`
 
+#### Revision 1 — Reporter table แสดงชื่ออาคาร+ชั้น + ลบ NEW badge (commit `3c813f6`)
+
+User feedback หลัง deploy: อยากเห็นชื่ออาคารจริงในตาราง (ไม่ใช่แค่จำนวน) + เพิ่มคอลัมน์ชั้น + เอา badge "NEW" ออก (ผ่านช่วงใหม่แล้ว)
+
+- คอลัมน์ "อาคาร": จากตัวเลข count → **ชื่ออาคารจริง** เรียงตามความถี่ + `(n)` เมื่อ >1 ครั้ง (เช่น "ตึกสยามินทร์ (4), ตึก 84 ปี (3)")
+- เพิ่มคอลัมน์ใหม่ "ชั้น" — list ชั้นทั้งหมดที่แจ้ง เรียง numeric (เช่น "ชั้น 2, ชั้น 10, ชั้น 11/2")
+- `computeReporterStats` เพิ่ม `bldgCounts` (name→count) + `floors` (Set)
+- Export CSV update ตาม (header เพิ่มชั้น)
+- ลบ `<span class="sb-badge">NEW</span>` ออก 3 sidebar items
+
+#### Revision 2 — Dataviz audit + palette fix (commit `cdf75e6`)
+
+User สั่งให้ใช้ dataviz skill audit charts หน้า Reporter+Time — รัน `node scripts/validate_palette.js` จริง (ไม่เดา) พบ 4 ปัญหา แก้ครบ:
+
+| # | ระดับ | จุด | ปัญหา | Fix |
+|---|---|---|---|---|
+| 1 | 🔴 Critical | `tmHeatmap` (วัน×ชั่วโมง) | Rainbow sequential (blue→amber→red) สำหรับ magnitude — ตรง anti-pattern "Rainbow / non-neighbor sequential" | เปลี่ยนเป็น blue เดียว 6-step monotone (จาก dataviz `palette.md` ramp) + แก้ text contrast (เข้ม/อ่อนตาม step) |
+| 2 | 🟠 High | `chartHour`/`chartDow` | Peak-highlight amber ชนกับ status "warning" + base color ไม่ใช่ documented hex | Emphasis pattern: เทา (`#94a3b8`) ทุกแท่ง + blue (`#3987e5`) เด่นเฉพาะ peak |
+| 3 | 🟡 Medium | `PEST_PALETTE` (ทั้งแอป) | CVD **FAIL จริง**: `#ca8a04`↔`#ea580c` ΔE 2.9 (ต้อง≥8), `#ea580c`↔`#dc2626` normal-vision 8.7 (ต้อง≥15) | แทนด้วย documented 6-slot `['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300']` — validate PASS ทั้ง light+dark surface จริงของแอป (`#ffffff`/`#1e293b`) |
+| 4 | 🟢 Low | `chartTopReporters`/`chartTimeLine` | hex ไม่ใช่ documented palette | Snap เป็น `#3987e5` |
+
+**Fix #3 กระทบทั้งแอป** — `pestColorFor()` ใช้ร่วมกับ BPM stacked chart เดิม (ไม่ใช่แค่ Reporter) ตามกฎ "never mix themes within a dashboard"
+
+Verified local: heatmap ไล่เฉดเดียวถูก, peak highlight เด่นชัด, pest แยกสีง่ายขึ้น
+
+---
+
+## 🖥️ Dev Environment (เครื่อง local — 4 ส.ค. 2569)
+
+### Python + hookify แก้ 2 บั๊กเรียงกัน
+
+1. **`python3`/`python` ใช้ไม่ได้** — Windows App Execution Alias ชี้ไป Microsoft Store stub แทน python.exe จริง (แม้ติดตั้ง Python จาก python.org แล้ว) → แก้ด้วย Settings → Apps → Advanced app settings → App execution aliases → toggle "Python (default)" + "Python install manager" off→on
+2. **hookify rule ไม่ trigger แม้ python ใช้ได้แล้ว** — `config_loader.py` เปิดไฟล์ด้วย `open(path, 'r')` ไม่ระบุ encoding → Windows default เป็น cp1252 → อ่านไฟล์ rule ที่มีภาษาไทย/emoji ไม่ออก → error ถูก swallow เงียบ (print stderr แล้ว skip) → แก้ด้วย `PYTHONUTF8=1` (User env var ถาวร, ตั้งผ่าน `[Environment]::SetEnvironmentVariable`)
+
+**หลังแก้:** ต้องเปิด Claude Code session ใหม่ (terminal ใหม่) ให้ env var มีผล — verified ผ่าน direct script test แล้ว (`permissionDecision: deny` ออกถูกต้อง) แต่ยังไม่ได้ verify ผ่าน live session จริง (รอ user เปิดเครื่องรอบหน้า)
+
+### Hookify rules ที่สร้างไว้ (ยังไม่ commit — `.claude/` ถูก gitignore)
+
+| Rule | File | Action | Trigger |
+|---|---|---|---|
+| `block-secret-commit` | `.claude/hookify.block-secret-commit.local.md` | 🚨 block | `git add` โดน `Secret Key.env` / `credentials/*.json,txt,pem,key` / `.env` |
+| `remind-test-gemini` | `.claude/hookify.remind-test-gemini.local.md` | ⚠️ warn | Edit/Write `src/gemini.js` — เตือนรัน `test_normalize.js` |
+
+**TODO เปิดเครื่องรอบหน้า:** ทดสอบ `git add -f "Secret Key.env"` ใน session ใหม่ → ควรโดน block จริง (รอบก่อนหน้ายังไม่ block เพราะ 2 บั๊กข้างบน)
+
 ---
 
 ## 📋 สถานะระบบปัจจุบัน (4 ส.ค. 2569)
@@ -221,9 +266,8 @@
 | Component | สถานะ |
 |-----------|-------|
 | Cloud Run Backend | ✅ commit `4b36b7d` (Phase 15 — gemini.js normalize + 3.6-flash) |
-| Netlify Dashboard | ✅ commit `72e715b` (Phase 16 — chart-enlarge + filter chips + Reporter + Time) |
+| Netlify Dashboard | ✅ commit `cdf75e6` (Phase 16 + dataviz audit fix — ล่าสุด) |
 | Gemini Model | ✅ `gemini-3.6-flash` (upgrade จาก 3.5-flash, 2 ส.ค.) |
-| Netlify Dashboard | ✅ auto-deploy — sidebar redesign + หน้า "อาคาร × เดือน" (Phase 14) |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
