@@ -1860,7 +1860,9 @@ function renderBuildingFloorDrill(rows) {
 
 /* ---- ชนิดสัตว์รบกวน แยกตามอาคาร (Stacked bar + filter อาคาร/เดือน/ชนิด) ---- */
 let _bldgPestChart = null;
-const PEST_PALETTE = ['#dc2626','#ea580c','#ca8a04','#16a34a','#0891b2','#7c3aed'];
+// Categorical palette — validated via dataviz skill (node validate_palette.js):
+// worst adjacent CVD ΔE 8.4 (protan) / normal-vision floor 19.3, PASS ทั้ง light+dark surface
+const PEST_PALETTE = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300'];
 const OTHER_PEST = 'อื่นๆ', OTHER_PEST_C = '#94a3b8';
 const bpState = { buildings: new Set(), pests: new Set(), preset: 'all', dateFrom: '', dateTo: '' };
 function getBpDateRange() {
@@ -3297,7 +3299,7 @@ function renderReporter() {
   if (_rpChartTop) _rpChartTop.destroy();
   _rpChartTop = new Chart(document.getElementById('chartTopReporters'), {
     type: 'bar',
-    data: { labels, datasets: [{ label: 'จำนวนงาน', data: values, backgroundColor: '#3b82f6', borderRadius: 4 }] },
+    data: { labels, datasets: [{ label: 'จำนวนงาน', data: values, backgroundColor: '#3987e5', borderRadius: 4 }] },
     options: {
       indexAxis: 'y',
       responsive: true,
@@ -3531,7 +3533,7 @@ function renderTime() {
       datasets: [{
         label: 'จำนวนงาน',
         data: hourCounts,
-        backgroundColor: hourCounts.map(v => v === peakHourN && v > 0 ? '#f59e0b' : '#22d3ee'),
+        backgroundColor: hourCounts.map(v => v === peakHourN && v > 0 ? '#3987e5' : '#94a3b8'),
         borderRadius: 3
       }]
     },
@@ -3550,7 +3552,7 @@ function renderTime() {
       datasets: [{
         label: 'จำนวนงาน',
         data: [dowCounts[1], dowCounts[2], dowCounts[3], dowCounts[4], dowCounts[5], dowCounts[6], dowCounts[0]],
-        backgroundColor: [1,2,3,4,5,6,0].map(d => d === peakDow && dowCounts[d] > 0 ? '#f59e0b' : '#3b82f6'),
+        backgroundColor: [1,2,3,4,5,6,0].map(d => d === peakDow && dowCounts[d] > 0 ? '#3987e5' : '#94a3b8'),
         borderRadius: 3
       }]
     },
@@ -3589,8 +3591,8 @@ function renderTime() {
       datasets: [{
         label: 'งาน/วัน',
         data: trendVals,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,.15)',
+        borderColor: '#3987e5',
+        backgroundColor: 'rgba(57,135,229,.15)',
         fill: true, tension: 0.3, pointRadius: 2
       }]
     },
@@ -3608,16 +3610,21 @@ function renderTimeHeatmap(mat) {
   const maxV = Math.max(...mat.flat(), 1);
   const rowOrder = [1,2,3,4,5,6,0]; // จ อ พ พฤ ศ ส อา
   const rowLabels = ['จ','อ','พ','พฤ','ศ','ส','อา'];
-  const color = v => {
-    if (v === 0) return 'rgba(148,163,184,.08)';
+  // Sequential — one hue (blue), monotone light→dark ตามทีที่ dataviz skill กำหนด
+  // (อ้างอิงจาก references/palette.md ramp บรรทัด 150/250/350/450/550/650 — ไม่ใช่ rainbow หลายเฉด)
+  const SEQ_STEPS = ['#b7d3f6','#86b6ef','#5598e7','#2a78d6','#1c5cab','#104281'];
+  const DARK_TEXT_CUTOFF = 3; // steps index < 3 (150/250/350) → ตัวหนังสือเข้ม, >= 3 → ตัวหนังสือขาว
+  const stepIdx = v => {
     const pct = v / maxV;
-    if (pct <= 0.15) return '#1e3a5f';
-    if (pct <= 0.3)  return '#2563eb';
-    if (pct <= 0.5)  return '#3b82f6';
-    if (pct <= 0.7)  return '#60a5fa';
-    if (pct <= 0.85) return '#f59e0b';
-    return '#ef4444';
+    if (pct <= 0.15) return 0;
+    if (pct <= 0.3)  return 1;
+    if (pct <= 0.5)  return 2;
+    if (pct <= 0.7)  return 3;
+    if (pct <= 0.85) return 4;
+    return 5;
   };
+  const color = v => v === 0 ? 'rgba(148,163,184,.08)' : SEQ_STEPS[stepIdx(v)];
+  const textColor = v => v === 0 ? '' : (stepIdx(v) < DARK_TEXT_CUTOFF ? 'rgba(15,23,42,.75)' : 'rgba(255,255,255,.9)');
   let html = '<div style="display:grid; grid-template-columns:36px repeat(24,minmax(22px,1fr)); gap:2px; min-width:640px; font-size:10px;">';
   html += '<div></div>';
   for (let h = 0; h < 24; h++) html += `<div style="text-align:center; color:#94a3b8; font-size:9px; padding:2px 0;">${h}</div>`;
@@ -3625,14 +3632,14 @@ function renderTimeHeatmap(mat) {
     html += `<div style="color:#94a3b8; text-align:right; padding-right:6px; display:grid; place-items:center; font-size:10px;">${rowLabels[i]}</div>`;
     for (let h = 0; h < 24; h++) {
       const v = mat[dow][h];
-      html += `<div style="height:22px; border-radius:2px; background:${color(v)}; display:grid; place-items:center; font-size:9px; color:rgba(255,255,255,.85); font-weight:500;" title="${rowLabels[i]} ${h}:00 — ${v} งาน">${v || ''}</div>`;
+      html += `<div style="height:22px; border-radius:2px; background:${color(v)}; display:grid; place-items:center; font-size:9px; color:${textColor(v)}; font-weight:500;" title="${rowLabels[i]} ${h}:00 — ${v} งาน">${v || ''}</div>`;
     }
   });
   html += '</div>';
-  // legend
+  // legend — ไล่เฉดเดียว (blue) ให้ตรงกับ ramp ที่ใช้จริงในกริด
   html += '<div style="display:flex; gap:8px; margin-top:10px; font-size:10px; color:#94a3b8; align-items:center; flex-wrap:wrap;">';
   html += '<span>น้อย</span>';
-  ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#f59e0b','#ef4444'].forEach(c => {
+  SEQ_STEPS.forEach(c => {
     html += `<span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:${c};"></span>`;
   });
   html += '<span>มาก</span></div>';
