@@ -189,39 +189,39 @@
 
 ---
 
-### Phase 16 — Dashboard: หน้า "ผู้แจ้ง" + "ช่วงเวลาการแจ้ง" + Filter enhance (2 ส.ค. 2569) ⏸️ PAUSED — รอ user กลับมาตัดสินใจ
+### Phase 16 — Dashboard: หน้า "ผู้แจ้ง" + "ช่วงเวลาการแจ้ง" + Filter enhance + Chart-enlarge modal (4 ส.ค. 2569) ✅ DONE
 
-**Context:** User ขอเพิ่ม 3 อย่างในหน้า dashboard ก่อน implement ทำ mockup ไว้ที่ [mockups/7-reporter-time-filter.html](../mockups/7-reporter-time-filter.html) แล้ว
+**Grill-me spec ล็อก 4/4:** (1) Filter B chips · (2) Reporter ตาม mockup + chart-enlarge · (3) Time ตาม mockup · (4) Extras A+C
 
-**สิ่งที่ user ขอ:**
-1. **Filter enhance** ปุ่มเดือน `bpMonth` (บนกราฟ "ชนิดสัตว์รบกวน แยกตามอาคาร" ในหน้า BPM) → เพิ่มการเลือกช่วงวันที่
-2. **หน้าใหม่ "ผู้แจ้ง"** (sidebar) — Reporter analytics
-3. **หน้าใหม่ "ช่วงเวลาการแจ้ง"** (sidebar) — Time analytics
-4. Design ต้อง เข้าใจง่าย + เป็นทางการ + เข้ากับ theme เดิม
+**4 commits deploy รอบเดียว (netlify auto):**
+| # | Commit | Feat |
+|---|---|---|
+| 1 | `bd814b9` | Universal chart-enlarge modal + ปุ่ม 🔍 (14 charts) · ESC/click-outside/✕ ปิด |
+| 2 | `5b59cce` | bpMonth → preset chips (7d/30d/90d/tm/all/custom) + date range |
+| 3 | `67ab132` | หน้า "ผู้แจ้ง" 👤 + alert ผู้แจ้งซ้ำ + Export CSV + fix modal title |
+| 4 | `72e715b` | หน้า "ช่วงเวลาการแจ้ง" ⏰ + heatmap 7×24 + hour/dow bar + line trend |
 
-**Mockup ส่งไปแล้ว 3 ตัวเลือก + 2 หน้าเต็ม + extras** — รอ user กลับมาเลือก:
+**สิ่งที่ทำจริง:**
+- Sidebar เพิ่ม 2 items: `👤 ผู้แจ้ง` · `⏰ ช่วงเวลาการแจ้ง` (badge NEW)
+- setTab handle 'reporter' + 'time'
+- ใช้ `contactName` (col J) + `contactPhone` (col K) — NOT senderName
+- Chart-enlarge modal (Q2 addon): universal button 🔍 บนกราฟทุก card, hover ให้เห็น, click เปิด modal ขนาด 960×540 · ปิด ESC/nokrob/✕
+- Alert threshold (Q4A): ≥5 งาน/สัปดาห์/อาคารเดียว/ผู้แจ้ง
+- Export CSV (Q4C): reporter+phone+count+bldg+top3pest+lastDate+%close (BOM Excel-safe)
+- Fix mid-turn (user feedback): small multi mini-chart → title = ชื่ออาคารจาก sibling <p> · dataset ไม่มี label → hide legend (แก้ "undefined")
 
-**คำถามค้าง 4 ข้อ (พอ user กลับมาให้ถามต่อเลย):**
-1. Filter enhance → **A** (dropdown+custom range) / **B ⭐แนะนำ** (preset chips 7d/30d/90d/เดือนนี้/ทั้งหมด + custom) / **C** (dual month from→to) ?
-2. หน้า "ผู้แจ้ง" — ok layout ไหม? (KPI 4 ใบ + Top 10 bar + Reporter×Pest stacked + ตาราง sortable)
-3. หน้า "ช่วงเวลา" — ok layout ไหม? (KPI 4 + Heatmap ชั่วโมง×วัน + bar list ชั่วโมง/วัน + line trend รายวัน)
-4. Extras opt-in → 🚨 Alert ผู้แจ้งซ้ำ ≥5 งาน/สัปดาห์/อาคาร · 📅 Compare period Δ% · 📤 Export ผู้แจ้ง CSV/PDF · เลือกอันไหน?
+**Verified local:** 5 tabs switch OK · Reporter 65 คน / top คุณรุ่งนภา · Time 110 งาน peak 09:00 อังคาร · Heatmap 168 cells · Charts+modal+CSV คลีน zero error
 
-**Design decisions ที่เก็บไว้แล้ว (ไม่ต้องถามซ้ำ):**
-- Theme match dashboard เดิม: dark slate + blue accent + emoji icons + Noto Sans Thai
-- Sidebar item ใหม่ 2 อัน: `👤 ผู้แจ้ง` + `⏰ ช่วงเวลาการแจ้ง` (badge NEW)
-- Reporter data source: column `senderName` + `contactPhone` จาก Sheet
-- Time data source: column `timestamp` จาก Sheet
-
-**ไฟล์ที่แก้เมื่อ implement จริง:** `dashboard.html` (เพิ่ม sidebar items + 2 sections + JS render functions)
+ไฟล์ที่แก้: `dashboard.html`
 
 ---
 
-## 📋 สถานะระบบปัจจุบัน (2 ส.ค. 2569)
+## 📋 สถานะระบบปัจจุบัน (4 ส.ค. 2569)
 
 | Component | สถานะ |
 |-----------|-------|
 | Cloud Run Backend | ✅ commit `4b36b7d` (Phase 15 — gemini.js normalize + 3.6-flash) |
+| Netlify Dashboard | ✅ commit `72e715b` (Phase 16 — chart-enlarge + filter chips + Reporter + Time) |
 | Gemini Model | ✅ `gemini-3.6-flash` (upgrade จาก 3.5-flash, 2 ส.ค.) |
 | Netlify Dashboard | ✅ auto-deploy — sidebar redesign + หน้า "อาคาร × เดือน" (Phase 14) |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
