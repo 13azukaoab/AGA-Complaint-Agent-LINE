@@ -1038,6 +1038,66 @@
     </div>
   </div>
 
+  <!-- ========== หน้าช่วงเวลาการแจ้ง (Time Analytics) ========== -->
+  <div id="tabTime" class="hidden">
+    <div class="mb-4">
+      <h1 class="text-xl font-bold text-slate-800">⏰ ช่วงเวลาการแจ้ง · Time Analytics</h1>
+      <p class="text-xs text-slate-500">แจ้งเวลาไหน · วันไหน — เพื่อวางแผน service team ให้ตรง peak</p>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="card p-3 mb-4 flex flex-wrap items-center gap-2">
+      <span class="text-xs text-slate-500 flex items-center gap-1">📅 ช่วงเวลา</span>
+      <div class="bp-chip-row flex items-center gap-1 flex-wrap" id="tmChips">
+        <button type="button" class="bp-chip" data-tm-preset="7d">7 วัน</button>
+        <button type="button" class="bp-chip active" data-tm-preset="30d">30 วัน</button>
+        <button type="button" class="bp-chip" data-tm-preset="90d">90 วัน</button>
+        <button type="button" class="bp-chip" data-tm-preset="tm">เดือนนี้</button>
+        <button type="button" class="bp-chip" data-tm-preset="all">ทั้งหมด</button>
+        <button type="button" class="bp-chip" data-tm-preset="custom">📅 กำหนดเอง</button>
+      </div>
+      <div id="tmCustomRange" class="hidden items-center gap-1 text-xs">
+        <input type="date" id="tmDateFrom" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+        <span class="text-slate-400">→</span>
+        <input type="date" id="tmDateTo" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div class="card p-4"><p class="text-xs text-slate-500">งานที่แจ้ง (ช่วงนี้)</p><p id="tmKpiTotal" class="text-2xl font-bold text-slate-800 mt-1">—</p><p id="tmKpiTotalMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+      <div class="card p-4"><p class="text-xs text-slate-500">ชั่วโมงพีค</p><p id="tmKpiPeakHour" class="text-2xl font-bold text-slate-800 mt-1">—</p><p id="tmKpiPeakHourMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+      <div class="card p-4"><p class="text-xs text-slate-500">วันพีค</p><p id="tmKpiPeakDay" class="text-base font-semibold text-slate-800 mt-1">—</p><p id="tmKpiPeakDayMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+      <div class="card p-4"><p class="text-xs text-slate-500">ในเวลาทำการ (8–17)</p><p id="tmKpiOffice" class="text-2xl font-bold text-slate-800 mt-1">—</p><p id="tmKpiOfficeMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+    </div>
+
+    <!-- Heatmap Day × Hour -->
+    <div class="card p-4 mb-4">
+      <h3 class="text-sm font-semibold text-slate-600 mb-1">Heatmap · วัน × ชั่วโมง</h3>
+      <p class="text-[10px] text-slate-400 mb-3">เข้ม = แจ้งเยอะ · hover ดูจำนวน</p>
+      <div id="tmHeatmap" class="overflow-x-auto"></div>
+    </div>
+
+    <!-- Hour + Day bar lists -->
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-600 mb-3">แจกแจงตามชั่วโมง (24 ชม.)</h3>
+        <div style="height:280px; position:relative;"><canvas id="chartHour"></canvas></div>
+      </div>
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-600 mb-3">แจกแจงตามวันในสัปดาห์</h3>
+        <div style="height:280px; position:relative;"><canvas id="chartDow"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Line trend -->
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-600 mb-1">เทรนด์รายวัน</h3>
+      <p id="tmLineMeta" class="text-[10px] text-slate-400 mb-3">—</p>
+      <div style="height:220px; position:relative;"><canvas id="chartTimeLine"></canvas></div>
+    </div>
+  </div>
+
   <p class="text-center text-xs text-slate-400 mt-5">AGA Complaint Agent · อัปเดตอัตโนมัติทุก 30 นาที</p>
 </main>
 
@@ -3367,6 +3427,211 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dtRp) dtRp.addEventListener('change', e => { rpState.dateTo = e.target.value; renderReporter(); });
   const expBtn = document.getElementById('rpExportBtn');
   if (expBtn) expBtn.addEventListener('click', () => exportReporterCSV(computeReporterStats(rpFilteredRows())));
+});
+
+/* ==================================================
+   Time Analytics (Phase 16 · หน้าช่วงเวลาการแจ้ง)
+   ================================================== */
+const tmState = { preset: '30d', dateFrom: '', dateTo: '' };
+let _tmChartHour = null, _tmChartDow = null, _tmChartLine = null;
+const DOW_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'];
+function getTmDateRange() {
+  const p = tmState.preset || '30d';
+  if (p === 'all') return null;
+  if (p === 'custom') return (tmState.dateFrom || tmState.dateTo) ? { from: tmState.dateFrom, to: tmState.dateTo } : null;
+  const now = new Date(); now.setHours(23,59,59,999);
+  const from = new Date(now);
+  if (p === '7d') { from.setDate(from.getDate() - 6); from.setHours(0,0,0,0); }
+  else if (p === '30d') { from.setDate(from.getDate() - 29); from.setHours(0,0,0,0); }
+  else if (p === '90d') { from.setDate(from.getDate() - 89); from.setHours(0,0,0,0); }
+  else if (p === 'tm') { from.setDate(1); from.setHours(0,0,0,0); }
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { from: fmt(from), to: fmt(now) };
+}
+function tmFilteredRows() {
+  const range = getTmDateRange();
+  let rows = allRecords.slice();
+  if (range && (range.from || range.to)) {
+    const fd = range.from ? new Date(range.from + 'T00:00:00') : null;
+    const td = range.to   ? new Date(range.to   + 'T23:59:59') : null;
+    rows = rows.filter(r => {
+      const d = parseThai(r.timestamp);
+      if (!d) return false;
+      if (fd && d < fd) return false;
+      if (td && d > td) return false;
+      return true;
+    });
+  }
+  return rows;
+}
+function renderTime() {
+  const rows = tmFilteredRows();
+  const hourCounts = new Array(24).fill(0);
+  const dowCounts  = new Array(7).fill(0);
+  const dayCounts  = {}; // key = 'YYYY-MM-DD'
+  const hmMatrix   = Array.from({length:7}, () => new Array(24).fill(0));
+  let officeCount = 0;
+  rows.forEach(r => {
+    const d = parseThai(r.timestamp);
+    if (!d) return;
+    const h = d.getHours(), dow = d.getDay();
+    hourCounts[h]++;
+    dowCounts[dow]++;
+    hmMatrix[dow][h]++;
+    if (h >= 8 && h <= 17) officeCount++;
+    const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    dayCounts[dk] = (dayCounts[dk] || 0) + 1;
+  });
+  // KPIs
+  const total = rows.length;
+  const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+  const peakHourN = hourCounts[peakHour] || 0;
+  const peakDow = dowCounts.indexOf(Math.max(...dowCounts));
+  const peakDowN = dowCounts[peakDow] || 0;
+  const officePct = total > 0 ? Math.round(officeCount / total * 100) : 0;
+  document.getElementById('tmKpiTotal').textContent = total;
+  document.getElementById('tmKpiTotalMeta').textContent = 'รวมงานในช่วง';
+  document.getElementById('tmKpiPeakHour').textContent = total > 0 ? `${String(peakHour).padStart(2,'0')}:00` : '—';
+  document.getElementById('tmKpiPeakHourMeta').textContent = total > 0 ? `${peakHourN} งาน · ${Math.round(peakHourN/total*100)}%` : '';
+  document.getElementById('tmKpiPeakDay').textContent = total > 0 ? DOW_TH[peakDow] : '—';
+  document.getElementById('tmKpiPeakDayMeta').textContent = total > 0 ? `${peakDowN} งาน · ${Math.round(peakDowN/total*100)}%` : '';
+  document.getElementById('tmKpiOffice').textContent = officePct + '%';
+  document.getElementById('tmKpiOfficeMeta').textContent = `${officeCount}/${total} งาน`;
+  // Heatmap
+  renderTimeHeatmap(hmMatrix);
+  // Hour bar
+  if (_tmChartHour) _tmChartHour.destroy();
+  _tmChartHour = new Chart(document.getElementById('chartHour'), {
+    type: 'bar',
+    data: {
+      labels: Array.from({length:24}, (_,i) => String(i).padStart(2,'0')),
+      datasets: [{
+        label: 'จำนวนงาน',
+        data: hourCounts,
+        backgroundColor: hourCounts.map(v => v === peakHourN && v > 0 ? '#f59e0b' : '#22d3ee'),
+        borderRadius: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+  // DOW bar
+  if (_tmChartDow) _tmChartDow.destroy();
+  _tmChartDow = new Chart(document.getElementById('chartDow'), {
+    type: 'bar',
+    data: {
+      labels: ['จ','อ','พ','พฤ','ศ','ส','อา'],
+      datasets: [{
+        label: 'จำนวนงาน',
+        data: [dowCounts[1], dowCounts[2], dowCounts[3], dowCounts[4], dowCounts[5], dowCounts[6], dowCounts[0]],
+        backgroundColor: [1,2,3,4,5,6,0].map(d => d === peakDow && dowCounts[d] > 0 ? '#f59e0b' : '#3b82f6'),
+        borderRadius: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+  // Line trend (30 วันย้อนหลัง จาก now)
+  const days = [];
+  const now = new Date(); now.setHours(0,0,0,0);
+  const rangeInfo = getTmDateRange();
+  let daysBack = 30;
+  if (rangeInfo) {
+    const fd = new Date(rangeInfo.from + 'T00:00:00');
+    daysBack = Math.max(1, Math.ceil((now - fd) / 86400000) + 1);
+  }
+  daysBack = Math.min(daysBack, 120); // cap
+  const trendLabels = [], trendVals = [];
+  for (let i = daysBack - 1; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    trendLabels.push(`${d.getDate()}/${d.getMonth()+1}`);
+    trendVals.push(dayCounts[k] || 0);
+  }
+  const avg = trendVals.length ? (trendVals.reduce((s,v)=>s+v,0) / trendVals.length).toFixed(1) : 0;
+  const peak = Math.max(...trendVals, 0);
+  const peakIdx = trendVals.indexOf(peak);
+  document.getElementById('tmLineMeta').textContent = `เฉลี่ย ${avg} งาน/วัน · พีค ${peak} งาน (${trendLabels[peakIdx] || '—'})`;
+  if (_tmChartLine) _tmChartLine.destroy();
+  _tmChartLine = new Chart(document.getElementById('chartTimeLine'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'งาน/วัน',
+        data: trendVals,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,.15)',
+        fill: true, tension: 0.3, pointRadius: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { maxTicksLimit: 15 } } }
+    }
+  });
+}
+function renderTimeHeatmap(mat) {
+  // mat = 7 rows (Sun-Sat), 24 cols. Display จ-อา order for TH context
+  const host = document.getElementById('tmHeatmap');
+  if (!host) return;
+  const maxV = Math.max(...mat.flat(), 1);
+  const rowOrder = [1,2,3,4,5,6,0]; // จ อ พ พฤ ศ ส อา
+  const rowLabels = ['จ','อ','พ','พฤ','ศ','ส','อา'];
+  const color = v => {
+    if (v === 0) return 'rgba(148,163,184,.08)';
+    const pct = v / maxV;
+    if (pct <= 0.15) return '#1e3a5f';
+    if (pct <= 0.3)  return '#2563eb';
+    if (pct <= 0.5)  return '#3b82f6';
+    if (pct <= 0.7)  return '#60a5fa';
+    if (pct <= 0.85) return '#f59e0b';
+    return '#ef4444';
+  };
+  let html = '<div style="display:grid; grid-template-columns:36px repeat(24,minmax(22px,1fr)); gap:2px; min-width:640px; font-size:10px;">';
+  html += '<div></div>';
+  for (let h = 0; h < 24; h++) html += `<div style="text-align:center; color:#94a3b8; font-size:9px; padding:2px 0;">${h}</div>`;
+  rowOrder.forEach((dow, i) => {
+    html += `<div style="color:#94a3b8; text-align:right; padding-right:6px; display:grid; place-items:center; font-size:10px;">${rowLabels[i]}</div>`;
+    for (let h = 0; h < 24; h++) {
+      const v = mat[dow][h];
+      html += `<div style="height:22px; border-radius:2px; background:${color(v)}; display:grid; place-items:center; font-size:9px; color:rgba(255,255,255,.85); font-weight:500;" title="${rowLabels[i]} ${h}:00 — ${v} งาน">${v || ''}</div>`;
+    }
+  });
+  html += '</div>';
+  // legend
+  html += '<div style="display:flex; gap:8px; margin-top:10px; font-size:10px; color:#94a3b8; align-items:center; flex-wrap:wrap;">';
+  html += '<span>น้อย</span>';
+  ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#f59e0b','#ef4444'].forEach(c => {
+    html += `<span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:${c};"></span>`;
+  });
+  html += '<span>มาก</span></div>';
+  host.innerHTML = html;
+}
+// event bindings — เมื่อ DOM พร้อม
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-tm-preset]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('[data-tm-preset]').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      tmState.preset = chip.dataset.tmPreset;
+      const cr = document.getElementById('tmCustomRange');
+      if (tmState.preset === 'custom') { cr.classList.remove('hidden'); cr.classList.add('show'); }
+      else { cr.classList.add('hidden'); cr.classList.remove('show'); }
+      renderTime();
+    });
+  });
+  const dfTm = document.getElementById('tmDateFrom');
+  const dtTm = document.getElementById('tmDateTo');
+  if (dfTm) dfTm.addEventListener('change', e => { tmState.dateFrom = e.target.value; renderTime(); });
+  if (dtTm) dtTm.addEventListener('change', e => { tmState.dateTo = e.target.value; renderTime(); });
 });
 
 /* ---- Chart enlarge modal (universal) ---- */
