@@ -280,6 +280,19 @@
   .gallery-loc { color:#cbd5e1; font-size:9px; }
   body.dark .gallery-thumb { background:#0f172a; border-color:#334155; }
 
+  /* ---- BPM date preset chips ---- */
+  .bp-chip {
+    padding:5px 12px; border-radius:999px; font-size:11.5px;
+    border:1px solid #cbd5e1; background:#fff; color:#475569;
+    cursor:pointer; transition:all .15s; line-height:1.2;
+  }
+  .bp-chip:hover { background:#f1f5f9; border-color:#94a3b8; }
+  .bp-chip.active { background:#3b82f6; color:#fff; border-color:#3b82f6; font-weight:500; }
+  body.dark .bp-chip { background:#1e293b; border-color:#334155; color:#cbd5e1; }
+  body.dark .bp-chip:hover { background:#334155; border-color:#475569; }
+  body.dark .bp-chip.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+  #bpCustomRange.show { display:flex !important; }
+
   /* ---- Chart enlarge modal ---- */
   .chart-enlarge-btn {
     position:absolute; top:8px; right:8px; z-index:6;
@@ -610,8 +623,20 @@
       <span class="text-xs text-slate-500 flex items-center gap-1">🏢 อาคาร</span>
       <button type="button" class="ms-btn" style="width:auto;min-width:110px;flex:none" data-bp="buildings"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button>
       <span class="w-px h-5 bg-slate-200"></span>
-      <span class="text-xs text-slate-500 flex items-center gap-1">📅 เดือน</span>
-      <select id="bpMonth" class="border border-slate-200 rounded-lg px-2 py-1 text-xs"><option value="">ทั้งหมด</option></select>
+      <span class="text-xs text-slate-500 flex items-center gap-1">📅 ช่วงเวลา</span>
+      <div class="bp-chip-row flex items-center gap-1 flex-wrap">
+        <button type="button" class="bp-chip" data-preset="7d">7 วัน</button>
+        <button type="button" class="bp-chip" data-preset="30d">30 วัน</button>
+        <button type="button" class="bp-chip" data-preset="90d">90 วัน</button>
+        <button type="button" class="bp-chip" data-preset="tm">เดือนนี้</button>
+        <button type="button" class="bp-chip active" data-preset="all">ทั้งหมด</button>
+        <button type="button" class="bp-chip" data-preset="custom">📅 กำหนดเอง</button>
+      </div>
+      <div id="bpCustomRange" class="hidden items-center gap-1 text-xs">
+        <input type="date" id="bpDateFrom" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+        <span class="text-slate-400">→</span>
+        <input type="date" id="bpDateTo" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+      </div>
       <span class="w-px h-5 bg-slate-200"></span>
       <span class="text-xs text-slate-500 flex items-center gap-1">🐛 ชนิด</span>
       <button type="button" class="ms-btn" style="width:auto;min-width:110px;flex:none" data-bp="pests"><span class="ms-lbl">ทั้งหมด</span><span class="ms-caret">▼</span></button>
@@ -1702,7 +1727,20 @@ function renderBuildingFloorDrill(rows) {
 let _bldgPestChart = null;
 const PEST_PALETTE = ['#dc2626','#ea580c','#ca8a04','#16a34a','#0891b2','#7c3aed'];
 const OTHER_PEST = 'อื่นๆ', OTHER_PEST_C = '#94a3b8';
-const bpState = { buildings: new Set(), pests: new Set() };
+const bpState = { buildings: new Set(), pests: new Set(), preset: 'all', dateFrom: '', dateTo: '' };
+function getBpDateRange() {
+  const p = bpState.preset || 'all';
+  if (p === 'all') return null;
+  if (p === 'custom') return (bpState.dateFrom || bpState.dateTo) ? { from: bpState.dateFrom, to: bpState.dateTo } : null;
+  const now = new Date(); now.setHours(23,59,59,999);
+  const from = new Date(now);
+  if (p === '7d') { from.setDate(from.getDate() - 6); from.setHours(0,0,0,0); }
+  else if (p === '30d') { from.setDate(from.getDate() - 29); from.setHours(0,0,0,0); }
+  else if (p === '90d') { from.setDate(from.getDate() - 89); from.setHours(0,0,0,0); }
+  else if (p === 'tm') { from.setDate(1); from.setHours(0,0,0,0); }
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { from: fmt(from), to: fmt(now) };
+}
 let _pestColors = null;
 // สีชนิด — จัดตามความถี่รวมทั้งชุดข้อมูล (สีคงที่ ไม่เปลี่ยนตาม filter)
 function pestColorFor(pest) {
@@ -1721,14 +1759,20 @@ function renderBuildingPestStack(rows) {
   const legend = document.getElementById('bldgPestLegend');
   const topN = parseInt(document.getElementById('bldgPestTopN')?.value);
   const limit = isNaN(topN) ? 10 : topN;
-  const month = document.getElementById('bpMonth')?.value || '';
-
-  // กรองเดือน (ภายในกราฟ)
+  // กรองตามช่วงเวลา (chip preset หรือ custom range)
+  const range = getBpDateRange();
   let rows2 = rows;
-  if (month) rows2 = rows.filter(r => {
-    const d = parseThai(r.timestamp);
-    return d && `${d.getFullYear()}-${d.getMonth()}` === month;
-  });
+  if (range && (range.from || range.to)) {
+    const fd = range.from ? new Date(range.from + 'T00:00:00') : null;
+    const td = range.to   ? new Date(range.to   + 'T23:59:59') : null;
+    rows2 = rows.filter(r => {
+      const d = parseThai(r.timestamp);
+      if (!d) return false;
+      if (fd && d < fd) return false;
+      if (td && d > td) return false;
+      return true;
+    });
+  }
 
   const usePestFilter = bpState.pests.size > 0;
   const bldgTotals = {}, bldgPest = {}, pestTotals = {};
@@ -1819,24 +1863,7 @@ function updateBpButton(kind) {
   else if (set.size === 1) { btn.classList.add('has-value'); lbl.textContent = [...set][0] || '(ไม่ระบุ)'; }
   else                     { btn.classList.add('has-value'); lbl.textContent = set.size + ' รายการ'; }
 }
-function populateBpMonth() {
-  const sel = document.getElementById('bpMonth');
-  if (!sel) return;
-  const TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const map = new Map();
-  allRecords.forEach(r => {
-    const d = parseThai(r.timestamp);
-    if (!d) return;
-    const k = `${d.getFullYear()}-${d.getMonth()}`;
-    if (!map.has(k)) map.set(k, { k, t: new Date(d.getFullYear(), d.getMonth(), 1).getTime(),
-      label: `${TH[d.getMonth()]} ${String((d.getFullYear() + 543) % 100).padStart(2, '0')}` });
-  });
-  const arr = [...map.values()].sort((a, b) => a.t - b.t);
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">ทั้งหมด</option>' +
-    arr.map(m => `<option value="${m.k}">${m.label}</option>`).join('');
-  if (map.has(cur)) sel.value = cur;
-}
+function populateBpMonth() { /* deprecated — chip preset ใช้แทน (Phase 16) */ }
 function openBpPopup(kind, btn) {
   const pop = getColPopup();
   const set = bpState[kind];
@@ -2520,11 +2547,29 @@ document.querySelectorAll('[data-bp]').forEach(btn => {
     openBpPopup(kind, btn);
   });
 });
-document.getElementById('bpMonth').addEventListener('change', () => renderBuildingPestStack(getFiltered()));
+// chip preset events (7d/30d/90d/tm/all/custom)
+document.querySelectorAll('.bp-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.bp-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    bpState.preset = chip.dataset.preset;
+    const cr = document.getElementById('bpCustomRange');
+    if (bpState.preset === 'custom') { cr.classList.remove('hidden'); cr.classList.add('show'); }
+    else { cr.classList.add('hidden'); cr.classList.remove('show'); }
+    renderBuildingPestStack(getFiltered());
+  });
+});
+document.getElementById('bpDateFrom').addEventListener('change', e => { bpState.dateFrom = e.target.value; renderBuildingPestStack(getFiltered()); });
+document.getElementById('bpDateTo').addEventListener('change', e => { bpState.dateTo = e.target.value; renderBuildingPestStack(getFiltered()); });
 document.getElementById('bpClear').addEventListener('click', () => {
   bpState.buildings.clear(); bpState.pests.clear();
   updateBpButton('buildings'); updateBpButton('pests');
-  document.getElementById('bpMonth').value = '';
+  // reset chip preset → "ทั้งหมด"
+  bpState.preset = 'all'; bpState.dateFrom = ''; bpState.dateTo = '';
+  document.querySelectorAll('.bp-chip').forEach(c => c.classList.toggle('active', c.dataset.preset === 'all'));
+  const df = document.getElementById('bpDateFrom'); if (df) df.value = '';
+  const dt = document.getElementById('bpDateTo');   if (dt) dt.value = '';
+  const cr = document.getElementById('bpCustomRange'); if (cr) { cr.classList.add('hidden'); cr.classList.remove('show'); }
   hideColPopup();
   renderBuildingPestStack(getFiltered());
 });
