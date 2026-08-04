@@ -357,9 +357,9 @@
     <div class="sb-group">Dashboard</div>
     <div class="sb-item active" id="sb-overview" onclick="setTab('overview')">📊 <span>ภาพรวม</span></div>
     <div class="sb-item" id="sb-vs" onclick="setTab('vs')">⚖️ <span>เปรียบเทียบ VS</span></div>
-    <div class="sb-item" id="sb-bpm" onclick="setTab('bpm')">🏢 <span>อาคาร × เดือน</span><span class="sb-badge">NEW</span></div>
-    <div class="sb-item" id="sb-reporter" onclick="setTab('reporter')">👤 <span>ผู้แจ้ง</span><span class="sb-badge">NEW</span></div>
-    <div class="sb-item" id="sb-time" onclick="setTab('time')">⏰ <span>ช่วงเวลาการแจ้ง</span><span class="sb-badge">NEW</span></div>
+    <div class="sb-item" id="sb-bpm" onclick="setTab('bpm')">🏢 <span>อาคาร × เดือน</span></div>
+    <div class="sb-item" id="sb-reporter" onclick="setTab('reporter')">👤 <span>ผู้แจ้ง</span></div>
+    <div class="sb-item" id="sb-time" onclick="setTab('time')">⏰ <span>ช่วงเวลาการแจ้ง</span></div>
     <div class="sb-item" onclick="goSection('sectionFloorHeat')">🗺️ <span>Heatmap ชั้น</span></div>
 
     <div class="sb-group">งาน</div>
@@ -1027,7 +1027,8 @@
             <th class="text-left py-2 px-2">ผู้แจ้ง</th>
             <th class="text-left py-2 px-2">เบอร์</th>
             <th class="text-right py-2 px-2">งาน</th>
-            <th class="text-right py-2 px-2">อาคาร</th>
+            <th class="text-left py-2 px-2">อาคาร</th>
+            <th class="text-left py-2 px-2">ชั้น</th>
             <th class="text-left py-2 px-2">ชนิดที่แจ้งบ่อย</th>
             <th class="text-left py-2 px-2">ล่าสุด</th>
             <th class="text-right py-2 px-2">%ปิด</th>
@@ -3256,11 +3257,15 @@ function computeReporterStats(rows) {
   rows.forEach(r => {
     const name = (r.contactName || '').trim();
     if (!name || name === 'ไม่ระบุ') return;
-    if (!byName[name]) byName[name] = { count:0, phone:'', buildings:new Set(), pests:{}, lastTs:null, closed:0 };
+    if (!byName[name]) byName[name] = { count:0, phone:'', buildings:new Set(), bldgCounts:{}, floors:new Set(), pests:{}, lastTs:null, closed:0 };
     const b = byName[name];
     b.count++;
     if (r.contactPhone && !b.phone) b.phone = r.contactPhone;
-    if (r.building && r.building !== 'ไม่ระบุ') b.buildings.add(r.building);
+    if (r.building && r.building !== 'ไม่ระบุ') {
+      b.buildings.add(r.building);
+      b.bldgCounts[r.building] = (b.bldgCounts[r.building] || 0) + 1;
+    }
+    if (r.floor && r.floor !== 'ไม่ระบุ' && r.floor !== '') b.floors.add(r.floor);
     const pest = (r.pestType || '').trim() || 'ไม่ระบุ';
     b.pests[pest] = (b.pests[pest] || 0) + 1;
     if (r.status === 'ปิด') b.closed++;
@@ -3337,18 +3342,29 @@ function renderReporterTable(reporters) {
   tbody.innerHTML = reporters.map(([name, b]) => {
     const topPests = Object.entries(b.pests).sort((a,c) => c[1]-a[1]).slice(0, 3)
       .map(([p]) => `<span class="inline-block px-2 py-0.5 rounded-full text-[10px] mr-1" style="background:${pestColorFor(p)}22; color:${pestColorFor(p)}">${p}</span>`).join('');
+    // อาคาร — list ชื่ออาคารเรียงตามจำนวน (ถ้า >1 ครั้งใส่ (n) ต่อท้าย)
+    const bldgList = Object.entries(b.bldgCounts).sort((a,c) => c[1]-a[1])
+      .map(([n,c]) => c > 1 ? `${n} <span class="text-slate-400">(${c})</span>` : n)
+      .join(', ') || '—';
+    // ชั้น — เรียงตัวเลขน้อย→มาก
+    const floorList = [...b.floors].sort((a,c) => {
+      const na = parseInt((a.match(/\d+/)||['999'])[0]);
+      const nb = parseInt((c.match(/\d+/)||['999'])[0]);
+      return na - nb;
+    }).join(', ') || '—';
     const closeRate = b.count > 0 ? Math.round(b.closed / b.count * 100) : 0;
     const closeColor = closeRate >= 90 ? 'text-emerald-600' : closeRate >= 70 ? 'text-amber-600' : 'text-red-600';
     return `<tr class="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
       <td class="py-2 px-2"><button class="font-medium text-blue-600 hover:underline" onclick="rpFilterByName('${name.replace(/'/g,"\\'")}')">${name}</button></td>
       <td class="py-2 px-2 text-slate-500">${b.phone || '—'}</td>
       <td class="py-2 px-2 text-right font-semibold">${b.count}</td>
-      <td class="py-2 px-2 text-right">${b.buildings.size}</td>
+      <td class="py-2 px-2 text-slate-600 dark:text-slate-300 text-[11px]" style="max-width:260px;">${bldgList}</td>
+      <td class="py-2 px-2 text-slate-500 text-[11px]" style="max-width:120px;">${floorList}</td>
       <td class="py-2 px-2">${topPests || '—'}</td>
       <td class="py-2 px-2 text-slate-500">${fmtDate(b.lastTs)}</td>
       <td class="py-2 px-2 text-right ${closeColor} font-semibold">${closeRate}%</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="7" class="text-center text-slate-400 py-6">ไม่มีข้อมูลผู้แจ้งในช่วงนี้</td></tr>';
+  }).join('') || '<tr><td colspan="8" class="text-center text-slate-400 py-6">ไม่มีข้อมูลผู้แจ้งในช่วงนี้</td></tr>';
 }
 function renderReporterAlert(reporters) {
   // Q4A: alert คนที่แจ้ง ≥5 งาน/สัปดาห์/อาคารเดียว
@@ -3391,11 +3407,18 @@ function rpFilterByName(name) {
 }
 function exportReporterCSV(reporters) {
   const fmtDate = d => d ? `${d.getDate()}/${d.getMonth()+1}/${(d.getFullYear()+543)%100}` : '';
-  const header = ['ผู้แจ้ง','เบอร์','จำนวนงาน','จำนวนอาคาร','ชนิดที่แจ้งบ่อย (top 3)','งานล่าสุด','% ปิด'];
+  const header = ['ผู้แจ้ง','เบอร์','จำนวนงาน','อาคาร','ชั้น','ชนิดที่แจ้งบ่อย (top 3)','งานล่าสุด','% ปิด'];
   const rows = reporters.map(([name, b]) => {
     const topPests = Object.entries(b.pests).sort((a,c) => c[1]-a[1]).slice(0, 3).map(([p,n]) => `${p}(${n})`).join(' · ');
+    const bldgList = Object.entries(b.bldgCounts).sort((a,c) => c[1]-a[1])
+      .map(([n,c]) => c > 1 ? `${n}(${c})` : n).join(' · ');
+    const floorList = [...b.floors].sort((a,c) => {
+      const na = parseInt((a.match(/\d+/)||['999'])[0]);
+      const nb = parseInt((c.match(/\d+/)||['999'])[0]);
+      return na - nb;
+    }).join(' · ');
     const closeRate = b.count > 0 ? Math.round(b.closed / b.count * 100) : 0;
-    return [name, b.phone || '', b.count, b.buildings.size, topPests, fmtDate(b.lastTs), closeRate + '%'];
+    return [name, b.phone || '', b.count, bldgList, floorList, topPests, fmtDate(b.lastTs), closeRate + '%'];
   });
   const csv = '\uFEFF' + [header, ...rows].map(r => r.map(v => {
     const s = String(v).replace(/"/g, '""');
