@@ -280,6 +280,24 @@
   .gallery-loc { color:#cbd5e1; font-size:9px; }
   body.dark .gallery-thumb { background:#0f172a; border-color:#334155; }
 
+  /* ---- Chart enlarge modal ---- */
+  .chart-enlarge-btn {
+    position:absolute; top:8px; right:8px; z-index:6;
+    width:28px; height:28px; border-radius:8px;
+    background:rgba(148,163,184,.12); border:1px solid rgba(148,163,184,.28);
+    color:#64748b; font-size:13px; line-height:1; cursor:pointer; opacity:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:opacity .15s, background .15s, color .15s;
+  }
+  .card:hover .chart-enlarge-btn,
+  .bpm-small-mult > div:hover .chart-enlarge-btn,
+  .chart-enlarge-host:hover .chart-enlarge-btn { opacity:1; }
+  .chart-enlarge-btn:hover { background:rgba(59,130,246,.18); color:#3b82f6; border-color:rgba(59,130,246,.4); }
+  body.dark .chart-enlarge-btn { color:#94a3b8; border-color:rgba(148,163,184,.25); background:rgba(30,41,59,.7); }
+  body.dark .chart-enlarge-btn:hover { color:#60a5fa; background:rgba(59,130,246,.22); }
+  /* Small multiple mini-chart wrappers need position:relative for the button */
+  .bpm-small-mult > div > div[style*="position:relative"] { position:relative; }
+
   /* หัวรายงานเฉพาะตอน print */
   #printHeader { display:none; }
 
@@ -3014,6 +3032,78 @@ window.addEventListener('resize', () => {
   };
 })();
 
+/* ---- Chart enlarge modal (universal) ---- */
+let _modalChart = null;
+function openChartModal(canvasId, title){
+  if (typeof Chart === 'undefined') return;
+  const src = Chart.getChart(canvasId);
+  if (!src) return;
+  const cloneOpts = JSON.parse(JSON.stringify(src.options || {}));
+  cloneOpts.responsive = true;
+  cloneOpts.maintainAspectRatio = false;
+  cloneOpts.animation = false;
+  cloneOpts.plugins = cloneOpts.plugins || {};
+  cloneOpts.plugins.legend = Object.assign({}, cloneOpts.plugins.legend || {}, { display:true });
+  cloneOpts.plugins.legend.labels = Object.assign({}, cloneOpts.plugins.legend.labels || {}, { font:{ size:14 } });
+  cloneOpts.plugins.tooltip = Object.assign({}, cloneOpts.plugins.tooltip || {}, { bodyFont:{size:13}, titleFont:{size:13} });
+  if (cloneOpts.scales) {
+    Object.values(cloneOpts.scales).forEach(s => {
+      s.ticks = Object.assign({}, s.ticks || {}, { font:{ size:13 } });
+      if (s.title) s.title.font = { size:13 };
+    });
+  }
+  const cfg = {
+    type: src.config.type,
+    data: {
+      labels: Array.isArray(src.data.labels) ? src.data.labels.slice() : src.data.labels,
+      datasets: (src.data.datasets || []).map(d => Object.assign({}, d, {
+        data: Array.isArray(d.data) ? d.data.slice() : d.data
+      }))
+    },
+    options: cloneOpts
+  };
+  document.getElementById('chartModalTitle').textContent = title || 'กราฟ';
+  document.getElementById('chartModal').classList.remove('hidden');
+  const modCanvas = document.getElementById('chartModalCanvas');
+  if (_modalChart) { _modalChart.destroy(); _modalChart = null; }
+  requestAnimationFrame(() => { _modalChart = new Chart(modCanvas, cfg); });
+}
+function closeChartModal(){
+  if (_modalChart) { _modalChart.destroy(); _modalChart = null; }
+  document.getElementById('chartModal').classList.add('hidden');
+}
+function injectChartEnlargeButtons(){
+  const SKIP = ['bpmSpk','spk_','chartModalCanvas'];
+  document.querySelectorAll('canvas').forEach(canvas => {
+    if (!canvas.id) return;
+    if (SKIP.some(p => canvas.id === p || canvas.id.startsWith(p))) return;
+    const box = canvas.parentElement;
+    if (!box || box.querySelector('.chart-enlarge-btn')) return;
+    if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+    const card = canvas.closest('.card');
+    const prevP = box.previousElementSibling;
+    const smallMultLabel = (prevP && prevP.tagName === 'P')
+      ? (prevP.getAttribute('title') || prevP.textContent.trim())
+      : '';
+    const cardTitle = card && card.querySelector('h2,h3,.card-title,.font-semibold');
+    const title = (cardTitle && cardTitle.textContent.trim()) || smallMultLabel || canvas.id;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chart-enlarge-btn no-print';
+    btn.title = 'ขยายกราฟ';
+    btn.textContent = '🔍';
+    btn.addEventListener('click', ev => { ev.stopPropagation(); openChartModal(canvas.id, title); });
+    box.appendChild(btn);
+  });
+}
+(function hookInjectOnRender(){
+  const wrap = fn => function(){ const r = fn.apply(this, arguments); requestAnimationFrame(injectChartEnlargeButtons); return r; };
+  if (typeof window.render === 'function') window.render = wrap(window.render);
+  if (typeof window.renderBPM === 'function') window.renderBPM = wrap(window.renderBPM);
+  if (typeof window.renderVS === 'function') window.renderVS = wrap(window.renderVS);
+})();
+document.addEventListener('DOMContentLoaded', () => setTimeout(injectChartEnlargeButtons, 800));
+
 /* ---- VS Mode events ---- */
 document.getElementById('vsDim').addEventListener('change', () => { populateVS(); renderVS(); });
 document.getElementById('vsA').addEventListener('change', renderVS);
@@ -3026,6 +3116,8 @@ document.addEventListener('keydown', e => {
 
   // ESC — ปิด modal หรือ help panel ก่อน
   if (e.key === 'Escape') {
+    const chartMod = document.getElementById('chartModal');
+    if (chartMod && !chartMod.classList.contains('hidden')) { closeChartModal(); return; }
     const modal = document.getElementById('photoModal');
     const gallery = document.getElementById('photoGalleryModal');
     const help  = document.getElementById('shortcutHelp');
@@ -3154,6 +3246,22 @@ fetchData();
     <button id="photoNext" onclick="photoNav(1)"
       class="hidden w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 text-white text-2xl flex items-center justify-center transition-all shrink-0 backdrop-blur-sm">›</button>
 
+  </div>
+</div>
+
+<!-- Chart Enlarge Modal -->
+<div id="chartModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 no-print"
+     onclick="if(event.target.id==='chartModal')closeChartModal()">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-[min(960px,94vw)] max-h-[92vh] p-5 relative flex flex-col">
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="chartModalTitle" class="text-base font-semibold text-slate-700 dark:text-slate-100 truncate pr-4">กราฟ</h3>
+      <button onclick="closeChartModal()" title="ปิด (ESC)"
+              class="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 text-xl leading-none shrink-0">✕</button>
+    </div>
+    <div style="height:min(70vh,540px); position:relative;">
+      <canvas id="chartModalCanvas"></canvas>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-3 text-center">💡 ปิดด้วย ESC · คลิกนอกกรอบ · ปุ่ม ✕</p>
   </div>
 </div>
 
