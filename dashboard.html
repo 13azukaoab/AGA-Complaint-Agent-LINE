@@ -358,6 +358,8 @@
     <div class="sb-item active" id="sb-overview" onclick="setTab('overview')">📊 <span>ภาพรวม</span></div>
     <div class="sb-item" id="sb-vs" onclick="setTab('vs')">⚖️ <span>เปรียบเทียบ VS</span></div>
     <div class="sb-item" id="sb-bpm" onclick="setTab('bpm')">🏢 <span>อาคาร × เดือน</span><span class="sb-badge">NEW</span></div>
+    <div class="sb-item" id="sb-reporter" onclick="setTab('reporter')">👤 <span>ผู้แจ้ง</span><span class="sb-badge">NEW</span></div>
+    <div class="sb-item" id="sb-time" onclick="setTab('time')">⏰ <span>ช่วงเวลาการแจ้ง</span><span class="sb-badge">NEW</span></div>
     <div class="sb-item" onclick="goSection('sectionFloorHeat')">🗺️ <span>Heatmap ชั้น</span></div>
 
     <div class="sb-group">งาน</div>
@@ -963,6 +965,78 @@
     </div>
 
   </div><!-- /tabBPM -->
+
+  <!-- ========== หน้าผู้แจ้ง (Reporter Analytics) ========== -->
+  <div id="tabReporter" class="hidden">
+    <div class="mb-4">
+      <h1 class="text-xl font-bold text-slate-800">👤 ผู้แจ้ง · Reporter Analytics</h1>
+      <p class="text-xs text-slate-500">วิเคราะห์ผู้แจ้ง — ความถี่ · อาคาร · ชนิดสัตว์รบกวน (ใช้ชื่อผู้ติดต่อในข้อความ ไม่ใช่ผู้ส่ง LINE)</p>
+    </div>
+
+    <!-- Alert banner (repeat reporters) -->
+    <div id="rpAlertBanner" class="hidden mb-4"></div>
+
+    <!-- Filter bar -->
+    <div class="card p-3 mb-4 flex flex-wrap items-center gap-2">
+      <span class="text-xs text-slate-500 flex items-center gap-1">📅 ช่วงเวลา</span>
+      <div class="bp-chip-row flex items-center gap-1 flex-wrap" id="rpChips">
+        <button type="button" class="bp-chip" data-rp-preset="7d">7 วัน</button>
+        <button type="button" class="bp-chip active" data-rp-preset="30d">30 วัน</button>
+        <button type="button" class="bp-chip" data-rp-preset="90d">90 วัน</button>
+        <button type="button" class="bp-chip" data-rp-preset="tm">เดือนนี้</button>
+        <button type="button" class="bp-chip" data-rp-preset="all">ทั้งหมด</button>
+        <button type="button" class="bp-chip" data-rp-preset="custom">📅 กำหนดเอง</button>
+      </div>
+      <div id="rpCustomRange" class="hidden items-center gap-1 text-xs">
+        <input type="date" id="rpDateFrom" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+        <span class="text-slate-400">→</span>
+        <input type="date" id="rpDateTo" class="border border-slate-200 rounded-lg px-2 py-1 text-xs">
+      </div>
+      <button id="rpExportBtn" class="ml-auto text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg no-print">📤 Export CSV</button>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div class="card p-4"><p class="text-xs text-slate-500">ผู้แจ้งทั้งหมด</p><p id="rpKpiTotal" class="text-2xl font-bold text-slate-800 mt-1">—</p><p id="rpKpiTotalMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+      <div class="card p-4"><p class="text-xs text-slate-500">แอคทีฟช่วงนี้</p><p id="rpKpiActive" class="text-2xl font-bold text-slate-800 mt-1">—</p><p id="rpKpiActiveMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+      <div class="card p-4"><p class="text-xs text-slate-500">แจ้งบ่อยที่สุด</p><p id="rpKpiTop" class="text-base font-semibold text-slate-800 mt-1 truncate">—</p><p id="rpKpiTopMeta" class="text-[10px] text-slate-400 mt-1"></p></div>
+      <div class="card p-4"><p class="text-xs text-slate-500">เฉลี่ยต่อคน</p><p id="rpKpiAvg" class="text-2xl font-bold text-slate-800 mt-1">—</p><p class="text-[10px] text-slate-400 mt-1">งาน / ผู้แจ้ง</p></div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-600 mb-1">Top 10 ผู้แจ้ง</h3>
+        <p class="text-[10px] text-slate-400 mb-3">คลิกชื่อในตารางล่างเพื่อดูรายการงาน</p>
+        <div style="height:340px; position:relative;"><canvas id="chartTopReporters"></canvas></div>
+      </div>
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-600 mb-1">ผู้แจ้ง × ชนิดสัตว์ (Top 5)</h3>
+        <p class="text-[10px] text-slate-400 mb-3">สัดส่วนชนิดสัตว์ที่แต่ละคนแจ้งบ่อย</p>
+        <div style="height:340px; position:relative;"><canvas id="chartReporterPest"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-600 mb-1">รายชื่อผู้แจ้งทั้งหมด</h3>
+      <p class="text-[10px] text-slate-400 mb-3">คลิกชื่อ = กรองตารางงานหลัก</p>
+      <div class="overflow-x-auto"><table class="w-full text-xs">
+        <thead class="text-[11px] text-slate-500 border-b bg-slate-50">
+          <tr>
+            <th class="text-left py-2 px-2">ผู้แจ้ง</th>
+            <th class="text-left py-2 px-2">เบอร์</th>
+            <th class="text-right py-2 px-2">งาน</th>
+            <th class="text-right py-2 px-2">อาคาร</th>
+            <th class="text-left py-2 px-2">ชนิดที่แจ้งบ่อย</th>
+            <th class="text-left py-2 px-2">ล่าสุด</th>
+            <th class="text-right py-2 px-2">%ปิด</th>
+          </tr>
+        </thead>
+        <tbody id="rpTableBody"></tbody>
+      </table></div>
+    </div>
+  </div>
 
   <p class="text-center text-xs text-slate-400 mt-5">AGA Complaint Agent · อัปเดตอัตโนมัติทุก 30 นาที</p>
 </main>
@@ -2209,12 +2283,18 @@ function setTab(name) {
   document.getElementById('tabOverview').classList.toggle('hidden', name !== 'overview');
   document.getElementById('tabVS').classList.toggle('hidden', name !== 'vs');
   const tbpm = document.getElementById('tabBPM'); if (tbpm) tbpm.classList.toggle('hidden', name !== 'bpm');
+  const trep = document.getElementById('tabReporter'); if (trep) trep.classList.toggle('hidden', name !== 'reporter');
+  const ttim = document.getElementById('tabTime'); if (ttim) ttim.classList.toggle('hidden', name !== 'time');
   // sidebar highlight
   document.getElementById('sb-overview').classList.toggle('active', name === 'overview');
   document.getElementById('sb-vs').classList.toggle('active', name === 'vs');
   document.getElementById('sb-bpm').classList.toggle('active', name === 'bpm');
+  const sbRep = document.getElementById('sb-reporter'); if (sbRep) sbRep.classList.toggle('active', name === 'reporter');
+  const sbTim = document.getElementById('sb-time');     if (sbTim) sbTim.classList.toggle('active', name === 'time');
   if (name === 'vs')  { populateVS(); renderVS(); }
   if (name === 'bpm') { requestAnimationFrame(renderBPM); }  // รอ layout reflow ก่อนวัดกราฟ
+  if (name === 'reporter' && typeof renderReporter === 'function') { requestAnimationFrame(renderReporter); }
+  if (name === 'time'     && typeof renderTime     === 'function') { requestAnimationFrame(renderTime); }
   // ปิด drawer บน mobile
   toggleSidebar(false);
 }
@@ -3077,6 +3157,218 @@ window.addEventListener('resize', () => {
   };
 })();
 
+/* ==================================================
+   Reporter Analytics (Phase 16 · หน้าผู้แจ้ง)
+   ================================================== */
+const rpState = { preset: '30d', dateFrom: '', dateTo: '' };
+let _rpChartTop = null, _rpChartPest = null;
+function getRpDateRange() {
+  const p = rpState.preset || '30d';
+  if (p === 'all') return null;
+  if (p === 'custom') return (rpState.dateFrom || rpState.dateTo) ? { from: rpState.dateFrom, to: rpState.dateTo } : null;
+  const now = new Date(); now.setHours(23,59,59,999);
+  const from = new Date(now);
+  if (p === '7d') { from.setDate(from.getDate() - 6); from.setHours(0,0,0,0); }
+  else if (p === '30d') { from.setDate(from.getDate() - 29); from.setHours(0,0,0,0); }
+  else if (p === '90d') { from.setDate(from.getDate() - 89); from.setHours(0,0,0,0); }
+  else if (p === 'tm') { from.setDate(1); from.setHours(0,0,0,0); }
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { from: fmt(from), to: fmt(now) };
+}
+function rpFilteredRows() {
+  const range = getRpDateRange();
+  let rows = allRecords.slice();
+  if (range && (range.from || range.to)) {
+    const fd = range.from ? new Date(range.from + 'T00:00:00') : null;
+    const td = range.to   ? new Date(range.to   + 'T23:59:59') : null;
+    rows = rows.filter(r => {
+      const d = parseThai(r.timestamp);
+      if (!d) return false;
+      if (fd && d < fd) return false;
+      if (td && d > td) return false;
+      return true;
+    });
+  }
+  return rows;
+}
+function computeReporterStats(rows) {
+  const byName = {};
+  rows.forEach(r => {
+    const name = (r.contactName || '').trim();
+    if (!name || name === 'ไม่ระบุ') return;
+    if (!byName[name]) byName[name] = { count:0, phone:'', buildings:new Set(), pests:{}, lastTs:null, closed:0 };
+    const b = byName[name];
+    b.count++;
+    if (r.contactPhone && !b.phone) b.phone = r.contactPhone;
+    if (r.building && r.building !== 'ไม่ระบุ') b.buildings.add(r.building);
+    const pest = (r.pestType || '').trim() || 'ไม่ระบุ';
+    b.pests[pest] = (b.pests[pest] || 0) + 1;
+    if (r.status === 'ปิด') b.closed++;
+    const d = parseThai(r.timestamp);
+    if (d && (!b.lastTs || d > b.lastTs)) b.lastTs = d;
+  });
+  return Object.entries(byName).sort((a,b) => b[1].count - a[1].count);
+}
+function renderReporter() {
+  const rows = rpFilteredRows();
+  const reporters = computeReporterStats(rows);
+  // KPIs
+  const total = reporters.length;
+  const totalWO = reporters.reduce((s,[,b]) => s + b.count, 0);
+  const active = reporters.length; // = anyone with ≥1 in period
+  const top = reporters[0] || null;
+  const avg = total > 0 ? (totalWO / total).toFixed(1) : '0';
+  document.getElementById('rpKpiTotal').textContent = total;
+  document.getElementById('rpKpiTotalMeta').textContent = `${totalWO} งานรวม`;
+  document.getElementById('rpKpiActive').textContent = active;
+  document.getElementById('rpKpiActiveMeta').textContent = 'มีการแจ้งในช่วงนี้';
+  document.getElementById('rpKpiTop').textContent = top ? top[0] : '—';
+  document.getElementById('rpKpiTopMeta').textContent = top ? `${top[1].count} งาน · ${top[1].buildings.size} อาคาร` : '';
+  document.getElementById('rpKpiAvg').textContent = avg;
+  // Top 10 bar chart
+  const top10 = reporters.slice(0, 10);
+  const labels = top10.map(([n]) => n);
+  const values = top10.map(([,b]) => b.count);
+  if (_rpChartTop) _rpChartTop.destroy();
+  _rpChartTop = new Chart(document.getElementById('chartTopReporters'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'จำนวนงาน', data: values, backgroundColor: '#3b82f6', borderRadius: 4 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { autoSkip: false } } }
+    }
+  });
+  // Reporter × Pest — top 5 reporters stacked bar
+  const top5 = reporters.slice(0, 5);
+  const allPests = new Set();
+  top5.forEach(([,b]) => Object.keys(b.pests).forEach(p => allPests.add(p)));
+  const pestList = [...allPests];
+  const rpLabels = top5.map(([n]) => n);
+  const datasets = pestList.map(p => ({
+    label: p,
+    data: top5.map(([,b]) => b.pests[p] || 0),
+    backgroundColor: pestColorFor(p),
+    borderRadius: 2
+  }));
+  if (_rpChartPest) _rpChartPest.destroy();
+  _rpChartPest = new Chart(document.getElementById('chartReporterPest'), {
+    type: 'bar',
+    data: { labels: rpLabels, datasets },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:12 } } },
+      scales: { x: { stacked: true, beginAtZero: true }, y: { stacked: true } }
+    }
+  });
+  // Table
+  renderReporterTable(reporters);
+  // Alert repeat reporters (Q4A)
+  renderReporterAlert(reporters);
+}
+function renderReporterTable(reporters) {
+  const tbody = document.getElementById('rpTableBody');
+  if (!tbody) return;
+  const fmtDate = d => d ? `${d.getDate()}/${d.getMonth()+1}/${(d.getFullYear()+543)%100}` : '—';
+  tbody.innerHTML = reporters.map(([name, b]) => {
+    const topPests = Object.entries(b.pests).sort((a,c) => c[1]-a[1]).slice(0, 3)
+      .map(([p]) => `<span class="inline-block px-2 py-0.5 rounded-full text-[10px] mr-1" style="background:${pestColorFor(p)}22; color:${pestColorFor(p)}">${p}</span>`).join('');
+    const closeRate = b.count > 0 ? Math.round(b.closed / b.count * 100) : 0;
+    const closeColor = closeRate >= 90 ? 'text-emerald-600' : closeRate >= 70 ? 'text-amber-600' : 'text-red-600';
+    return `<tr class="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
+      <td class="py-2 px-2"><button class="font-medium text-blue-600 hover:underline" onclick="rpFilterByName('${name.replace(/'/g,"\\'")}')">${name}</button></td>
+      <td class="py-2 px-2 text-slate-500">${b.phone || '—'}</td>
+      <td class="py-2 px-2 text-right font-semibold">${b.count}</td>
+      <td class="py-2 px-2 text-right">${b.buildings.size}</td>
+      <td class="py-2 px-2">${topPests || '—'}</td>
+      <td class="py-2 px-2 text-slate-500">${fmtDate(b.lastTs)}</td>
+      <td class="py-2 px-2 text-right ${closeColor} font-semibold">${closeRate}%</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="text-center text-slate-400 py-6">ไม่มีข้อมูลผู้แจ้งในช่วงนี้</td></tr>';
+}
+function renderReporterAlert(reporters) {
+  // Q4A: alert คนที่แจ้ง ≥5 งาน/สัปดาห์/อาคารเดียว
+  const banner = document.getElementById('rpAlertBanner');
+  if (!banner) return;
+  // ตรวจ per reporter → per building → 7 วันย้อนหลัง count
+  const now = new Date();
+  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+  const alerts = [];
+  reporters.forEach(([name, b]) => {
+    // ต้อง recount จริงจาก allRecords (ล่าสุด 7 วัน แยกอาคาร)
+    const byBldg = {};
+    allRecords.forEach(r => {
+      if ((r.contactName || '').trim() !== name) return;
+      const d = parseThai(r.timestamp);
+      if (!d || d < weekAgo || d > now) return;
+      const bldg = r.building || 'ไม่ระบุ';
+      if (bldg === 'ไม่ระบุ') return;
+      byBldg[bldg] = (byBldg[bldg] || 0) + 1;
+    });
+    Object.entries(byBldg).forEach(([bldg, cnt]) => {
+      if (cnt >= 5) alerts.push({ name, bldg, cnt });
+    });
+  });
+  if (alerts.length === 0) { banner.classList.add('hidden'); banner.innerHTML = ''; return; }
+  banner.classList.remove('hidden');
+  banner.innerHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-200">
+    🚨 <b>ผู้แจ้งซ้ำหนัก (7 วันย้อนหลัง)</b> — ควรเข้าตรวจสอบพิเศษ:
+    <ul class="mt-2 space-y-1 text-xs">
+      ${alerts.map(a => `<li>• <b>${a.name}</b> แจ้ง <b>${a.cnt} งาน</b> ที่ <b>${a.bldg}</b></li>`).join('')}
+    </ul>
+  </div>`;
+}
+function rpFilterByName(name) {
+  // ไปหน้า Overview + ใส่ชื่อใน searchBox
+  setTab('overview');
+  const sb = document.getElementById('searchBox');
+  if (sb) { sb.value = name; sb.dispatchEvent(new Event('input')); }
+  setTimeout(() => { const s = document.getElementById('sectionTable'); if (s) s.scrollIntoView({ block:'start' }); }, 200);
+}
+function exportReporterCSV(reporters) {
+  const fmtDate = d => d ? `${d.getDate()}/${d.getMonth()+1}/${(d.getFullYear()+543)%100}` : '';
+  const header = ['ผู้แจ้ง','เบอร์','จำนวนงาน','จำนวนอาคาร','ชนิดที่แจ้งบ่อย (top 3)','งานล่าสุด','% ปิด'];
+  const rows = reporters.map(([name, b]) => {
+    const topPests = Object.entries(b.pests).sort((a,c) => c[1]-a[1]).slice(0, 3).map(([p,n]) => `${p}(${n})`).join(' · ');
+    const closeRate = b.count > 0 ? Math.round(b.closed / b.count * 100) : 0;
+    return [name, b.phone || '', b.count, b.buildings.size, topPests, fmtDate(b.lastTs), closeRate + '%'];
+  });
+  const csv = '\uFEFF' + [header, ...rows].map(r => r.map(v => {
+    const s = String(v).replace(/"/g, '""');
+    return /[",\n]/.test(s) ? `"${s}"` : s;
+  }).join(',')).join('\n');
+  const today = new Date();
+  const fn = `reporter_${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}.csv`;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = fn; a.click();
+  URL.revokeObjectURL(a.href);
+}
+// event bindings
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-rp-preset]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('[data-rp-preset]').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      rpState.preset = chip.dataset.rpPreset;
+      const cr = document.getElementById('rpCustomRange');
+      if (rpState.preset === 'custom') { cr.classList.remove('hidden'); cr.classList.add('show'); }
+      else { cr.classList.add('hidden'); cr.classList.remove('show'); }
+      renderReporter();
+    });
+  });
+  const dfRp = document.getElementById('rpDateFrom');
+  const dtRp = document.getElementById('rpDateTo');
+  if (dfRp) dfRp.addEventListener('change', e => { rpState.dateFrom = e.target.value; renderReporter(); });
+  if (dtRp) dtRp.addEventListener('change', e => { rpState.dateTo = e.target.value; renderReporter(); });
+  const expBtn = document.getElementById('rpExportBtn');
+  if (expBtn) expBtn.addEventListener('click', () => exportReporterCSV(computeReporterStats(rpFilteredRows())));
+});
+
 /* ---- Chart enlarge modal (universal) ---- */
 let _modalChart = null;
 function openChartModal(canvasId, title){
@@ -3107,6 +3399,10 @@ function openChartModal(canvasId, title){
     },
     options: cloneOpts
   };
+  // dataset ที่ไม่มี label (small multi/sparkline-like) → ใช้ title เป็น label + ถ้ามีตัวเดียวไม่ต้องโชว์ legend
+  const dss = cfg.data.datasets;
+  dss.forEach(d => { if (!d.label || d.label === 'undefined') d.label = title || 'ค่า'; });
+  if (dss.length === 1) cloneOpts.plugins.legend.display = false;
   document.getElementById('chartModalTitle').textContent = title || 'กราฟ';
   document.getElementById('chartModal').classList.remove('hidden');
   const modCanvas = document.getElementById('chartModalCanvas');
@@ -3131,7 +3427,11 @@ function injectChartEnlargeButtons(){
       ? (prevP.getAttribute('title') || prevP.textContent.trim())
       : '';
     const cardTitle = card && card.querySelector('h2,h3,.card-title,.font-semibold');
-    const title = (cardTitle && cardTitle.textContent.trim()) || smallMultLabel || canvas.id;
+    // Small multiple mini-chart → ใช้ชื่ออาคารจาก sibling <p> ก่อน (จะได้รู้ว่าคืออาคารไหน)
+    const isSmallMulti = canvas.id.startsWith('bpm_mini_') || canvas.closest('.bpm-small-mult');
+    const title = isSmallMulti
+      ? (smallMultLabel || (cardTitle && cardTitle.textContent.trim()) || canvas.id)
+      : ((cardTitle && cardTitle.textContent.trim()) || smallMultLabel || canvas.id);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'chart-enlarge-btn no-print';
