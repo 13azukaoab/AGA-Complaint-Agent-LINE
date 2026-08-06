@@ -1074,8 +1074,31 @@
 
     <!-- Heatmap Day × Hour -->
     <div class="card p-4 mb-4">
-      <h3 class="text-sm font-semibold text-slate-600 mb-1">Heatmap · วัน × ชั่วโมง</h3>
-      <p class="text-[10px] text-slate-400 mb-3">เข้ม = แจ้งเยอะ · hover ดูจำนวน</p>
+      <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-600 mb-1">Heatmap · วัน × ชั่วโมง</h3>
+          <p class="text-[10px] text-slate-400">เข้ม = แจ้งเยอะ · hover ดูจำนวน · เซลล์นอกช่วง = จาง</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-slate-500 text-[11px]">วัน:</span>
+          <div class="flex gap-1 flex-wrap" id="tmHmDays">
+            <button type="button" class="bp-chip active" data-hm-dow="all">ทั้งหมด</button>
+            <button type="button" class="bp-chip" data-hm-dow="1">จ</button>
+            <button type="button" class="bp-chip" data-hm-dow="2">อ</button>
+            <button type="button" class="bp-chip" data-hm-dow="3">พ</button>
+            <button type="button" class="bp-chip" data-hm-dow="4">พฤ</button>
+            <button type="button" class="bp-chip" data-hm-dow="5">ศ</button>
+            <button type="button" class="bp-chip" data-hm-dow="6">ส</button>
+            <button type="button" class="bp-chip" data-hm-dow="0">อา</button>
+          </div>
+          <span class="text-slate-500 text-[11px] ml-2">ชั่วโมง:</span>
+          <select id="tmHmHourFrom" class="border border-slate-200 rounded px-1.5 py-0.5 text-[11px]"></select>
+          <span class="text-slate-400 text-[11px]">→</span>
+          <select id="tmHmHourTo" class="border border-slate-200 rounded px-1.5 py-0.5 text-[11px]"></select>
+          <button type="button" id="tmHmOffice" class="bp-chip" title="8:00-17:00">🌞 เวลาทำการ</button>
+          <button type="button" id="tmHmClear" class="text-[11px] px-2 py-1 text-slate-500 hover:text-slate-800">↻ ล้าง</button>
+        </div>
+      </div>
       <div id="tmHeatmap" class="overflow-x-auto"></div>
     </div>
 
@@ -2690,10 +2713,10 @@ document.querySelectorAll('[data-bp]').forEach(btn => {
     openBpPopup(kind, btn);
   });
 });
-// chip preset events (7d/30d/90d/tm/all/custom)
-document.querySelectorAll('.bp-chip').forEach(chip => {
+// chip preset events (7d/30d/90d/tm/all/custom) — scope เฉพาะ [data-preset] เพื่อไม่กิน chip อื่น (rp/tm/hm)
+document.querySelectorAll('.bp-chip[data-preset]').forEach(chip => {
   chip.addEventListener('click', () => {
-    document.querySelectorAll('.bp-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.bp-chip[data-preset]').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     bpState.preset = chip.dataset.preset;
     const cr = document.getElementById('bpCustomRange');
@@ -2709,7 +2732,7 @@ document.getElementById('bpClear').addEventListener('click', () => {
   updateBpButton('buildings'); updateBpButton('pests');
   // reset chip preset → "ทั้งหมด"
   bpState.preset = 'all'; bpState.dateFrom = ''; bpState.dateTo = '';
-  document.querySelectorAll('.bp-chip').forEach(c => c.classList.toggle('active', c.dataset.preset === 'all'));
+  document.querySelectorAll('.bp-chip[data-preset]').forEach(c => c.classList.toggle('active', c.dataset.preset === 'all'));
   const df = document.getElementById('bpDateFrom'); if (df) df.value = '';
   const dt = document.getElementById('bpDateTo');   if (dt) dt.value = '';
   const cr = document.getElementById('bpCustomRange'); if (cr) { cr.classList.add('hidden'); cr.classList.remove('show'); }
@@ -3459,6 +3482,8 @@ document.addEventListener('DOMContentLoaded', () => {
    ================================================== */
 const tmState = { preset: '30d', dateFrom: '', dateTo: '' };
 let _tmChartHour = null, _tmChartDow = null, _tmChartLine = null;
+let _tmHmMatrix = null; // เก็บ 7×24 matrix ล่าสุด สำหรับ re-render เฉพาะ heatmap เมื่อ filter เปลี่ยน
+const tmHmFilter = { days: null /* null = ทั้งหมด */, hourFrom: 0, hourTo: 23 };
 const DOW_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'];
 function getTmDateRange() {
   const p = tmState.preset || '30d';
@@ -3522,7 +3547,8 @@ function renderTime() {
   document.getElementById('tmKpiPeakDayMeta').textContent = total > 0 ? `${peakDowN} งาน · ${Math.round(peakDowN/total*100)}%` : '';
   document.getElementById('tmKpiOffice').textContent = officePct + '%';
   document.getElementById('tmKpiOfficeMeta').textContent = `${officeCount}/${total} งาน`;
-  // Heatmap
+  // Heatmap — เก็บ matrix ไว้ให้ filter re-render ได้โดยไม่ recompute อาgregation
+  _tmHmMatrix = hmMatrix;
   renderTimeHeatmap(hmMatrix);
   // Hour bar
   if (_tmChartHour) _tmChartHour.destroy();
@@ -3607,13 +3633,26 @@ function renderTimeHeatmap(mat) {
   // mat = 7 rows (Sun-Sat), 24 cols. Display จ-อา order for TH context
   const host = document.getElementById('tmHeatmap');
   if (!host) return;
-  const maxV = Math.max(...mat.flat(), 1);
   const rowOrder = [1,2,3,4,5,6,0]; // จ อ พ พฤ ศ ส อา
   const rowLabels = ['จ','อ','พ','พฤ','ศ','ส','อา'];
   // Sequential — one hue (blue), monotone light→dark ตามทีที่ dataviz skill กำหนด
-  // (อ้างอิงจาก references/palette.md ramp บรรทัด 150/250/350/450/550/650 — ไม่ใช่ rainbow หลายเฉด)
   const SEQ_STEPS = ['#b7d3f6','#86b6ef','#5598e7','#2a78d6','#1c5cab','#104281'];
-  const DARK_TEXT_CUTOFF = 3; // steps index < 3 (150/250/350) → ตัวหนังสือเข้ม, >= 3 → ตัวหนังสือขาว
+  const DARK_TEXT_CUTOFF = 3;
+  // ---- filter (day chips + hour range) ----
+  const daysFilter = tmHmFilter.days; // null = ทุกวัน · Set = เฉพาะวันที่เลือก
+  const hFrom = tmHmFilter.hourFrom ?? 0, hTo = tmHmFilter.hourTo ?? 23;
+  const inScope = (dow, h) => (!daysFilter || daysFilter.has(dow)) && h >= hFrom && h <= hTo;
+  // recompute maxV จาก in-scope เท่านั้น → สีเข้มสุด = peak ในช่วงที่เลือก
+  let inMax = 0, inSum = 0, inCount = 0, inPeakDow = -1, inPeakH = -1;
+  for (let dow = 0; dow < 7; dow++) {
+    for (let h = 0; h < 24; h++) {
+      if (!inScope(dow, h)) continue;
+      const v = mat[dow][h];
+      inSum += v; inCount++;
+      if (v > inMax) { inMax = v; inPeakDow = dow; inPeakH = h; }
+    }
+  }
+  const maxV = Math.max(inMax, 1);
   const stepIdx = v => {
     const pct = v / maxV;
     if (pct <= 0.15) return 0;
@@ -3625,18 +3664,34 @@ function renderTimeHeatmap(mat) {
   };
   const color = v => v === 0 ? 'rgba(148,163,184,.08)' : SEQ_STEPS[stepIdx(v)];
   const textColor = v => v === 0 ? '' : (stepIdx(v) < DARK_TEXT_CUTOFF ? 'rgba(15,23,42,.75)' : 'rgba(255,255,255,.9)');
+  // out-of-scope styling — เทาจางมาก + ตัวเลขจาง (ยังเห็นได้)
+  const DIM_BG = 'rgba(148,163,184,.04)';
+  const DIM_TEXT = 'rgba(148,163,184,.5)';
   let html = '<div style="display:grid; grid-template-columns:36px repeat(24,minmax(22px,1fr)); gap:2px; min-width:640px; font-size:10px;">';
   html += '<div></div>';
-  for (let h = 0; h < 24; h++) html += `<div style="text-align:center; color:#94a3b8; font-size:9px; padding:2px 0;">${h}</div>`;
+  for (let h = 0; h < 24; h++) {
+    const dim = h < hFrom || h > hTo;
+    html += `<div style="text-align:center; color:${dim ? '#cbd5e1' : '#94a3b8'}; font-size:9px; padding:2px 0;">${h}</div>`;
+  }
   rowOrder.forEach((dow, i) => {
-    html += `<div style="color:#94a3b8; text-align:right; padding-right:6px; display:grid; place-items:center; font-size:10px;">${rowLabels[i]}</div>`;
+    const dowDim = daysFilter && !daysFilter.has(dow);
+    html += `<div style="color:${dowDim ? '#cbd5e1' : '#94a3b8'}; text-align:right; padding-right:6px; display:grid; place-items:center; font-size:10px;">${rowLabels[i]}</div>`;
     for (let h = 0; h < 24; h++) {
       const v = mat[dow][h];
-      html += `<div style="height:22px; border-radius:2px; background:${color(v)}; display:grid; place-items:center; font-size:9px; color:${textColor(v)}; font-weight:500;" title="${rowLabels[i]} ${h}:00 — ${v} งาน">${v || ''}</div>`;
+      const scope = inScope(dow, h);
+      const bg = scope ? color(v) : DIM_BG;
+      const tc = scope ? textColor(v) : (v > 0 ? DIM_TEXT : '');
+      html += `<div style="height:22px; border-radius:2px; background:${bg}; display:grid; place-items:center; font-size:9px; color:${tc}; font-weight:500;" title="${rowLabels[i]} ${h}:00 — ${v} งาน${scope ? '' : ' (นอกช่วงกรอง)'}">${v || ''}</div>`;
     }
   });
   html += '</div>';
-  // legend — ไล่เฉดเดียว (blue) ให้ตรงกับ ramp ที่ใช้จริงในกริด
+  // meta: สรุป in-scope
+  const filterActive = daysFilter || hFrom !== 0 || hTo !== 23;
+  if (filterActive) {
+    const peakLabel = inPeakDow >= 0 ? `${rowLabels[rowOrder.indexOf(inPeakDow)]} ${String(inPeakH).padStart(2,'0')}:00` : '—';
+    html += `<div style="margin-top:8px; font-size:11px; color:#64748b;">ในช่วงที่กรอง: <b style="color:#0f172a">${inSum}</b> งาน · peak <b style="color:#0f172a">${inMax}</b> (${peakLabel})</div>`;
+  }
+  // legend
   html += '<div style="display:flex; gap:8px; margin-top:10px; font-size:10px; color:#94a3b8; align-items:center; flex-wrap:wrap;">';
   html += '<span>น้อย</span>';
   SEQ_STEPS.forEach(c => {
@@ -3662,6 +3717,65 @@ document.addEventListener('DOMContentLoaded', () => {
   const dtTm = document.getElementById('tmDateTo');
   if (dfTm) dfTm.addEventListener('change', e => { tmState.dateFrom = e.target.value; renderTime(); });
   if (dtTm) dtTm.addEventListener('change', e => { tmState.dateTo = e.target.value; renderTime(); });
+
+  // ---- Heatmap-specific filter (day chips + hour range) ----
+  const hFrom = document.getElementById('tmHmHourFrom');
+  const hTo = document.getElementById('tmHmHourTo');
+  if (hFrom && hTo) {
+    for (let h = 0; h < 24; h++) {
+      const opt1 = document.createElement('option'); opt1.value = h; opt1.textContent = String(h).padStart(2,'0') + ':00'; hFrom.appendChild(opt1);
+      const opt2 = document.createElement('option'); opt2.value = h; opt2.textContent = String(h).padStart(2,'0') + ':00'; hTo.appendChild(opt2);
+    }
+    hFrom.value = 0; hTo.value = 23;
+    const applyHours = () => {
+      let f = parseInt(hFrom.value), t = parseInt(hTo.value);
+      if (f > t) { [f, t] = [t, f]; hFrom.value = f; hTo.value = t; }
+      tmHmFilter.hourFrom = f; tmHmFilter.hourTo = t;
+      if (_tmHmMatrix) renderTimeHeatmap(_tmHmMatrix);
+    };
+    hFrom.addEventListener('change', applyHours);
+    hTo.addEventListener('change', applyHours);
+  }
+  document.querySelectorAll('[data-hm-dow]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.hmDow;
+      const chips = document.querySelectorAll('[data-hm-dow]');
+      if (val === 'all') {
+        chips.forEach(c => c.classList.toggle('active', c.dataset.hmDow === 'all'));
+        tmHmFilter.days = null;
+      } else {
+        // ตัด "ทั้งหมด" ออก, toggle chip นั้น
+        chips.forEach(c => { if (c.dataset.hmDow === 'all') c.classList.remove('active'); });
+        chip.classList.toggle('active');
+        const selected = new Set();
+        chips.forEach(c => { if (c.dataset.hmDow !== 'all' && c.classList.contains('active')) selected.add(parseInt(c.dataset.hmDow)); });
+        if (selected.size === 0) {
+          // กลับไปเป็น "ทั้งหมด" อัตโนมัติ
+          document.querySelector('[data-hm-dow="all"]').classList.add('active');
+          tmHmFilter.days = null;
+        } else {
+          tmHmFilter.days = selected;
+        }
+      }
+      if (_tmHmMatrix) renderTimeHeatmap(_tmHmMatrix);
+    });
+  });
+  const officeBtn = document.getElementById('tmHmOffice');
+  if (officeBtn) officeBtn.addEventListener('click', () => {
+    tmHmFilter.hourFrom = 8; tmHmFilter.hourTo = 17;
+    if (hFrom) hFrom.value = 8;
+    if (hTo) hTo.value = 17;
+    if (_tmHmMatrix) renderTimeHeatmap(_tmHmMatrix);
+  });
+  const hmClear = document.getElementById('tmHmClear');
+  if (hmClear) hmClear.addEventListener('click', () => {
+    tmHmFilter.days = null;
+    tmHmFilter.hourFrom = 0; tmHmFilter.hourTo = 23;
+    if (hFrom) hFrom.value = 0;
+    if (hTo) hTo.value = 23;
+    document.querySelectorAll('[data-hm-dow]').forEach(c => c.classList.toggle('active', c.dataset.hmDow === 'all'));
+    if (_tmHmMatrix) renderTimeHeatmap(_tmHmMatrix);
+  });
 });
 
 /* ---- Chart enlarge modal (universal) ---- */
