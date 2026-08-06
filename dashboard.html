@@ -3635,23 +3635,26 @@ function renderTimeHeatmap(mat) {
   if (!host) return;
   const rowOrder = [1,2,3,4,5,6,0]; // จ อ พ พฤ ศ ส อา
   const rowLabels = ['จ','อ','พ','พฤ','ศ','ส','อา'];
-  // Sequential — one hue (blue), monotone light→dark ตามทีที่ dataviz skill กำหนด
   const SEQ_STEPS = ['#b7d3f6','#86b6ef','#5598e7','#2a78d6','#1c5cab','#104281'];
   const DARK_TEXT_CUTOFF = 3;
   // ---- filter (day chips + hour range) ----
   const daysFilter = tmHmFilter.days; // null = ทุกวัน · Set = เฉพาะวันที่เลือก
   const hFrom = tmHmFilter.hourFrom ?? 0, hTo = tmHmFilter.hourTo ?? 23;
-  const inScope = (dow, h) => (!daysFilter || daysFilter.has(dow)) && h >= hFrom && h <= hTo;
-  // recompute maxV จาก in-scope เท่านั้น → สีเข้มสุด = peak ในช่วงที่เลือก
-  let inMax = 0, inSum = 0, inCount = 0, inPeakDow = -1, inPeakH = -1;
-  for (let dow = 0; dow < 7; dow++) {
-    for (let h = 0; h < 24; h++) {
-      if (!inScope(dow, h)) continue;
+  // === ซ่อนแถว/คอลัมน์ที่ไม่ได้เลือกทั้งอัน — ไม่ dim ===
+  // เลือกเฉพาะ dow ที่อยู่ใน filter (เรียงตาม rowOrder เดิม: จ-อา)
+  const visibleDows = rowOrder.filter(dow => !daysFilter || daysFilter.has(dow));
+  // เลือกเฉพาะ hour ในช่วง [hFrom, hTo]
+  const visibleHours = [];
+  for (let h = hFrom; h <= hTo; h++) visibleHours.push(h);
+  // recompute maxV จาก visible เท่านั้น → สีเข้มสุด = peak ในช่วงที่เลือก
+  let inMax = 0, inSum = 0, inPeakDow = -1, inPeakH = -1;
+  visibleDows.forEach(dow => {
+    visibleHours.forEach(h => {
       const v = mat[dow][h];
-      inSum += v; inCount++;
+      inSum += v;
       if (v > inMax) { inMax = v; inPeakDow = dow; inPeakH = h; }
-    }
-  }
+    });
+  });
   const maxV = Math.max(inMax, 1);
   const stepIdx = v => {
     const pct = v / maxV;
@@ -3664,32 +3667,33 @@ function renderTimeHeatmap(mat) {
   };
   const color = v => v === 0 ? 'rgba(148,163,184,.08)' : SEQ_STEPS[stepIdx(v)];
   const textColor = v => v === 0 ? '' : (stepIdx(v) < DARK_TEXT_CUTOFF ? 'rgba(15,23,42,.75)' : 'rgba(255,255,255,.9)');
-  // out-of-scope styling — เทาจางมาก + ตัวเลขจาง (ยังเห็นได้)
-  const DIM_BG = 'rgba(148,163,184,.04)';
-  const DIM_TEXT = 'rgba(148,163,184,.5)';
-  let html = '<div style="display:grid; grid-template-columns:36px repeat(24,minmax(22px,1fr)); gap:2px; min-width:640px; font-size:10px;">';
-  html += '<div></div>';
-  for (let h = 0; h < 24; h++) {
-    const dim = h < hFrom || h > hTo;
-    html += `<div style="text-align:center; color:${dim ? '#cbd5e1' : '#94a3b8'}; font-size:9px; padding:2px 0;">${h}</div>`;
+  // ถ้าไม่มี hour เลย (edge case) → แสดงข้อความแทน
+  if (visibleHours.length === 0 || visibleDows.length === 0) {
+    host.innerHTML = '<div style="padding:24px; text-align:center; color:#94a3b8; font-size:12px;">ไม่มีข้อมูลในช่วงที่เลือก · ปรับ filter เพื่อดูข้อมูล</div>';
+    return;
   }
-  rowOrder.forEach((dow, i) => {
-    const dowDim = daysFilter && !daysFilter.has(dow);
-    html += `<div style="color:${dowDim ? '#cbd5e1' : '#94a3b8'}; text-align:right; padding-right:6px; display:grid; place-items:center; font-size:10px;">${rowLabels[i]}</div>`;
-    for (let h = 0; h < 24; h++) {
+  const nCols = visibleHours.length;
+  // ให้ min-width ปรับตามจำนวนคอลัมน์ที่แสดง (เต็ม 24 = 640px, น้อย = แคบลง)
+  const minWidth = Math.max(300, 36 + nCols * 26);
+  let html = `<div style="display:grid; grid-template-columns:36px repeat(${nCols},minmax(22px,1fr)); gap:2px; min-width:${minWidth}px; font-size:10px;">`;
+  html += '<div></div>';
+  visibleHours.forEach(h => {
+    html += `<div style="text-align:center; color:#94a3b8; font-size:9px; padding:2px 0;">${h}</div>`;
+  });
+  visibleDows.forEach(dow => {
+    const rowLabel = rowLabels[rowOrder.indexOf(dow)];
+    html += `<div style="color:#94a3b8; text-align:right; padding-right:6px; display:grid; place-items:center; font-size:10px;">${rowLabel}</div>`;
+    visibleHours.forEach(h => {
       const v = mat[dow][h];
-      const scope = inScope(dow, h);
-      const bg = scope ? color(v) : DIM_BG;
-      const tc = scope ? textColor(v) : (v > 0 ? DIM_TEXT : '');
-      html += `<div style="height:22px; border-radius:2px; background:${bg}; display:grid; place-items:center; font-size:9px; color:${tc}; font-weight:500;" title="${rowLabels[i]} ${h}:00 — ${v} งาน${scope ? '' : ' (นอกช่วงกรอง)'}">${v || ''}</div>`;
-    }
+      html += `<div style="height:22px; border-radius:2px; background:${color(v)}; display:grid; place-items:center; font-size:9px; color:${textColor(v)}; font-weight:500;" title="${rowLabel} ${h}:00 — ${v} งาน">${v || ''}</div>`;
+    });
   });
   html += '</div>';
-  // meta: สรุป in-scope
+  // meta: สรุปในช่วงที่แสดง
   const filterActive = daysFilter || hFrom !== 0 || hTo !== 23;
   if (filterActive) {
     const peakLabel = inPeakDow >= 0 ? `${rowLabels[rowOrder.indexOf(inPeakDow)]} ${String(inPeakH).padStart(2,'0')}:00` : '—';
-    html += `<div style="margin-top:8px; font-size:11px; color:#64748b;">ในช่วงที่กรอง: <b style="color:#0f172a">${inSum}</b> งาน · peak <b style="color:#0f172a">${inMax}</b> (${peakLabel})</div>`;
+    html += `<div style="margin-top:8px; font-size:11px; color:#64748b;">ในช่วงที่กรอง: <b style="color:#0f172a">${inSum}</b> งาน · peak <b style="color:#0f172a">${inMax}</b> (${peakLabel}) · แสดง ${visibleDows.length} วัน × ${visibleHours.length} ชม.</div>`;
   }
   // legend
   html += '<div style="display:flex; gap:8px; margin-top:10px; font-size:10px; color:#94a3b8; align-items:center; flex-wrap:wrap;">';
