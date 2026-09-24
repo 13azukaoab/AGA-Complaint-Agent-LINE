@@ -294,6 +294,29 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 - **แก้ถาวร:** commit `26c7fb2` — เพิ่ม `ensureGridCapacity()` ใน `src/sheets.js`: ดัก error "exceeds grid limits" → `appendDimension` ขยายกริด +500 แถวอัตโนมัติ แล้วเขียนใหม่ (ไม่ต้องเพิ่มแถวเองอีกตลอดไป)
 - **บทเรียน:** "อ่านได้ เขียนไม่ได้" ไม่ได้แปลว่าสิทธิ์เสมอไป — เช็ค log จริงก่อนสรุป root cause
 
+### 24 ก.ย. 2569 — บอทเงียบทั้งระบบ (ไม่เปิด work order + "งานค้าง" ไม่ตอบ) 🔴 กำลังกู้
+
+- **อาการ:** ส่งเคสใหม่/พิมพ์ "งานค้าง" ในกลุ่ม LINE บอท**ไม่ตอบอะไรเลย** ทุกคำสั่ง — ต่างจาก incident 31 ก.ค. ที่บอทยังตอบ error กลับมา (รอบนี้เงียบสนิท = backend ตาย)
+- **วิธีเช็คตอนเจอ:**
+  - ping backend: `curl -s -o /dev/null -w "%{http_code}" "https://aga-complaint-agent-396358198178.asia-southeast1.run.app/"` → ได้ **500/503/429** (ปกติต้อง 200)
+  - อ่าน log severity: `gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="aga-complaint-agent" AND severity>=WARNING' --project qcs-bait-app-v5 --limit=10 --freshness=1d --format="value(timestamp,textPayload)"`
+- **สาเหตุจริง (ลำดับเหตุการณ์):**
+  1. **user ลบ project `qcs-bait-app-v5`** (ตั้งใจ/ทดลอง) → project เข้าสถานะ `DELETE_REQUESTED` (grace period ~30 วัน)
+  2. project ถูกลบ → **billing หลุด** อัตโนมัติ → log แสดง `The request failed because billing is disabled for this project.`
+  3. อาการหลอก: project ที่เพิ่งลบ metadata ยังค้าง → `gcloud describe/logging/billing link` ยัง**ทำได้** แต่ Cloud Run **start instance/deploy ไม่ได้** → ทุก request `429 no available instance` หรือ `500/503`
+- **สิ่งที่หลงทางระหว่าง debug (บันทึกกันพลาดซ้ำ):**
+  - ❌ ครั้งแรกสรุปว่าเป็น "billing disabled" อย่างเดียว → link billing account `01F132-3C808D-BB0970` กลับ (`billingEnabled: true`) **แต่ไม่หาย** เพราะตัว project ถูกลบ
+  - ❌ `gemini-3.8-flash` (commit `6a1b649`) เคยสงสัยว่าชื่อ model ผิด → **ยืนยันแล้วว่าถูกต้อง** (อยู่ใน list models + generateContent HTTP 200) ไม่เกี่ยวกับ incident นี้
+  - ✅ ตัวชี้ขาด: `gcloud run services update ... ` เด้ง error `Project #396358198178 has been deleted.` = project ถูกลบจริง
+- **แก้:** user รัน (หรือสั่งให้รัน) `gcloud projects undelete qcs-bait-app-v5` → project กลับ `ACTIVE`
+- **สถานะ ณ ตอนบันทึก:** project = ACTIVE + billing = enabled แล้ว **แต่ Cloud Run ยัง propagate ไม่ครบ** — serving flap (เดี๋ยว 200 เดี๋ยว 429), control-plane (deploy/update) ยังค้าง `has been deleted` → **ตั้ง background monitor ลอง redeploy ทุก 15 นาที** จนกว่าจะสำเร็จ (= project กลับมาเต็มตัว)
+- **วิธียืนยันว่าแก้หายจริง (checklist):**
+  1. `gcloud run services update aga-complaint-agent ...` สำเร็จ (ไม่มี error "has been deleted")
+  2. ping `/` ได้ **200 ติดกันหลายครั้ง** (ไม่ flap)
+  3. พิมพ์ "งานค้าง" ในกลุ่ม LINE → บอท**ตอบ**
+  4. ส่งเคสจริง → บอทเปิด work order + บันทึกลง Sheet
+- **บทเรียน:** อย่าลบ Google Cloud project ที่ยังมี service รันอยู่ · billing error อาจเป็น**อาการปลายเหตุ**ของ project ที่ถูกลบ — เช็คด้วยคำสั่งที่แตะ control-plane (`services update`) จะเห็น "has been deleted" ชัดกว่า · undelete project แล้ว Cloud Run ไม่กลับมาทันที ต้องรอ propagate (นาที–ชั่วโมง)
+
 ---
 
 ## 📁 ไฟล์หลักของโปรเจกต์
