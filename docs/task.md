@@ -294,7 +294,7 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 - **แก้ถาวร:** commit `26c7fb2` — เพิ่ม `ensureGridCapacity()` ใน `src/sheets.js`: ดัก error "exceeds grid limits" → `appendDimension` ขยายกริด +500 แถวอัตโนมัติ แล้วเขียนใหม่ (ไม่ต้องเพิ่มแถวเองอีกตลอดไป)
 - **บทเรียน:** "อ่านได้ เขียนไม่ได้" ไม่ได้แปลว่าสิทธิ์เสมอไป — เช็ค log จริงก่อนสรุป root cause
 
-### 24 ก.ย. 2569 — บอทเงียบทั้งระบบ (ไม่เปิด work order + "งานค้าง" ไม่ตอบ) 🔴 กำลังกู้
+### 24 ก.ย. 2569 — บอทเงียบทั้งระบบ (ไม่เปิด work order + "งานค้าง" ไม่ตอบ) ✅ แก้แล้ว
 
 - **อาการ:** ส่งเคสใหม่/พิมพ์ "งานค้าง" ในกลุ่ม LINE บอท**ไม่ตอบอะไรเลย** ทุกคำสั่ง — ต่างจาก incident 31 ก.ค. ที่บอทยังตอบ error กลับมา (รอบนี้เงียบสนิท = backend ตาย)
 - **วิธีเช็คตอนเจอ:**
@@ -309,12 +309,13 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
   - ❌ `gemini-3.8-flash` (commit `6a1b649`) เคยสงสัยว่าชื่อ model ผิด → **ยืนยันแล้วว่าถูกต้อง** (อยู่ใน list models + generateContent HTTP 200) ไม่เกี่ยวกับ incident นี้
   - ✅ ตัวชี้ขาด: `gcloud run services update ... ` เด้ง error `Project #396358198178 has been deleted.` = project ถูกลบจริง
 - **แก้:** user รัน (หรือสั่งให้รัน) `gcloud projects undelete qcs-bait-app-v5` → project กลับ `ACTIVE`
-- **สถานะ ณ ตอนบันทึก:** project = ACTIVE + billing = enabled แล้ว **แต่ Cloud Run ยัง propagate ไม่ครบ** — serving flap (เดี๋ยว 200 เดี๋ยว 429), control-plane (deploy/update) ยังค้าง `has been deleted` → **ตั้ง background monitor ลอง redeploy ทุก 15 นาที** จนกว่าจะสำเร็จ (= project กลับมาเต็มตัว)
-- **วิธียืนยันว่าแก้หายจริง (checklist):**
-  1. `gcloud run services update aga-complaint-agent ...` สำเร็จ (ไม่มี error "has been deleted")
-  2. ping `/` ได้ **200 ติดกันหลายครั้ง** (ไม่ flap)
-  3. พิมพ์ "งานค้าง" ในกลุ่ม LINE → บอท**ตอบ**
-  4. ส่งเคสจริง → บอทเปิด work order + บันทึกลง Sheet
+- **การกู้ (timeline):** undelete → project ACTIVE ทันที แต่ Cloud Run ค่อยๆ กลับมา — serving flap (200↔429) ~1-2 ชม. แล้วนิ่งเป็น 200 · control-plane (deploy/update) ยังค้าง `has been deleted` นานกว่า (แต่**ไม่จำเป็น**ต่อการที่บอทจะทำงาน — serving นิ่งพอแล้ว)
+- **✅ ยืนยันหายจริง (24 ก.ย. ~15:30):** พิมพ์ "งานค้าง" → บอทตอบ "ไม่มีงานค้าง ✅" · ส่งเคสจริง → เปิด **W401** สำเร็จ (Gemini parse: หนู / อาคาร 100 ปีฯ ชั้น 6 / ผู้แจ้ง+เบอร์ครบ) + เขียน Sheet ติด
+- **checklist ที่ใช้ยืนยัน:**
+  1. ~~redeploy สำเร็จ~~ — ยังค้าง "deleted" (propagation ฝั่ง Google) **แต่ไม่จำเป็น** ข้ามได้
+  2. ✅ ping `/` = 200 ติดกัน (ไม่ flap)
+  3. ✅ "งานค้าง" → บอทตอบ
+  4. ✅ เคสจริง → เปิด WO + เขียน Sheet
 - **บทเรียน:** อย่าลบ Google Cloud project ที่ยังมี service รันอยู่ · billing error อาจเป็น**อาการปลายเหตุ**ของ project ที่ถูกลบ — เช็คด้วยคำสั่งที่แตะ control-plane (`services update`) จะเห็น "has been deleted" ชัดกว่า · undelete project แล้ว Cloud Run ไม่กลับมาทันที ต้องรอ propagate (นาที–ชั่วโมง)
 
 ---
