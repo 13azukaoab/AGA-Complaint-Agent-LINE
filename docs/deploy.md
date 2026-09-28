@@ -1,8 +1,24 @@
 # คู่มือ Deploy — AGA Complaint Agent บน Google Cloud Run
 
-> Project: **qcs-bait-app-v5** | Region: **asia-southeast1** (Singapore)
-> Service: **aga-complaint-agent** | URL: `https://aga-complaint-agent-396358198178.asia-southeast1.run.app`
+> Project: **aga-complaint-line** | Region: **asia-southeast1** (Singapore)
+> Service: **aga-complaint-agent** | URL: `https://aga-complaint-agent-929114248743.asia-southeast1.run.app`
 > Repo: `https://github.com/13azukaoab/AGA-Complaint-Agent-LINE.git`
+
+---
+
+## 🆕 หมายเหตุการย้าย Project (28 ก.ย. 2569)
+
+ย้ายจาก project เดิม `qcs-bait-app-v5` (ถูกลบโดยไม่ตั้งใจ 2 ครั้ง → Cloud Run พัง) มาที่ **`aga-complaint-line`** (#929114248743) ใส่ **lien กันลบ** แล้ว
+
+**สิ่งที่ต่างจากเดิม (project ใหม่):**
+- **Service account:** ใช้ default compute `929114248743-compute@developer.gserviceaccount.com` (เดิมใช้ custom `complaint-sheet-writer@...`)
+- **Secrets:** ตั้งเป็น **env vars ตรงๆ** บน service (`LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `GEMINI_API_KEY`, `GOOGLE_SHEET_ID`) — ยังไม่ได้ใช้ Secret Manager
+- **Google Sheet:** แชร์ให้ SA ใหม่เป็น Editor แล้ว
+- **GCS bucket** `aga-complaint-photos`: ยังอยู่ project เก่า — ให้สิทธิ์ SA ใหม่ (`storage.objectAdmin`) แล้ว
+- **Gemini key:** อยู่ project `gen-lang-client-0566996785` (คนละตัว) ใช้ข้ามได้
+- ตั้ง `--no-cpu-throttling --memory=512Mi` เพื่อให้ async task หลังส่ง response ทำงานได้
+
+> ⬇️ ส่วน "Setup ครั้งแรก" ด้านล่างเป็นวิธีของ **project เดิม** (Secret Manager + custom SA) เก็บไว้อ้างอิง
 
 ---
 
@@ -27,11 +43,11 @@ git push origin main
 cd ~/aga-agent && git pull origin main
 
 # 5. Build Docker image
-gcloud builds submit --tag asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest
+gcloud builds submit --tag asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest
 
 # 6. Deploy ขึ้น Cloud Run
 gcloud run deploy aga-complaint-agent \
-  --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest \
+  --image asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest \
   --platform managed \
   --region asia-southeast1
 ```
@@ -110,7 +126,7 @@ gcloud secrets versions add GCP_SERVICE_ACCOUNT_KEY --data-file="credentials/qcs
 
 ```bash
 gcloud run deploy aga-complaint-agent \
-  --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest \
+  --image asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest \
   --platform managed \
   --region asia-southeast1 \
   --allow-unauthenticated \
@@ -142,7 +158,7 @@ gcloud projects add-iam-policy-binding qcs-bait-app-v5 \
 
 1. เปิด [LINE Developers Console](https://developers.line.biz)
 2. เลือก Channel **AGA Pest Control (Dizzy)**
-3. **Messaging API → Webhook URL** → ใส่ `https://aga-complaint-agent-396358198178.asia-southeast1.run.app/webhook`
+3. **Messaging API → Webhook URL** → ใส่ `https://aga-complaint-agent-929114248743.asia-southeast1.run.app/webhook`
 4. กด **Verify** → ต้องขึ้น Success
 
 </details>

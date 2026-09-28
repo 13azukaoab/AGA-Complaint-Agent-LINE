@@ -3,13 +3,13 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest'
+      - 'asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest'
       - '.'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest'
+      - 'asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest'
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
@@ -18,7 +18,7 @@ steps:
       - 'deploy'
       - 'aga-complaint-agent'
       - '--image'
-      - 'asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest'
+      - 'asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest'
       - '--platform'
       - 'managed'
       - '--region'
@@ -26,7 +26,7 @@ steps:
       - '--quiet'
 
 images:
-  - 'asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest'
+  - 'asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY

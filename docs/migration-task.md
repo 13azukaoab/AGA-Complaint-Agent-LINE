@@ -82,3 +82,11 @@
 
 ## 📝 Log ความคืบหน้า
 - 28 ก.ย. : สร้าง task นี้ + commit checkpoint
+- 28 ก.ย. : ✅ **ย้ายสำเร็จสมบูรณ์** — project ใหม่ `aga-complaint-line` (#929114248743)
+  - สร้าง project + billing (ปลด billing `gen-lang-client-0473769217` เพื่อเปิดช่องโควตา) + lien
+  - deploy service (URL: `https://aga-complaint-agent-929114248743.asia-southeast1.run.app`) + env vars + `--no-cpu-throttling`
+  - แชร์ Sheet ให้ SA `929114248743-compute@...` + ให้สิทธิ์ bucket
+  - LINE webhook ชี้ URL ใหม่ + Verify Success
+  - ทดสอบผ่านครบ: งานค้าง / เปิด W412 / ปิด W412 / dashboard 422 รายการ
+  - อัปเดต config+docs: cloudbuild.yaml, dashboard.html, README.md, CLAUDE.md, deploy.md
+- **เหลือ (ทีหลัง):** ย้าย bucket รูปมา project ใหม่ (optional), ปิด service เดิม, แก้ path key file ใน src สำหรับ local dev

@@ -42,7 +42,7 @@ git revert <commit-hash>   # ย้อนกลับ commit นั้น (ป�
 
 **หลัง push ทุกครั้ง — ต้องแจ้ง Cloud Build Status:**
 - หลัง `git push origin main` สำเร็จ ให้ตรวจสอบและแจ้ง user ว่า Cloud Build build/deploy สำเร็จหรือไม่
-- ใช้ Cloud Build History ที่ https://console.cloud.google.com/cloud-build/builds?project=qcs-bait-app-v5 หรือ schedule wakeup แล้วรายงานผลให้ user ทราบ
+- ใช้ Cloud Build History ที่ https://console.cloud.google.com/cloud-build/builds?project=aga-complaint-line หรือ schedule wakeup แล้วรายงานผลให้ user ทราบ
 - แจ้งให้ชัดว่า ✅ code ขึ้น production แล้ว หรือ ❌ build ล้มเหลว (พร้อม error)
 
 **ขั้นตอน Deploy มาตรฐาน (6 ขั้น):**
@@ -53,8 +53,8 @@ git revert <commit-hash>   # ย้อนกลับ commit นั้น (ป�
 | 2. commit | PowerShell | `git add .` → `git commit -m "..."` |
 | 3. push | PowerShell | `git push origin main` |
 | 4. pull | Cloud Shell | `cd ~/aga-agent && git pull origin main` |
-| 5. build | Cloud Shell | `gcloud builds submit --tag asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest` |
-| 6. deploy | Cloud Shell | `gcloud run deploy aga-complaint-agent --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest --platform managed --region asia-southeast1` |
+| 5. build | Cloud Shell | `gcloud builds submit --tag asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest` |
+| 6. deploy | Cloud Shell | `gcloud run deploy aga-complaint-agent --image asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest --platform managed --region asia-southeast1` |
 
 **ข้อห้าม / ข้อควรระวัง:**
 - ❌ ห้ามใช้ `cat > file << 'EOF'` เขียนไฟล์ภาษาไทยใน Cloud Shell — ตัว `$` และ backtick จะพัง

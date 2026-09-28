@@ -205,11 +205,11 @@ cd ~/aga-agent && git pull origin main
 
 # 2. Build Docker image
 gcloud builds submit \
-  --tag asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest
+  --tag asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest
 
 # 3. Deploy
 gcloud run deploy aga-complaint-agent \
-  --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest \
+  --image asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest \
   --platform managed \
   --region asia-southeast1
 
