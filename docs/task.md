@@ -269,7 +269,7 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 | **Cloud Run URL** | ✅ `https://aga-complaint-agent-929114248743.asia-southeast1.run.app` |
 | Cloud Run Backend | ✅ deploy บน project ใหม่ + `--no-cpu-throttling` + 512Mi · SA `929114248743-compute@` |
 | Netlify Dashboard | ✅ commit `cdf75e6` (Phase 16 + dataviz audit fix — ล่าสุด) |
-| Gemini Model | ✅ `gemini-3.8-flash` (commit `6a1b649`) · เครดิตเติมแล้ว 28 ก.ย. |
+| Gemini Model | ✅ `gemini-3.6-flash` + retry (commit `de41921`, revision 00006) · เปลี่ยนจาก 3.8 เพราะ 3.8 เจอ 503 · override ผ่าน env `GEMINI_MODEL` |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
@@ -353,6 +353,11 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 - 🐛 พบ+แก้ bug: `uploadPhotoToGCS` (`src/index.js`) บังคับใช้ key file `qcs-bait-app-v5-...json` แม้บน Cloud Run → ไฟล์ไม่มีใน container → รูปไม่อัปโหลดบน project ใหม่ · แก้ให้ใช้ **metadata SA (ADC)** บน Cloud Run (commit `0a3ad01`, deploy revision 00004) — SA ใหม่มีสิทธิ์ bucket แล้ว
 - 🪣 **bucket `aga-complaint-photos`:** คงไว้ที่ project เก่า (ล็อก lien กันลบ + SA ใหม่เข้าถึงได้) — ไม่ย้ายจริง เพราะชื่อ bucket เป็น global-unique การย้ายต้องแก้ URL รูปใน Sheet 400+ แถว = กระทบ production
 - 🗑️ **service เก่าใน `qcs-bait-app-v5`:** ยังไม่ลบ (ไม่มีค่าใช้จ่าย scale-to-zero) — ลบเองได้ที่ Console เมื่อต้องการ
+
+**อัปเดตเพิ่ม (28 ก.ย. บ่ายแก่ๆ) — บอทไม่เปิด WO อีก (2 สาเหตุใหม่ หลังย้าย):**
+- **① GEMINI_API_KEY ที่กรอกตอน setup เป็น key ผิด (free tier):** log แสดง `429 free_tier_requests limit 20/day` — key ที่กรอกเข้า Cloud Run เป็นคนละตัว อยู่ free tier · แก้: อัปเดต env เป็น key ถูกจาก `Secret Key.env` (paid tier, ลงท้าย `...xWnVnA`) · **บทเรียน:** free tier = 429/`free_tier_requests` · paid = 402/`prepayment` — ดู error แยก tier ได้
+- **② `gemini-3.8-flash` เจอ 503 "high demand" เป็นระยะ:** ทดสอบ 3.8 = 2/3 สำเร็จ · 3.6/3.7/flash-latest = 3/3 · แก้ (commit `de41921`): เปลี่ยน default → **`gemini-3.6-flash`** + เพิ่ม **`generateWithRetry`** (retry 3 ครั้ง 800ms→2s เมื่อเจอ 503/429/network) · override model ได้ผ่าน env `GEMINI_MODEL` · deploy revision 00006
+- ✅ verified local: 2 เคสจริง (อดุลยเดช/สยามินทร์) คืนผลถูก + retry จับ transient error ได้
 
 ---
 
