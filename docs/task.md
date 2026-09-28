@@ -241,6 +241,49 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 
 ---
 
+### Phase 17 — Flex สรุปรายสัปดาห์/รายเดือน + Cloud Scheduler (28 ก.ย. 2569) ✅
+
+**ฟีเจอร์ใหม่:** สรุปงานเป็น **LINE Flex message** สวยงาม แยก weekly (header 🔵 น้ำเงิน) / monthly (header 🔴 แดง) — ต่อยอดจาก notify text เดิม
+
+**Command on-demand (reply ฟรี ไม่กิน quota — แต่ละกลุ่มพิมพ์ = สรุปเฉพาะกลุ่มตัวเอง):**
+- `#สรุปสัปดาห์` (หรือ `สรุปสัปดาห์`) → weekly สัปดาห์นี้ (จันทร์→ตอนนี้)
+- `#สรุปเดือน` (หรือ `สรุปเดือน`) → monthly เดือนนี้ + เทียบเดือนก่อน ▲▼
+
+**Scheduled (push):** Cloud Scheduler 2 job บน `aga-complaint-line` (asia-southeast1):
+| job | cron | เวลา | สรุปช่วง |
+|-----|------|------|---------|
+| `aga-summary-weekly` | `30 8 * * 1` | จันทร์ 08:30 | สัปดาห์ที่แล้ว (จ-อา) |
+| `aga-summary-monthly` | `30 8 1 * *` | วันที่ 1 08:30 | เดือนก่อน |
+
+**เนื้อหาการ์ด (ตัดงานแจ้งซ้ำทุก metric):**
+- KPI: งานทั้งหมด/ปิดแล้ว/ค้าง + อัตราปิด% · monthly เพิ่มแถบเทียบเดือนก่อน (งานเข้า ▲▼% + อัตราปิด ▲▼)
+- ชนิดสัตว์ 6 หมวด (หนู/ปลวก/แมลงสาบ/ยุง/มด/อื่นๆ) + แถบ — **ปลวก = icon รูปจริง** (`gs://aga-complaint-photos/icons/termite.png`), ที่เหลือ emoji
+- อาคาร TOP 3 (weekly) / TOP 5 (monthly) "(เคสแจ้ง)" — นับตาม location
+- 🐀 หนูที่จับได้รวม (sum catchCount เฉพาะหมวดหนู)
+
+**ไฟล์:**
+- `src/summary.js` (ใหม่) — คำนวณสถิติจาก Sheet (รอบเวลา, จัดหมวดสัตว์, นับอาคาร, เทียบเดือน)
+- `src/flex.js` (ใหม่) — สร้างการ์ด Flex จากข้อมูล (weekly/monthly)
+- `src/index.js` — command #สรุปสัปดาห์/#สรุปเดือน (real data, reply) + ลบ sample builders
+- `src/notify.js` — เพิ่ม type=weekly/monthly (push, รองรับ `?group=` สำหรับ dev)
+- commit `3682be0` — validated กับข้อมูลจริง 428 WOs
+
+**Security:** คืน `NOTIFY_KEY` ป้องกัน /notify (scheduler ส่ง header `X-Notify-Key`) — /notify ไม่มี key = **403** ✅
+
+**⚠️ ยังเป็น dev — ก่อน go-live ต้องทำ 3 ข้อ:**
+1. scheduler ตอนนี้ยิง**เฉพาะกลุ่ม Test** (`&group=C0c96f60db7622d5636f1060f149b6ce6`) — จะเปิดครบทุกกลุ่ม: ตั้ง env `ALLOWED_GROUP_IDS=Cc0527...,C0c96...` **แล้วแก้ scheduler URI เอา `&group=` ออก**
+2. **push quota เต็ม 0** ตอนนี้ → scheduled ยิงจริงได้ตอน LINE reset ต้นเดือน (~1 ต.ค.) · weekly job แรก = จันทร์หน้า
+3. pest icon อีก 5 ตัว (หนู/แมลงสาบ/ยุง/มด/อื่นๆ) ยังเป็น emoji — อยากเข้าชุดปลวก: หา icon เพิ่ม + อัปโหลด `gs://aga-complaint-photos/icons/`
+
+**คำสั่งจัดการ scheduler:**
+```bash
+gcloud scheduler jobs list --project aga-complaint-line --location asia-southeast1
+gcloud scheduler jobs run aga-summary-weekly --project aga-complaint-line --location asia-southeast1   # ยิงทดสอบทันที (กิน quota)
+gcloud scheduler jobs pause|resume|delete aga-summary-weekly --project aga-complaint-line --location asia-southeast1
+```
+
+---
+
 ## 🖥️ Dev Environment (เครื่อง local — 4 ส.ค. 2569)
 
 ### Python + hookify แก้ 2 บั๊กเรียงกัน
@@ -379,8 +422,10 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 |------|--------|
 | `src/index.js` | Webhook handler + routing คำสั่งทั้งหมด |
 | `src/sheets.js` | อ่าน/เขียน Google Sheets (columns A–U) |
-| `src/notify.js` | Endpoint /notify — morning / check / daily |
+| `src/notify.js` | Endpoint /notify — morning/check/daily + **weekly/monthly (Flex)** |
 | `src/gemini.js` | เรียก Gemini AI + กรองข้อความที่ไม่ใช่ complaint |
+| `src/summary.js` | **(ใหม่)** คำนวณสถิติสรุป weekly/monthly จาก Sheet |
+| `src/flex.js` | **(ใหม่)** สร้าง LINE Flex การ์ดสรุป (weekly/monthly) |
 | `dashboard.html` | Dashboard (VS Mode, Charts, Photo modal, Shortcuts) |
 | `netlify.toml` | Redirect `/` → `/dashboard.html` |
 | `CLAUDE.md` | กฎ deploy + commit |
