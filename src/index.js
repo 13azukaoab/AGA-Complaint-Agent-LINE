@@ -151,9 +151,14 @@ async function uploadPhotoToGCS(messageId, woId) {
   try {
     const { Storage } = require('@google-cloud/storage');
     const storageOptions = {};
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    // บน Cloud Run (K_SERVICE) → ใช้ default service account ผ่าน metadata (ADC)
+    //   — SA มีสิทธิ์ bucket แล้ว จึงไม่ต้องใช้ key file (key file ไม่มีใน container อยู่แล้ว)
+    // เฉพาะรันบนเครื่อง local เท่านั้นที่ fallback ไปใช้ key file (ถ้ามีไฟล์)
+    if (!process.env.K_SERVICE && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       const path = require('path');
-      storageOptions.keyFilename = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
+      const fs = require('fs');
+      const keyFile = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
+      if (fs.existsSync(keyFile)) storageOptions.keyFilename = keyFile;
     }
     const storage = new Storage(storageOptions);
     const bucket = storage.bucket('aga-complaint-photos');
