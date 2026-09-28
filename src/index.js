@@ -234,6 +234,88 @@ function buildSampleWeeklyFlex() {
   };
 }
 
+// การ์ดตัวอย่าง "สรุปรายเดือน" (ดีไซน์ M1 = weekly + แถบเทียบเดือนก่อน)
+function buildSampleMonthlyFlex() {
+  const ICON = { termite: 'https://storage.googleapis.com/aga-complaint-photos/icons/termite.png' };
+  const kpi = (n, l, color) => ({
+    type: 'box', layout: 'vertical', flex: 1, backgroundColor: '#F6F8FB', cornerRadius: '10px', paddingAll: '8px',
+    contents: [
+      { type: 'text', text: n, size: 'xxl', weight: 'bold', color, align: 'center' },
+      { type: 'text', text: l, size: 'xxs', color: '#6B7280', align: 'center', margin: 'xs' },
+    ],
+  });
+  const cmp = (l, v, color) => ({
+    type: 'box', layout: 'vertical', flex: 1, backgroundColor: '#F6F8FB', cornerRadius: '8px', paddingAll: '8px',
+    contents: [
+      { type: 'text', text: l, size: 'xxs', color: '#6B7280' },
+      { type: 'text', text: v, size: 'sm', weight: 'bold', color },
+    ],
+  });
+  const pest = (icon, name, w, ct, isUrl) => ({
+    type: 'box', layout: 'horizontal', margin: 'md', spacing: 'sm', alignItems: 'center',
+    contents: [
+      isUrl
+        ? { type: 'box', layout: 'vertical', width: '22px', height: '22px', flex: 0, contents: [{ type: 'image', url: icon, size: 'full', aspectMode: 'fit' }] }
+        : { type: 'text', text: icon, flex: 0, size: 'sm' },
+      { type: 'text', text: name, flex: 3, size: 'sm', color: '#1F2937' },
+      { type: 'box', layout: 'horizontal', flex: 5, height: '8px', backgroundColor: '#E9EDF2', cornerRadius: '4px',
+        contents: [{ type: 'box', layout: 'vertical', width: w, backgroundColor: '#2563EB', cornerRadius: '4px', contents: [{ type: 'filler' }] }] },
+      { type: 'text', text: ct, flex: 0, size: 'sm', weight: 'bold', align: 'end', color: '#1F2937' },
+    ],
+  });
+  const bldg = (rank, name, ct) => ({
+    type: 'box', layout: 'horizontal', margin: 'sm', spacing: 'sm', alignItems: 'center',
+    contents: [
+      { type: 'text', text: rank, flex: 0, size: 'sm', weight: 'bold', color: '#2563EB' },
+      { type: 'text', text: name, flex: 1, size: 'sm', color: '#1F2937', wrap: true },
+      { type: 'text', text: ct, flex: 0, size: 'sm', weight: 'bold', color: '#1F2937', align: 'end' },
+    ],
+  });
+  const sep = () => ({ type: 'separator', margin: 'lg', color: '#ECEFF3' });
+  return {
+    type: 'bubble', size: 'mega',
+    header: {
+      type: 'box', layout: 'vertical', backgroundColor: '#1E40AF', paddingAll: '16px',
+      contents: [
+        { type: 'text', text: '📅 สรุปงานรายเดือน', color: '#FFFFFF', weight: 'bold', size: 'lg' },
+        { type: 'text', text: 'กันยายน 2569 · ไม่รวมงานแจ้งซ้ำ', color: '#DBEAFE', size: 'xs', margin: 'sm' },
+      ],
+    },
+    body: {
+      type: 'box', layout: 'vertical', paddingAll: '16px',
+      contents: [
+        { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [kpi('58', 'งานทั้งหมด', '#2563EB'), kpi('52', 'ปิดแล้ว', '#059669'), kpi('6', 'ค้าง', '#D97706')] },
+        { type: 'box', layout: 'horizontal', spacing: 'sm', margin: 'md', contents: [cmp('อัตราปิดงาน', '90% ▲5%', '#059669'), cmp('เทียบเดือน ส.ค.', '49→58 ▲18%', '#2563EB')] },
+        sep(),
+        { type: 'text', text: '🐾 แยกชนิดสัตว์รบกวน', weight: 'bold', size: 'sm', margin: 'lg' },
+        pest('🐀', 'หนู', '100%', '24'),
+        pest(ICON.termite, 'ปลวก', '58%', '14', true),
+        pest('🪳', 'แมลงสาบ', '38%', '9'),
+        pest('🦟', 'ยุง', '21%', '5'),
+        pest('🐜', 'มด', '17%', '4'),
+        pest('▫️', 'อื่นๆ', '8%', '2'),
+        sep(),
+        { type: 'text', text: '🏢 อาคารที่แจ้งเยอะสุด (TOP 3)', weight: 'bold', size: 'sm', margin: 'lg' },
+        bldg('1.', 'ตึกสยามินทร์', '12'),
+        bldg('2.', 'อาคาร 100 ปีฯ', '9'),
+        bldg('3.', 'ตึก 72 ปี', '7'),
+        { type: 'box', layout: 'horizontal', backgroundColor: '#F6F8FB', cornerRadius: '10px', paddingAll: '10px', margin: 'lg', alignItems: 'center',
+          contents: [
+            { type: 'text', text: '🐀 หนูที่จับได้รวม', size: 'sm', weight: 'bold', color: '#374151', flex: 1 },
+            { type: 'text', text: '31 ตัว', size: 'md', weight: 'bold', color: '#D97706', align: 'end', flex: 0 },
+          ] },
+      ],
+    },
+    footer: {
+      type: 'box', layout: 'vertical', backgroundColor: '#FFF7ED', paddingAll: '12px',
+      contents: [
+        { type: 'text', text: '🟡 คงค้าง 6 งาน', weight: 'bold', size: 'sm', color: '#D97706' },
+        { type: 'text', text: 'พิมพ์ "งานค้าง" ดูรายละเอียด', size: 'xs', color: '#92400E', margin: 'xs' },
+      ],
+    },
+  };
+}
+
 // แปลง timestamp ไทย (พ.ศ.) → format สั้น เช่น "17/06/69 13:33"
 function formatShortTimestamp(ts) {
   if (!ts) return '?';
@@ -432,6 +514,13 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     const senderName = event.source.userId
       ? await getMemberName(groupId, event.source.userId)
       : 'ไม่ระบุ';
+
+    // ตรวจ command: "พรีวิวสรุปเดือน" / "พรีวิวเดือน" — โชว์ Flex ตัวอย่างสรุปรายเดือน (reply ฟรี)
+    if (/^(พรีวิวสรุปเดือน|พรีวิวเดือน|preview month)\s*$/i.test(text)) {
+      console.log(`\n🧪 พรีวิว Flex สรุปรายเดือน โดย ${senderName}`);
+      await sendFlexReply(event.replyToken, '📅 สรุปงานรายเดือน', buildSampleMonthlyFlex());
+      continue;
+    }
 
     // ตรวจ command: "พรีวิวสรุป" — โชว์ Flex ตัวอย่างสรุปรายสัปดาห์ (reply ฟรี ใช้ทดสอบดีไซน์)
     if (/^(พรีวิวสรุป|ทดสอบสรุป|preview)\s*$/i.test(text)) {
