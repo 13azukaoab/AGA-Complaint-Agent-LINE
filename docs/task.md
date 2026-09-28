@@ -358,6 +358,9 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 - **① GEMINI_API_KEY ที่กรอกตอน setup เป็น key ผิด (free tier):** log แสดง `429 free_tier_requests limit 20/day` — key ที่กรอกเข้า Cloud Run เป็นคนละตัว อยู่ free tier · แก้: อัปเดต env เป็น key ถูกจาก `Secret Key.env` (paid tier, ลงท้าย `...xWnVnA`) · **บทเรียน:** free tier = 429/`free_tier_requests` · paid = 402/`prepayment` — ดู error แยก tier ได้
 - **② `gemini-3.8-flash` เจอ 503 "high demand" เป็นระยะ:** ทดสอบ 3.8 = 2/3 สำเร็จ · 3.6/3.7/flash-latest = 3/3 · แก้ (commit `de41921`): เปลี่ยน default → **`gemini-3.6-flash`** + เพิ่ม **`generateWithRetry`** (retry 3 ครั้ง 800ms→2s เมื่อเจอ 503/429/network) · override model ได้ผ่าน env `GEMINI_MODEL` · deploy revision 00006
 - ✅ verified local: 2 เคสจริง (อดุลยเดช/สยามินทร์) คืนผลถูก + retry จับ transient error ได้
+- ✅ verified production (revision 00006): เปิด **W414** สำเร็จ (ปลวก/ตึกอดุลยเดชวิกรม ชั้น5) · log ยืนยัน model = `gemini-3.6-flash` · retry ทำงานจริงใน prod
+- ✅ user เปิด **Auto-reload** เครดิต Gemini แล้ว → กัน 402 (credit หมด) ไม่ให้ซ้ำ
+- **สรุปเกราะป้องกันครบ:** paid key (กัน free-tier 429) + auto-reload (กัน 402) + 3.6-flash+retry (กัน 503) + lien (กันลบ project)
 
 ---
 
