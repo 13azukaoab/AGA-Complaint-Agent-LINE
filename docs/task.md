@@ -270,9 +270,13 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 
 **Security:** คืน `NOTIFY_KEY` ป้องกัน /notify (scheduler ส่ง header `X-Notify-Key`) — /notify ไม่มี key = **403** ✅
 
-**⚠️ ยังเป็น dev — ก่อน go-live ต้องทำ 3 ข้อ:**
-1. scheduler ตอนนี้ยิง**เฉพาะกลุ่ม Test** (`&group=C0c96f60db7622d5636f1060f149b6ce6`) — จะเปิดครบทุกกลุ่ม: ตั้ง env `ALLOWED_GROUP_IDS=Cc0527...,C0c96...` **แล้วแก้ scheduler URI เอา `&group=` ออก**
-2. **push quota เต็ม 0** ตอนนี้ → scheduled ยิงจริงได้ตอน LINE reset ต้นเดือน (~1 ต.ค.) · weekly job แรก = จันทร์หน้า
+**✅ Go-live แล้ว (28 ก.ย.):**
+- ตั้ง `ALLOWED_GROUP_IDS=Cc0527...,C0c96...` (2 กลุ่ม) + แก้ scheduler URI เอา `&group=` ออก → **auto-push ยิงครบทุกกลุ่มใน list**
+- **command #สรุปสัปดาห์/#สรุปเดือน = ใช้ได้ทุกกลุ่มที่บอทอยู่** (on-demand ไม่จำกัดกลุ่ม, ไม่ต้องอยู่ใน ALLOWED_GROUP_IDS)
+
+**⚠️ เหลือ (ทำเมื่อพร้อม):**
+1. **push quota เต็ม 0** ตอนนี้ → scheduled ยิงจริงได้ตอน LINE reset ต้นเดือน (~1 ต.ค.) · weekly job แรก = จันทร์หน้า
+2. เพิ่มบอทเข้ากลุ่มใหม่ → command ใช้ได้ทันที แต่ถ้าอยากให้ได้ **auto-push** ด้วย ต้องเพิ่ม group ID ใน `ALLOWED_GROUP_IDS`
 3. pest icon อีก 5 ตัว (หนู/แมลงสาบ/ยุง/มด/อื่นๆ) ยังเป็น emoji — อยากเข้าชุดปลวก: หา icon เพิ่ม + อัปโหลด `gs://aga-complaint-photos/icons/`
 
 **คำสั่งจัดการ scheduler:**
