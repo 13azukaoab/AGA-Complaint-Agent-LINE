@@ -1,6 +1,6 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 4 สิงหาคม 2569
+อัปเดตล่าสุด: 28 กันยายน 2569 (ย้าย project → `aga-complaint-line`)
 
 ---
 
@@ -265,9 +265,11 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 
 | Component | สถานะ |
 |-----------|-------|
-| Cloud Run Backend | ✅ commit `4b36b7d` (Phase 15 — gemini.js normalize + 3.6-flash) |
+| **GCP Project** | ✅ **`aga-complaint-line` (#929114248743)** — ย้ายจาก `qcs-bait-app-v5` (28 ก.ย.) · มี lien กันลบ |
+| **Cloud Run URL** | ✅ `https://aga-complaint-agent-929114248743.asia-southeast1.run.app` |
+| Cloud Run Backend | ✅ deploy บน project ใหม่ + `--no-cpu-throttling` + 512Mi · SA `929114248743-compute@` |
 | Netlify Dashboard | ✅ commit `cdf75e6` (Phase 16 + dataviz audit fix — ล่าสุด) |
-| Gemini Model | ✅ `gemini-3.6-flash` (upgrade จาก 3.5-flash, 2 ส.ค.) |
+| Gemini Model | ✅ `gemini-3.8-flash` (commit `6a1b649`) · เครดิตเติมแล้ว 28 ก.ย. |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
@@ -318,6 +320,35 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
   4. ✅ เคสจริง → เปิด WO + เขียน Sheet
 - **บทเรียน:** อย่าลบ Google Cloud project ที่ยังมี service รันอยู่ · billing error อาจเป็น**อาการปลายเหตุ**ของ project ที่ถูกลบ — เช็คด้วยคำสั่งที่แตะ control-plane (`services update`) จะเห็น "has been deleted" ชัดกว่า · undelete project แล้ว Cloud Run ไม่กลับมาทันที ต้องรอ propagate (นาที–ชั่วโมง)
 
+### 28 ก.ย. 2569 — บอทเงียบซ้ำ (3 ปัญหาซ้อน) → ย้าย project ใหม่ ✅ แก้แล้ว
+
+รอบนี้เจอ 3 ปัญหาคนละสาเหตุ ในวันเดียว:
+
+**① Gemini credit หมด (เช้า — บอทไม่เปิด work):**
+- อาการ: ส่งเคสใหม่ บอทไม่เปิด WO (แต่ "งานค้าง" ยังตอบ — เพราะ command นี้ไม่ใช้ Gemini)
+- สาเหตุ: Gemini API ตอบ `402 RESOURCE_EXHAUSTED: prepayment credits depleted` → `analyzeComplaint()` คืน null → ข้าม ไม่เปิด WO
+- แก้: **เติมเครดิต Gemini** ที่ https://ai.studio (billing account `01F132-3C808D-BB0970`) · ยืนยัน `gemini-3.8-flash` → 200 OK (ชื่อ model ถูก ไม่เกี่ยว)
+
+**② LINE push quota เต็ม 300/300:**
+- อาการ: push การ์ดเข้ากลุ่มไม่ได้ → `429 monthly limit`
+- ไม่กระทบงานหลัก (ปกติบอทใช้ **reply ฟรี** ตอบเคสสด · push ใช้แค่ scheduler/backfill) — รอ reset ต้นเดือน หรือ upgrade LINE OA plan
+
+**③ project `qcs-bait-app-v5` ถูกลบซ้ำ (สาย — บอทเงียบสนิท) → ย้าย project:**
+- อาการ: "งานค้าง"/เคสใหม่ ไม่ตอบเลย · `curl /` = **404 จาก Google Frontend** (ไม่ใช่ของแอป) · log หยุดตั้งแต่ 25 ก.ย.
+- สาเหตุ: **user เผลอลบ project เอง** (audit log: `DeleteProject` โดย oab_oabza) — undelete แล้ว project = ACTIVE แต่ **Cloud Run control-plane ค้าง `has been deleted`** (deploy/update ไม่ได้, URL ยัง 404) นานเกินรอ
+- ตัดสินใจ: **ย้ายไป project ใหม่ `aga-complaint-line` (#929114248743)** เพื่อตัดปัญหาถาวร
+- ขั้นตอนย้าย:
+  1. สร้าง project + billing — ติด quota เต็ม (5 project) → **ปลด billing project เปล่า `gen-lang-client-0473769217`** เปิดช่อง
+  2. เปิด API (run/build/ar/sheets/storage) + **lien กันลบ**
+  3. `gcloud run deploy --source .` + env vars (LINE/Gemini/SHEET_ID) ผ่าน **default compute SA** `929114248743-compute@` + `--no-cpu-throttling --memory=512Mi`
+  4. **แชร์ Google Sheet** ให้ SA ใหม่ (Editor) + ให้สิทธิ์ bucket `aga-complaint-photos` (`storage.objectAdmin`)
+  5. **LINE webhook** → `https://aga-complaint-agent-929114248743.asia-southeast1.run.app/webhook` + Verify Success
+  6. อัปเดต config/docs (commit `cc50739`): dashboard.html, cloudbuild.yaml, README, CLAUDE.md, deploy.md
+- ยืนยันหาย: งานค้าง / เปิด **W412** / ปิด W412 / `/api/dashboard` 422 รายการ — ผ่านครบ
+- backfill: **W409/W410/W411** (3 เคสที่ค้างตอน Gemini credit หมด) เขียนกลับเข้า Sheet
+- ป้องกัน: ใส่ **lien กันลบทั้ง project เก่า + ใหม่** — เผลอกดลบซ้ำจะโดนบล็อก
+- **บทเรียน:** (1) 404 จาก Google Frontend + `services update` เด้ง "has been deleted" = project ถูกลบจริง (แม้ `describe/list` ยังทำได้) (2) undelete คืน project แต่ Cloud Run อาจไม่ฟื้น — ย้าย project ใหม่เร็วกว่ารอ (3) billing account มี quota จำนวน project — ปลดตัวเปล่าเปิดช่องได้ (4) **ใส่ lien ทุก production project** กันมือลั่น
+
 ---
 
 ## 📁 ไฟล์หลักของโปรเจกต์
@@ -344,16 +375,17 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 gcloud run services logs read aga-complaint-agent --region asia-southeast1 --limit=20
 
 # ทดสอบ notify endpoints
-curl -s "https://aga-complaint-agent-396358198178.asia-southeast1.run.app/notify?type=morning" | python3 -m json.tool
-curl -s "https://aga-complaint-agent-396358198178.asia-southeast1.run.app/notify?type=check" | python3 -m json.tool
-curl -s "https://aga-complaint-agent-396358198178.asia-southeast1.run.app/notify?type=daily" | python3 -m json.tool
+curl -s "https://aga-complaint-agent-929114248743.asia-southeast1.run.app/notify?type=morning" | python3 -m json.tool
+curl -s "https://aga-complaint-agent-929114248743.asia-southeast1.run.app/notify?type=check" | python3 -m json.tool
+curl -s "https://aga-complaint-agent-929114248743.asia-southeast1.run.app/notify?type=daily" | python3 -m json.tool
 
 # rollback ถ้า code พัง
 git log --oneline
 git revert <commit-hash>
 
-# deploy ใหม่
+# deploy ใหม่ (project ใหม่ aga-complaint-line)
 cd ~/aga-agent && git pull origin main
-gcloud builds submit --tag asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest
-gcloud run deploy aga-complaint-agent --image asia-southeast1-docker.pkg.dev/qcs-bait-app-v5/cloud-run-source-deploy/aga-complaint-agent:latest --platform managed --region asia-southeast1
+gcloud config set project aga-complaint-line
+gcloud run deploy aga-complaint-agent --source . --region asia-southeast1
+# หมายเหตุ: env vars/SA ถูกตั้งไว้แล้ว — deploy ซ้ำจะคงค่าเดิม
 ```
