@@ -159,14 +159,27 @@ function buildSampleWeeklyFlex() {
       { type: 'text', text: l, size: 'xxs', color: '#6B7280', align: 'center', margin: 'xs' },
     ],
   });
-  const pest = (icon, name, w, ct) => ({
+  const ICON = { termite: 'https://storage.googleapis.com/aga-complaint-photos/icons/termite.png' };
+  // icon = emoji (text) หรือ URL รูป (isUrl=true)
+  const pest = (icon, name, w, ct, isUrl) => ({
     type: 'box', layout: 'horizontal', margin: 'md', spacing: 'sm', alignItems: 'center',
     contents: [
-      { type: 'text', text: icon, flex: 0, size: 'sm' },
+      isUrl
+        ? { type: 'box', layout: 'vertical', width: '22px', height: '22px', flex: 0, contents: [{ type: 'image', url: icon, size: 'full', aspectMode: 'fit' }] }
+        : { type: 'text', text: icon, flex: 0, size: 'sm' },
       { type: 'text', text: name, flex: 3, size: 'sm', color: '#1F2937' },
       { type: 'box', layout: 'horizontal', flex: 5, height: '8px', backgroundColor: '#E9EDF2', cornerRadius: '4px',
         contents: [{ type: 'box', layout: 'vertical', width: w, backgroundColor: '#2563EB', cornerRadius: '4px', contents: [{ type: 'filler' }] }] },
       { type: 'text', text: ct, flex: 0, size: 'sm', weight: 'bold', align: 'end', color: '#1F2937' },
+    ],
+  });
+  // แถวอาคาร top: อันดับ + ชื่อ + จำนวน
+  const bldg = (rank, name, ct) => ({
+    type: 'box', layout: 'horizontal', margin: 'sm', spacing: 'sm', alignItems: 'center',
+    contents: [
+      { type: 'text', text: rank, flex: 0, size: 'sm', weight: 'bold', color: '#2563EB' },
+      { type: 'text', text: name, flex: 1, size: 'sm', color: '#1F2937', wrap: true },
+      { type: 'text', text: ct, flex: 0, size: 'sm', weight: 'bold', color: '#1F2937', align: 'end' },
     ],
   });
   const sep = () => ({ type: 'separator', margin: 'lg', color: '#ECEFF3' });
@@ -194,18 +207,20 @@ function buildSampleWeeklyFlex() {
         sep(),
         { type: 'text', text: '🐾 แยกชนิดสัตว์รบกวน', weight: 'bold', size: 'sm', margin: 'lg' },
         pest('🐀', 'หนู', '100%', '6'),
-        pest('🐛', 'ปลวก', '50%', '3'),
+        pest(ICON.termite, 'ปลวก', '50%', '3', true),
         pest('🪳', 'แมลงสาบ', '33%', '2'),
         pest('🦟', 'ยุง', '17%', '1'),
         pest('🐜', 'มด', '17%', '1'),
         pest('▫️', 'อื่นๆ', '17%', '1'),
         sep(),
-        { type: 'text', text: '🏢 อาคารที่แจ้งเยอะสุด', weight: 'bold', size: 'sm', margin: 'lg' },
-        { type: 'text', text: 'ตึกสยามินทร์ (4) · อาคาร 100 ปีฯ (3) · ตึก 72 ปี (2)', size: 'xs', color: '#6B7280', wrap: true, margin: 'sm' },
+        { type: 'text', text: '🏢 อาคารที่แจ้งเยอะสุด (TOP 3)', weight: 'bold', size: 'sm', margin: 'lg' },
+        bldg('1.', 'ตึกสยามินทร์', '4'),
+        bldg('2.', 'อาคาร 100 ปีฯ', '3'),
+        bldg('3.', 'ตึก 72 ปี', '2'),
         { type: 'box', layout: 'horizontal', backgroundColor: '#F6F8FB', cornerRadius: '10px', paddingAll: '10px', margin: 'lg', alignItems: 'center',
           contents: [
-            { type: 'text', text: '🎯 จับ/กำจัดได้รวม', size: 'sm', weight: 'bold', color: '#374151' },
-            { type: 'text', text: '9 ตัว', size: 'md', weight: 'bold', color: '#D97706', align: 'end' },
+            { type: 'text', text: '🐀 หนูที่จับได้รวม', size: 'sm', weight: 'bold', color: '#374151', flex: 1 },
+            { type: 'text', text: '7 ตัว', size: 'md', weight: 'bold', color: '#D97706', align: 'end', flex: 0 },
           ] },
       ],
     },
