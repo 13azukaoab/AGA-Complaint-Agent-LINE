@@ -98,9 +98,11 @@ async function pushMessage(groupId, text) {
 }
 
 // Reply ข้อความด้วย replyToken (ฟรี ไม่กินโควต้า — ใช้ตอบ event ที่คนพิมพ์เข้ามา ภายใน 30 วิ)
+// text = string เดียว หรือ array ของ string (ส่งการ์ดแยกได้ — LINE รับสูงสุด 5 ข้อความ/reply)
 // return true ถ้าสำเร็จ, false ถ้า fail (เพื่อให้ caller fallback ไป pushMessage)
 async function replyMessage(replyToken, text) {
   try {
+    const texts = (Array.isArray(text) ? text : [text]).slice(0, 5);
     const res = await fetch('https://api.line.me/v2/bot/message/reply', {
       method: 'POST',
       headers: {
@@ -109,7 +111,7 @@ async function replyMessage(replyToken, text) {
       },
       body: JSON.stringify({
         replyToken,
-        messages: [{ type: 'text', text }],
+        messages: texts.map((t) => ({ type: 'text', text: t })),
       }),
     });
     if (!res.ok) {
@@ -129,7 +131,8 @@ async function safeReply(replyToken, groupId, text) {
   const ok = await replyMessage(replyToken, text);
   if (!ok) {
     console.log('   🔄 reply fail → fallback pushMessage');
-    await pushMessage(groupId, text);
+    const texts = Array.isArray(text) ? text : [text];
+    for (const t of texts) await pushMessage(groupId, t);
   }
 }
 
@@ -506,9 +509,10 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       woMessages.push(lines.join('\n'));
     }
 
-    // Reply WO แรกด้วย replyToken (ฟรี), WO ถัดไป (ถ้ามี) ใช้ push
-    await safeReply(event.replyToken, groupId, woMessages[0]);
-    for (let i = 1; i < woMessages.length; i++) {
+    // ส่งทุก WO เป็นการ์ดแยกกัน ในการ reply ครั้งเดียว (ฟรี ไม่กิน push quota)
+    // LINE รับได้สูงสุด 5 ข้อความ/reply — ถ้าเกิน 5 WO ในข้อความเดียว ส่วนเกินค่อยใช้ push (หายากมาก)
+    await safeReply(event.replyToken, groupId, woMessages);
+    for (let i = 5; i < woMessages.length; i++) {
       await pushMessage(groupId, woMessages[i]);
     }
 
