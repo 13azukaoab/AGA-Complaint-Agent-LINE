@@ -89,4 +89,7 @@
   - LINE webhook ชี้ URL ใหม่ + Verify Success
   - ทดสอบผ่านครบ: งานค้าง / เปิด W412 / ปิด W412 / dashboard 422 รายการ
   - อัปเดต config+docs: cloudbuild.yaml, dashboard.html, README.md, CLAUDE.md, deploy.md
-- **เหลือ (ทีหลัง):** ย้าย bucket รูปมา project ใหม่ (optional), ปิด service เดิม, แก้ path key file ใน src สำหรับ local dev
+- 28 ก.ย. (บ่าย) : ✅ แก้ bug อัปโหลดรูป (`uploadPhotoToGCS` ใช้ metadata SA บน Cloud Run — commit `0a3ad01`, revision 00004)
+- **เหลือ (manual — ทำเองเมื่อต้องการ):**
+  - ลบ service เก่าใน `qcs-bait-app-v5` ที่ Console (ระบบบล็อกไม่ให้ agent ลบ — ไม่มีค่าใช้จ่าย ไม่ลบก็ได้)
+  - bucket รูป: คงไว้ที่ project เก่า (lien กันลบแล้ว) — ย้ายจริงต้องแก้ URL ใน Sheet 400+ แถว จึงไม่ทำ

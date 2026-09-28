@@ -349,6 +349,11 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 - ป้องกัน: ใส่ **lien กันลบทั้ง project เก่า + ใหม่** — เผลอกดลบซ้ำจะโดนบล็อก
 - **บทเรียน:** (1) 404 จาก Google Frontend + `services update` เด้ง "has been deleted" = project ถูกลบจริง (แม้ `describe/list` ยังทำได้) (2) undelete คืน project แต่ Cloud Run อาจไม่ฟื้น — ย้าย project ใหม่เร็วกว่ารอ (3) billing account มี quota จำนวน project — ปลดตัวเปล่าเปิดช่องได้ (4) **ใส่ lien ทุก production project** กันมือลั่น
 
+**อัปเดตเพิ่ม (28 ก.ย. บ่าย) — fix รูป + cleanup:**
+- 🐛 พบ+แก้ bug: `uploadPhotoToGCS` (`src/index.js`) บังคับใช้ key file `qcs-bait-app-v5-...json` แม้บน Cloud Run → ไฟล์ไม่มีใน container → รูปไม่อัปโหลดบน project ใหม่ · แก้ให้ใช้ **metadata SA (ADC)** บน Cloud Run (commit `0a3ad01`, deploy revision 00004) — SA ใหม่มีสิทธิ์ bucket แล้ว
+- 🪣 **bucket `aga-complaint-photos`:** คงไว้ที่ project เก่า (ล็อก lien กันลบ + SA ใหม่เข้าถึงได้) — ไม่ย้ายจริง เพราะชื่อ bucket เป็น global-unique การย้ายต้องแก้ URL รูปใน Sheet 400+ แถว = กระทบ production
+- 🗑️ **service เก่าใน `qcs-bait-app-v5`:** ยังไม่ลบ (ไม่มีค่าใช้จ่าย scale-to-zero) — ลบเองได้ที่ Console เมื่อต้องการ
+
 ---
 
 ## 📁 ไฟล์หลักของโปรเจกต์
