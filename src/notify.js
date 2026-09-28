@@ -6,6 +6,8 @@
 const express = require('express');
 const router = express.Router();
 const { getOpenWorkOrders, getAllWorkOrders } = require('./sheets');
+const { buildWeeklyFlex, buildMonthlyFlex } = require('./flex');
+const { weeklySummaryData, monthlySummaryData } = require('./summary');
 
 const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
@@ -35,6 +37,51 @@ async function pushMessage(groupId, text) {
   } catch (e) {
     console.error('   ❌ pushMessage error:', e.message);
   }
+}
+
+// Push Flex message เข้ากลุ่ม (ใช้กับ scheduled weekly/monthly)
+async function pushFlex(groupId, altText, contents) {
+  try {
+    const res = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${LINE_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: groupId, messages: [{ type: 'flex', altText, contents }] }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`   ❌ pushFlex fail (${res.status}) groupId=${groupId}:`, body);
+      return false;
+    }
+    console.log(`   ✅ pushFlex ok → groupId=${groupId}`);
+    return true;
+  } catch (e) {
+    console.error('   ❌ pushFlex error:', e.message);
+    return false;
+  }
+}
+
+// จันทร์ 08:30 — สรุปรายสัปดาห์ (สัปดาห์ที่แล้ว จ-อา) push Flex เข้าแต่ละกลุ่ม
+async function sendWeeklySummary(groups) {
+  const wos = await getAllWorkOrders();
+  let sent = 0;
+  for (const gid of groups) {
+    const d = weeklySummaryData(wos, gid, { scheduled: true });
+    if (await pushFlex(gid, '📊 สรุปงานรายสัปดาห์', buildWeeklyFlex(d))) sent++;
+  }
+  console.log(`[notify/weekly] ส่ง ${sent}/${groups.length} กลุ่ม`);
+  return { sent, groups: groups.length };
+}
+
+// วันที่ 1 08:30 — สรุปรายเดือน (เดือนก่อน) push Flex เข้าแต่ละกลุ่ม
+async function sendMonthlySummary(groups) {
+  const wos = await getAllWorkOrders();
+  let sent = 0;
+  for (const gid of groups) {
+    const d = monthlySummaryData(wos, gid, { scheduled: true });
+    if (await pushFlex(gid, '📅 สรุปงานรายเดือน', buildMonthlyFlex(d))) sent++;
+  }
+  console.log(`[notify/monthly] ส่ง ${sent}/${groups.length} กลุ่ม`);
+  return { sent, groups: groups.length };
 }
 
 // แปลง timestamp ไทย (พ.ศ.) → Date object (ค.ศ.)
@@ -271,9 +318,17 @@ async function handleNotify(req, res) {
   }
 
   const type = req.query.type || 'check';
+  // dev: ?group=<id> → ยิงเฉพาะกลุ่มนั้น (ทดสอบก่อนเปิดครบ) · ไม่ระบุ = ทุกกลุ่มใน ALLOWED_GROUP_IDS
+  const targetGroups = req.query.group ? [req.query.group.trim()] : allowedGroups;
 
   try {
-    if (type === 'morning') {
+    if (type === 'weekly') {
+      const result = await sendWeeklySummary(targetGroups);
+      res.json({ ok: true, type: 'weekly', ...result });
+    } else if (type === 'monthly') {
+      const result = await sendMonthlySummary(targetGroups);
+      res.json({ ok: true, type: 'monthly', ...result });
+    } else if (type === 'morning') {
       const result = await checkMorningOverdue();
       res.json({ ok: true, type: 'morning', ...result });
     } else if (type === 'daily') {
