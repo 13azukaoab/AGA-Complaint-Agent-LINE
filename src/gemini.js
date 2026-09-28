@@ -1,7 +1,27 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+// gemini-3.6-flash เสถียรกว่า 3.8 (3.8 เจอ 503 "high demand" เป็นระยะ) — override ได้ผ่าน env GEMINI_MODEL
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+// retry เมื่อเจอ error ชั่วคราว (503 overload / 429 / network สะดุด) — กัน WO หลุดเพราะ Gemini สะดุดครั้งเดียว
+const RETRYABLE = /\b(429|500|502|503|504)\b|overload|high demand|unavailable|ECONNRESET|ETIMEDOUT|fetch failed|Premature close/i;
+async function generateWithRetry(prompt, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (err) {
+      lastErr = err;
+      if (!RETRYABLE.test(err.message || '') || i === tries - 1) throw err;
+      const delay = i === 0 ? 800 : 2000; // 800ms → 2s (รวม < 30s กัน reply token หมดอายุ)
+      console.warn(`   ⚠️ Gemini retry ${i + 1}/${tries} (${MODEL_NAME}) — ${(err.message || '').slice(0, 80)}`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
 
 /**
  * วิเคราะห์ข้อความจากกลุ่ม LINE
@@ -119,7 +139,7 @@ is_followup — ตั้งเป็น true เมื่อรายการ�
 `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(prompt);
     const raw = result.response.text().trim();
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleaned);
