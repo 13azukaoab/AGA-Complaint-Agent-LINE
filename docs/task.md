@@ -269,7 +269,7 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 | **Cloud Run URL** | ✅ `https://aga-complaint-agent-929114248743.asia-southeast1.run.app` |
 | Cloud Run Backend | ✅ deploy บน project ใหม่ + `--no-cpu-throttling` + 512Mi · SA `929114248743-compute@` |
 | Netlify Dashboard | ✅ commit `cdf75e6` (Phase 16 + dataviz audit fix — ล่าสุด) |
-| Gemini Model | ✅ `gemini-3.6-flash` + retry (commit `de41921`, revision 00006) · เปลี่ยนจาก 3.8 เพราะ 3.8 เจอ 503 · override ผ่าน env `GEMINI_MODEL` |
+| Gemini Model | ✅ `gemini-3.8-flash` + retry (revision 00008) · key ใหม่จาก `aga-complaint-line` (paid tier) · override ผ่าน env `GEMINI_MODEL` (สลับ 3.6 ได้ถ้า 3.8 เจอ 503 บ่อย) |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
@@ -361,6 +361,15 @@ Verified local: heatmap ไล่เฉดเดียวถูก, peak highlig
 - ✅ verified production (revision 00006): เปิด **W414** สำเร็จ (ปลวก/ตึกอดุลยเดชวิกรม ชั้น5) · log ยืนยัน model = `gemini-3.6-flash` · retry ทำงานจริงใน prod
 - ✅ user เปิด **Auto-reload** เครดิต Gemini แล้ว → กัน 402 (credit หมด) ไม่ให้ซ้ำ
 - **สรุปเกราะป้องกันครบ:** paid key (กัน free-tier 429) + auto-reload (กัน 402) + 3.6-flash+retry (กัน 503) + lien (กันลบ project)
+
+**อัปเดตเพิ่ม (28 ก.ย. เย็น) — Gemini key ตาย (เพราะลบ project) + multi-WO fix:**
+- **ต้นเหตุ:** ลบ project `gen-lang-client-0473769217` (คิดว่าว่าง) แต่ที่จริง **Gemini key ของบอท (`...xWnVnA`) ผูกอยู่ที่นั่น** → key ตาย (`400 API_KEY_INVALID`) → บอทวิเคราะห์ไม่ได้ ไม่เปิด WO
+  - ⚠️ **บทเรียนสำคัญ:** ก่อนลบ project **ต้องเช็คว่าไม่มี API key ที่ระบบใช้อยู่ผูกกับมัน** (ครั้งนี้เข้าใจว่าไม่ได้ใช้ key จากตัวนั้น แต่จริงๆ บอทใช้อยู่ → verify ก่อนลบเสมอ)
+- **แก้:** สร้าง Gemini key ใหม่จาก AI Studio ใน project **`aga-complaint-line`** (บอทเอง — มี billing = paid tier + มี lien กันลบ → key ไม่ตายจากการลบ project อีก) · อัปเดต env service + Secret Key.env · ตั้ง `GEMINI_MODEL=gemini-3.8-flash` (ตาม user request) — revision 00007
+- **Multi-WO bug (commit `3993df9`, revision 00008):** แจ้ง 2 เคสในข้อความเดียว → เปิด WO ครบ 2 (Sheet) แต่โชว์แค่ 1 การ์ด (WO ที่ 2 ใช้ push → quota เต็ม)
+  - แก้: `replyMessage` รับ array → ส่งทุก WO เป็น**การ์ดแยกใน reply ครั้งเดียว** (LINE รับ 5 ข้อความ/reply, ฟรี ไม่กิน push) · เกิน 5 ค่อย fallback push · ทดสอบ W420+W421 โชว์ครบ
+- **Deep audit ผ่านครบ:** paid tier (ยิง key 25 ครั้ง = 200 ทั้งหมด ไม่เจอ free_tier) · **เปิด WO เชื่อถือได้ ไม่ขึ้นกับ push** (Sheet write + retry — log พิสูจน์ W417 เขียน Sheet ติดแม้ push fail 429) · dashboard 426 รายการ · local+prod key ตรงกัน
+- **Cleanup:** ลบ `gen-lang-client-0473769217` (ว่าง) สำเร็จ · `bait-check-in-webapp` user ลบเอง
 
 ---
 
