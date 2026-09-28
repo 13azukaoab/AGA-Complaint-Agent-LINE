@@ -213,7 +213,7 @@ function buildSampleWeeklyFlex() {
         pest('🐜', 'มด', '17%', '1'),
         pest('▫️', 'อื่นๆ', '17%', '1'),
         sep(),
-        { type: 'text', text: '🏢 อาคารที่แจ้งเยอะสุด — TOP 3 (เคสแจ้ง)', weight: 'bold', size: 'sm', margin: 'lg' },
+        { type: 'text', text: '🏢 อาคาร TOP 3 (เคสแจ้ง)', weight: 'bold', size: 'sm', margin: 'lg' },
         bldg('1.', 'ตึกสยามินทร์', '4'),
         bldg('2.', 'อาคาร 100 ปีฯ', '3'),
         bldg('3.', 'ตึก 72 ปี', '2'),
@@ -275,7 +275,7 @@ function buildSampleMonthlyFlex() {
   return {
     type: 'bubble', size: 'mega',
     header: {
-      type: 'box', layout: 'vertical', backgroundColor: '#1E40AF', paddingAll: '16px',
+      type: 'box', layout: 'vertical', backgroundColor: '#B91C1C', paddingAll: '16px',
       contents: [
         { type: 'text', text: '📅 สรุปงานรายเดือน', color: '#FFFFFF', weight: 'bold', size: 'lg' },
         { type: 'text', text: 'กันยายน 2569 · ไม่รวมงานแจ้งซ้ำ', color: '#DBEAFE', size: 'xs', margin: 'sm' },
@@ -295,7 +295,7 @@ function buildSampleMonthlyFlex() {
         pest('🐜', 'มด', '17%', '4'),
         pest('▫️', 'อื่นๆ', '8%', '2'),
         sep(),
-        { type: 'text', text: '🏢 อาคารที่แจ้งเยอะสุด — TOP 5 (เคสแจ้ง)', weight: 'bold', size: 'sm', margin: 'lg' },
+        { type: 'text', text: '🏢 อาคาร TOP 5 (เคสแจ้ง)', weight: 'bold', size: 'sm', margin: 'lg' },
         bldg('1.', 'ตึกสยามินทร์', '12'),
         bldg('2.', 'อาคาร 100 ปีฯ', '9'),
         bldg('3.', 'ตึก 72 ปี', '7'),
