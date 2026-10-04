@@ -25,7 +25,6 @@ const {
   findRowByWorkOrderId,
   getRowData,
   updateWorkOrderStatus,
-  appendClosePhoto,
   getOpenWorkOrders,
   getAllWorkOrders,
 } = require('./sheets');
@@ -42,13 +41,6 @@ const lineConfig = {
 
 const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
-// เก็บรูปภาพล่าสุดในแต่ละกลุ่ม (ใช้ตอนปิดงาน) TTL 5 นาที
-const pendingPhotos = new Map();
-
-// เก็บงานที่เพิ่งปิดในแต่ละกลุ่ม (ใช้ผูกรูปที่วางหลังปิดงาน) TTL 5 นาที
-// groupId → { woId, rowNumber, time }
-const recentCloses = new Map();
-const PHOTO_TTL_MS = 5 * 60 * 1000;
 
 async function getGroupName(groupId) {
   try {
@@ -166,44 +158,8 @@ function formatShortTimestamp(ts) {
 }
 
 // ดาวน์โหลดรูปจาก LINE แล้วอัปโหลดขึ้น Google Cloud Storage
-async function uploadPhotoToGCS(messageId, woId) {
-  try {
-    const { Storage } = require('@google-cloud/storage');
-    const storageOptions = {};
-    // บน Cloud Run (K_SERVICE) → ใช้ default service account ผ่าน metadata (ADC)
-    //   — SA มีสิทธิ์ bucket แล้ว จึงไม่ต้องใช้ key file (key file ไม่มีใน container อยู่แล้ว)
-    // เฉพาะรันบนเครื่อง local เท่านั้นที่ fallback ไปใช้ key file (ถ้ามีไฟล์)
-    if (!process.env.K_SERVICE && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      const path = require('path');
-      const fs = require('fs');
-      const keyFile = path.resolve(__dirname, '../credentials/qcs-bait-app-v5-daa46a58d50b.json');
-      if (fs.existsSync(keyFile)) storageOptions.keyFilename = keyFile;
-    }
-    const storage = new Storage(storageOptions);
-    const bucket = storage.bucket('aga-complaint-photos');
-
-    // ดาวน์โหลดรูปจาก LINE
-    const lineRes = await fetch(`https://api-data.line.me/v2/bot/message/${messageId}/content`, {
-      headers: { 'Authorization': `Bearer ${LINE_TOKEN}` }
-    });
-    if (!lineRes.ok) return null;
-
-    const buffer = Buffer.from(await lineRes.arrayBuffer());
-
-    // อัปโหลดขึ้น GCS
-    const filename = `${woId}_${Date.now()}.jpg`;
-    const file = bucket.file(filename);
-    await file.save(buffer, { contentType: 'image/jpeg' });
-
-    return `https://storage.googleapis.com/aga-complaint-photos/${filename}`;
-  } catch (e) {
-    console.error('   ❌ uploadPhotoToGCS error:', e.message);
-    return null;
-  }
-}
-
 // จัดการ "ปิดงาน WXXX [วิธีปิด]"
-async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pendingPhotoMessageId, replyToken) {
+async function handleClose(groupId, senderName, woId, closeMethod, timestamp, replyToken) {
   const rowNumber = await findRowByWorkOrderId(woId);
   if (!rowNumber) {
     await safeReply(replyToken, groupId, `ไม่พบ ${woId} — ตรวจสอบหมายเลขอีกครั้ง`);
@@ -218,18 +174,7 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     return;
   }
 
-  // อัปโหลดรูปขึ้น GCS ทุกรูปที่รอไว้
-  let finalMethod = closeMethod || 'ไม่ระบุ';
-  if (pendingPhotoMessageId && pendingPhotoMessageId.length > 0) {
-    const urls = [];
-    for (let i = 0; i < pendingPhotoMessageId.length; i++) {
-      const gcsUrl = await uploadPhotoToGCS(pendingPhotoMessageId[i], `${woId}_${i + 1}`);
-      if (gcsUrl) urls.push(gcsUrl);
-    }
-    if (urls.length > 0) {
-      finalMethod = (closeMethod || '') + ' ' + urls.map(u => `[รูป: ${u}]`).join(' ');
-    }
-  }
+  const finalMethod = closeMethod || 'ไม่ระบุ';
 
   // ดึงจำนวนที่ติดจากข้อความ เช่น "หนูติดแผ่นกาว 2ตัว" → 2
   const catchMatch = finalMethod.match(/(\d+)\s*ตัว/);
@@ -242,9 +187,6 @@ async function handleClose(groupId, senderName, woId, closeMethod, timestamp, pe
     closeMethod: finalMethod,
     catchCount,
   });
-
-  // จำงานที่เพิ่งปิด — เผื่อมีรูปวางตามมาหลังปิดงาน (ภายใน 5 นาที)
-  recentCloses.set(groupId, { woId, rowNumber, time: Date.now() });
 
   // นับงานค้างที่เหลือในกลุ่มนี้ (หลังปิดงานนี้แล้ว)
   const remaining = await getOpenWorkOrders();
@@ -318,31 +260,6 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     const groupId = event.source.groupId;
 
     const timestamp = new Date(event.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
-
-    if (event.type === 'message' && event.message.type === 'image') {
-      const now = Date.now();
-
-      // ① ถ้าเพิ่งปิดงานในกลุ่มนี้ (ภายใน 5 นาที) → ผูกรูปกับงานที่ปิดไปเลย (รูปวางหลังปิดงาน)
-      const rc = recentCloses.get(groupId);
-      if (rc && (now - rc.time) < PHOTO_TTL_MS) {
-        const gcsUrl = await uploadPhotoToGCS(event.message.id, `${rc.woId}_after`);
-        if (gcsUrl) {
-          await appendClosePhoto(rc.rowNumber, gcsUrl);
-          console.log(`🖼️  ผูกรูปหลังปิดงาน → ${rc.woId}`);
-        }
-        continue;
-      }
-
-      // ② ไม่งั้นเก็บรูปไว้รอปิดงาน (รองรับหลายรูป, TTL 5 นาที)
-      const existing = pendingPhotos.get(groupId);
-      if (existing && (now - existing.time) < PHOTO_TTL_MS) {
-        existing.messageIds.push(event.message.id);
-      } else {
-        pendingPhotos.set(groupId, { messageIds: [event.message.id], time: now });
-      }
-      console.log('🖼️  เก็บรูปภาพรอปิดงาน:', groupId, '(', pendingPhotos.get(groupId).messageIds.length, 'รูป)');
-      continue;
-    }
 
     if (event.type !== 'message' || event.message.type !== 'text') continue;
 
@@ -422,15 +339,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       const closeMethod = (closeMatch[2] || '').trim();
       console.log(`\n🔒 ปิดงาน: ${woId} โดย ${senderName} — วิธี: ${closeMethod || 'ไม่ระบุ'}`);
 
-      // เช็ครูปที่รอไว้ (ไม่เกิน 5 นาที) — รองรับหลายรูป
-      const pending = pendingPhotos.get(groupId);
-      let photoMessageIds = null;
-      if (pending && (Date.now() - pending.time) < 5 * 60 * 1000) {
-        photoMessageIds = pending.messageIds;
-        pendingPhotos.delete(groupId);
-      }
-
-      await handleClose(groupId, senderName, woId, closeMethod, timestamp, photoMessageIds, event.replyToken);
+      await handleClose(groupId, senderName, woId, closeMethod, timestamp, event.replyToken);
       continue;
     }
 

@@ -177,29 +177,6 @@ async function updateWorkOrderStatus(rowNumber, fields) {
   }
 }
 
-// เพิ่ม URL รูปต่อท้ายช่อง "วิธีปิดงาน" (column T) — ใช้กรณีวางรูปหลังปิดงาน
-async function appendClosePhoto(rowNumber, photoUrl) {
-  try {
-    await withRetry(async () => {
-      const { sheets } = await getSheetClient();
-      const cur = await getRowData(rowNumber);
-      const existing = cur[19] || ''; // column T
-      const updated = existing ? `${existing} [รูป: ${photoUrl}]` : `[รูป: ${photoUrl}]`;
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!T${rowNumber}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[updated]] },
-      });
-    }, 'appendClosePhoto');
-    console.log(`   🖼️  เพิ่มรูปหลังปิดงาน row ${rowNumber} ✅`);
-    return true;
-  } catch (err) {
-    console.error('   ❌ appendClosePhoto error:', err.message);
-    return false;
-  }
-}
-
 // ดึง WO ทั้งหมดที่มีสถานะ "เปิด" สำหรับระบบแจ้งเตือน
 async function getOpenWorkOrders() {
   try {
@@ -385,7 +362,6 @@ module.exports = {
   findRowByWorkOrderId,
   getRowData,
   updateWorkOrderStatus,
-  appendClosePhoto,
   getOpenWorkOrders,
   getAllWorkOrders,
 };
