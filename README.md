@@ -36,8 +36,6 @@ Google Cloud Run (Node.js 22)
       │
       ├─► Google Sheets ── บันทึกข้อมูล + ออก Work Order ID (W001, W002...)
       │
-      ├─► Google Cloud Storage ── เก็บรูปภาพปิดงาน (bucket: aga-complaint-photos)
-      │
       └─► LINE Bot ── ตอบกลับยืนยัน "รับแจ้ง W001 ✅"
 
 Cloud Scheduler
@@ -147,7 +145,7 @@ aga-complaint-agent/
 | Q | เวลารับทราบ | `15/6/2569 14:00:00` |
 | R | ผู้ปิดงาน | `Oab` |
 | S | เวลาปิด | `15/6/2569 16:50:00` |
-| T | วิธีปิด + รูป | `วางกับดักหนู [รูป: https://storage.googleapis.com/...]` |
+| T | วิธีปิด | `วางกับดักหนู` (ข้อมูลเก่าบางแถวอาจมี `[รูป: ...]` ต่อท้าย — ระบบ strip ออกตอนแสดงผล) |
 | U | จำนวนที่ติด | `2` (ตัวเลขจาก "X ตัว" ในวิธีปิด) |
 
 ---
@@ -157,7 +155,7 @@ aga-complaint-agent/
 ### สิ่งที่ต้องมีก่อน
 
 - Node.js 22+
-- Google Cloud Project (เปิด Sheets API + Cloud Storage API)
+- Google Cloud Project (เปิด Sheets API)
 - LINE Official Account + Messaging API
 - Gemini API Key
 
@@ -180,7 +178,9 @@ ALLOWED_GROUP_IDS=Cxxxx,Cyyy   # เว้นว่าง = อนุญาต�
 
 สิทธิ์ที่ต้องมี:
 - Google Sheets: **Editor**
-- Google Cloud Storage (`aga-complaint-photos`): **Storage Object Creator**
+
+> หมายเหตุ: ระบบ **ยกเลิกการเก็บรูปจาก LINE แล้ว** (ต.ค. 2569) — ไม่ต้องใช้สิทธิ์ Cloud Storage อีก
+> แต่ **bucket `aga-complaint-photos` ต้องคงไว้** เพราะยังเก็บ (1) ไอคอนปลวกที่ Flex สรุปใช้ (2) รูปเก่าที่ลิงก์อยู่ในชีต
 
 ### รันในเครื่อง
 
@@ -348,9 +348,9 @@ gcloud run services logs read aga-complaint-agent --region asia-southeast1 --lim
 | Runtime | Node.js 22 (Alpine Docker) |
 | Web Framework | Express.js 5 |
 | LINE Integration | @line/bot-sdk v11 |
-| AI วิเคราะห์ข้อความ | Google Gemini (`gemini-3.5-flash`) |
+| AI วิเคราะห์ข้อความ | Google Gemini (`gemini-3.6-flash`) + pre-filter คัด chatter ก่อนยิง API |
 | ฐานข้อมูล | Google Sheets API v4 |
-| เก็บรูปภาพ | Google Cloud Storage (`aga-complaint-photos`) |
+| ไอคอนปลวก (Flex สรุป) | GCS public URL (`aga-complaint-photos/icons/`) — ห้ามลบ bucket |
 | Hosting (Backend) | Google Cloud Run — asia-southeast1 |
 | Hosting (Dashboard) | Netlify (auto-deploy จาก GitHub) |
 | Dashboard UI | Tailwind CSS CDN + Chart.js 4.4.1 |

@@ -15,6 +15,7 @@
 - **Secrets:** ตั้งเป็น **env vars ตรงๆ** บน service (`LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `GEMINI_API_KEY`, `GOOGLE_SHEET_ID`) — ยังไม่ได้ใช้ Secret Manager
 - **Google Sheet:** แชร์ให้ SA ใหม่เป็น Editor แล้ว
 - **GCS bucket** `aga-complaint-photos`: ยังอยู่ project เก่า — ให้สิทธิ์ SA ใหม่ (`storage.objectAdmin`) แล้ว
+  > ⚠️ ต.ค. 2569: ยกเลิกการเก็บรูปจาก LINE แล้ว (ตัด dependency `@google-cloud/storage`) — **แต่ห้ามลบ bucket นี้** เพราะยังเก็บไอคอนปลวกที่ Flex สรุปใช้ (`icons/termite.png`) + รูปเก่าที่ลิงก์ในชีต
 - **Gemini key:** อยู่ project `gen-lang-client-0566996785` (คนละตัว) ใช้ข้ามได้
 - ตั้ง `--no-cpu-throttling --memory=512Mi` เพื่อให้ async task หลังส่ง response ทำงานได้
 
