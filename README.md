@@ -348,7 +348,7 @@ gcloud run services logs read aga-complaint-agent --region asia-southeast1 --lim
 | Runtime | Node.js 22 (Alpine Docker) |
 | Web Framework | Express.js 5 |
 | LINE Integration | @line/bot-sdk v11 |
-| AI วิเคราะห์ข้อความ | Google Gemini (`gemini-3.6-flash`) + pre-filter คัด chatter ก่อนยิง API |
+| AI วิเคราะห์ข้อความ | Google Gemini (prod: `gemini-3.8-flash` ผ่าน env `GEMINI_MODEL`, default โค้ด `gemini-3.6-flash`) + pre-filter คัด chatter ก่อนยิง API |
 | ฐานข้อมูล | Google Sheets API v4 |
 | ไอคอนปลวก (Flex สรุป) | GCS public URL (`aga-complaint-photos/icons/`) — ห้ามลบ bucket |
 | Hosting (Backend) | Google Cloud Run — asia-southeast1 |

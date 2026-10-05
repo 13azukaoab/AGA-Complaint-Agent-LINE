@@ -39,6 +39,11 @@ git push origin main
 
 ### ขั้นที่ 4-6 — ทำที่ Google Cloud Shell
 
+> 💡 รันรวดเดียวได้ (ขั้น 4-6 ต่อด้วย `&&` — fail ขั้นไหนหยุดทันที ไม่ deploy ของพัง):
+> ```bash
+> cd ~/aga-agent && git pull origin main && gcloud builds submit --tag asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest && gcloud run deploy aga-complaint-agent --image asia-southeast1-docker.pkg.dev/aga-complaint-line/cloud-run-source-deploy/aga-complaint-agent:latest --platform managed --region asia-southeast1 --quiet
+> ```
+
 ```bash
 # 4. ดึง code ล่าสุดจาก GitHub
 cd ~/aga-agent && git pull origin main
@@ -53,6 +58,15 @@ gcloud run deploy aga-complaint-agent \
   --region asia-southeast1
 ```
 
+### ✅ ยืนยันหลัง deploy (สำคัญ — เคยพลาด 5 ต.ค. 2569)
+
+**อย่าเชื่อว่า deploy สำเร็จจนกว่าจะเห็น revision ใหม่** — ครั้งหนึ่งรันแล้วคิดว่าเสร็จ แต่ build ขั้น 5 ไม่ได้รัน → Cloud Run ยังรัน revision เก่า code ใหม่ไม่ขึ้น
+
+- output ตอนจบขั้น 6 ต้องขึ้น: `Service [aga-complaint-agent] revision [aga-complaint-agent-000XX-xxx] has been deployed and is serving 100 percent of traffic`
+- ขั้น 5 (build) ต้องขึ้น `STATUS: SUCCESS` + digest image ใหม่
+- เช็กซ้ำที่ Revision History ว่า revision ล่าสุด "Deployed" = เมื่อกี้ (ไม่ใช่ "X days ago")
+  https://console.cloud.google.com/run/detail/asia-southeast1/aga-complaint-agent/revisions?project=aga-complaint-line
+
 ---
 
 ## ⚠️ ข้อควรระวัง
@@ -60,7 +74,7 @@ gcloud run deploy aga-complaint-agent \
 - ❌ **ห้ามใช้ `cat > file << 'EOF'`** เขียนไฟล์ภาษาไทยใน Cloud Shell — `$` และ backtick จะถูก bash ตีความทำให้ไฟล์เสีย
 - ❌ **ห้าม commit ไฟล์ลับ:** `Secret Key.env`, `credentials/*.json`, `credentials/*.txt` (อยู่ใน `.gitignore` แล้ว)
 - ✅ **Dockerfile ใช้ `node:22-alpine`** — เพราะ `@line/bot-sdk` v11 ต้องการ Node 22+
-- ✅ Secrets ทั้งหมดเก็บใน **Secret Manager** ไม่ได้ฝังใน image
+- ✅ Secrets ตั้งเป็น **env vars ตรงๆ บน Cloud Run service** (`GOOGLE_SHEET_ID`, `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `NOTIFY_KEY`, `ALLOWED_GROUP_IDS`) — ไม่ได้ฝังใน image · project ใหม่ยังไม่ได้ใช้ Secret Manager (ส่วน setup เดิมด้านล่างเป็นของ project เก่า)
 
 ---
 
@@ -166,11 +180,14 @@ gcloud projects add-iam-policy-binding qcs-bait-app-v5 \
 
 ---
 
-## 💰 สรุปค่าใช้จ่าย
+## 💰 สรุปค่าใช้จ่าย (ตัวเลขจริง YTD 2026 — ตรวจ 5 ต.ค. 2569)
 
-| รายการ | Free Tier | ที่คาดว่าใช้ |
-|--------|-----------|------------|
-| Cloud Run requests | 2M req/month | ~หลักพัน/month → **ฟรี** |
-| Cloud Run CPU/RAM | 180,000 vCPU-sec/month | idle ไม่คิดเงิน → **ฟรี** |
-| Secret Manager | 10,000 access/month | น้อยมาก → **ฟรี** |
-| Gemini API (3.1 Flash Lite) | จ่ายตามใช้ | ~0.001 บาท/ข้อความ → เครดิต 400 บาทใช้ได้ ~3-4 ปี |
+> agent นี้กินเงินข้าม 2 project: **Gemini อยู่ `gen-lang-client-0473769217`** (ชื่อ "AGA Complaint Agent-LINE") · **Cloud Run อยู่ `aga-complaint-line`**
+
+| รายการ | Project | YTD | หมายเหตุ |
+|--------|---------|-----|---------|
+| **Gemini API** (3.8-flash) | gen-lang-client | **฿377** | ตัวแพงสุด ~90% → ลดด้วย pre-filter + ย่อ prompt (5 ต.ค.) |
+| Cloud Run (รวม) | aga-complaint-line | ฿45 | ถูกมาก — instance-based billing (no-cpu-throttling) |
+| Secret Manager / Scheduler | aga-complaint-line | น้อยมาก | ~ฟรี |
+
+> **project เก่า `qcs-bait-app-v5`** (฿119/ปี) — ล้างของค้างแล้ว 5 ต.ค.: ลบ Cloud Run service เก่า (−฿87) + image เก่า (−฿25) · คง bucket `aga-complaint-photos` + 4 Cloud Functions ของ QCS Bait App ไว้

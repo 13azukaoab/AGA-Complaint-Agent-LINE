@@ -6,15 +6,25 @@
 
 ## ✅ เสร็จแล้ว — ระบบ Production พร้อมใช้งาน 100%
 
-### Cost Optimization + ยกเลิกเก็บรูป (5 ต.ค. 2569)
+### Cost Optimization + ยกเลิกเก็บรูป (5 ต.ค. 2569) — ✅ deploy แล้ว (revision 00016-sbn)
 > เป้าหมาย: ลดค่า Gemini (฿377 YTD = ~90% ของค่า agent) — Cloud Run ถูกมาก (~฿45)
+> deploy: image digest `1cff89f...` (เก่า `758e1402`), revision `aga-complaint-agent-00016-sbn` serving 100%
+
+**โค้ด (3 commit: `9b6e556` ลบรูป · `657db02` A+B · `1b9aed6` docs):**
 - **A — pre-filter chatter:** `isTrivialChatter()` ใน `src/gemini.js` คัดข้อความตอบรับ/ทักทาย/emoji ล้วน ก่อนยิง Gemini (conservative — ทดสอบแล้ว complaint ไม่ดรอป)
 - **B — ย่อ prompt:** บีบ prose/ตัดคำอธิบายซ้ำ เก็บ mapping อาคารครบ 67 แห่ง + ย้าย `${text}` ไปท้ายสุด
-  - หมายเหตุ: gemini-3.6-flash ต้อง prompt ≥4,096 tok ถึงจะ cache ได้ — prompt เรา ~1,500 tok จึง **ลด token ตรงๆ** แทน caching
+  - หมายเหตุ: prod ใช้ `GEMINI_MODEL=gemini-3.8-flash` (env override) ต้อง prompt ≥4,096 tok ถึง cache ได้ — prompt เรา ~1,500 tok จึง **ลด token ตรงๆ** แทน caching
 - **ยกเลิกระบบเก็บรูปจาก LINE:** ลบ `uploadPhotoToGCS`/`appendClosePhoto`/`pendingPhotos`/`recentCloses` + ตัด dependency `@google-cloud/storage` — ปิดงานด้วยข้อความอย่างเดียว เก็บรูป manual
   - ⚠️ **bucket `aga-complaint-photos` คงไว้** — ยังเก็บไอคอนปลวก Flex (`icons/termite.png`) + รูปเก่าในชีต
-- commit: `9b6e556` (ลบรูป) + `657db02` (A+B)
-- ⏳ ค้าง: เฝ้า accuracy 2-3 วันแรก · เช็ก SKU qcs-bait-app-v5 (฿119 ค้าง)
+
+**ล้างของค้าง project เก่า `qcs-bait-app-v5` (ตรวจ SKU แล้ว — ฿119/ปี):**
+- รูป (Cloud Storage) ~฿0.09/ปี เท่านั้น — ไม่ใช่ตัวแพง
+- ✅ ลบ Cloud Run service เก่า `aga-complaint-agent` (min-instances>0 ค้าง) → −฿87/ปี
+- ✅ ลบ image เก่าใน repo `cloud-run-source-deploy` (9.99 GB) → −฿25/ปี
+- คงไว้: bucket `aga-complaint-photos`, repo `gcf-artifacts` + 4 Cloud Functions ของ QCS Bait App (ยังใช้อยู่)
+
+**รวมประหยัด:** ~฿112/ปี (ของค้าง) + ค่า Gemini ที่ลดต่อเนื่องหลัง deploy
+- ⏳ ค้าง: เฝ้า accuracy 2-3 วันแรก (log `⏭️ pre-filter` + ความแม่นแยกตึก/severity) · ดู bill เดือนหน้าว่า gen-lang (Gemini) ลดจริง
 
 ### Phase 1–4 — Core System
 - LINE Webhook รับข้อความจากกลุ่ม
