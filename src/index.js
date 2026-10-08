@@ -269,14 +269,15 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       : 'ไม่ระบุ';
 
     // #groupid — ตอบ Group ID ของกลุ่มนี้กลับไป (ใช้ตอนตั้งค่า SUMMARY_MIRRORS / ALLOWED_GROUP_IDS)
-    if (/^#?\s*groupid\s*$/i.test(text)) {
+    // บังคับต้องมี # นำหน้า — กันคนพิมพ์คำโดดๆ โดยไม่ตั้งใจแล้วบอทตอบ
+    if (/^#\s*groupid\s*$/i.test(text)) {
       console.log(`\n🆔 ขอ Group ID โดย ${senderName} → ${groupId}`);
       await replyMessage(event.replyToken, `🆔 Group ID กลุ่มนี้:\n${groupId}`);
       continue;
     }
 
     // #สรุปเดือน — Flex สรุปรายเดือน (ข้อมูลจริงของกลุ่มนี้ เดือนนี้ + เทียบเดือนก่อน)
-    if (/^(#\s*)?(สรุปเดือน|พรีวิวสรุปเดือน|พรีวิวเดือน)\s*$/i.test(text)) {
+    if (/^#\s*(สรุปเดือน|พรีวิวสรุปเดือน|พรีวิวเดือน)\s*$/i.test(text)) {
       console.log(`\n📅 #สรุปเดือน โดย ${senderName} (กลุ่ม ${groupId})`);
       const wos = await getAllWorkOrders();
       const d = monthlySummaryData(wos, groupId);
@@ -285,7 +286,7 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
     }
 
     // #สรุปสัปดาห์ — Flex สรุปรายสัปดาห์ (ข้อมูลจริงของกลุ่มนี้ สัปดาห์นี้)
-    if (/^(#\s*)?(สรุปสัปดาห์|พรีวิวสรุป|ทดสอบสรุป)\s*$/i.test(text)) {
+    if (/^#\s*(สรุปสัปดาห์|พรีวิวสรุป|ทดสอบสรุป)\s*$/i.test(text)) {
       console.log(`\n📊 #สรุปสัปดาห์ โดย ${senderName} (กลุ่ม ${groupId})`);
       const wos = await getAllWorkOrders();
       const d = weeklySummaryData(wos, groupId);
