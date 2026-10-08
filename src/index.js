@@ -30,6 +30,7 @@ const {
 } = require('./sheets');
 const { buildWeeklyFlex, buildMonthlyFlex } = require('./flex');
 const { weeklySummaryData, monthlySummaryData } = require('./summary');
+const { resolveSummarySource } = require('./mirrors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -278,18 +279,20 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
 
     // #สรุปเดือน — Flex สรุปรายเดือน (ข้อมูลจริงของกลุ่มนี้ เดือนนี้ + เทียบเดือนก่อน)
     if (/^#\s*(สรุปเดือน|พรีวิวสรุปเดือน|พรีวิวเดือน)\s*$/i.test(text)) {
-      console.log(`\n📅 #สรุปเดือน โดย ${senderName} (กลุ่ม ${groupId})`);
+      const srcGroup = resolveSummarySource(groupId);
+      console.log(`\n📅 #สรุปเดือน โดย ${senderName} (กลุ่ม ${groupId}${srcGroup !== groupId ? ` ← ข้อมูล ${srcGroup}` : ''})`);
       const wos = await getAllWorkOrders();
-      const d = monthlySummaryData(wos, groupId);
+      const d = monthlySummaryData(wos, srcGroup);
       await sendFlexReply(event.replyToken, '📅 สรุปงานรายเดือน', buildMonthlyFlex(d));
       continue;
     }
 
     // #สรุปสัปดาห์ — Flex สรุปรายสัปดาห์ (ข้อมูลจริงของกลุ่มนี้ สัปดาห์นี้)
     if (/^#\s*(สรุปสัปดาห์|พรีวิวสรุป|ทดสอบสรุป)\s*$/i.test(text)) {
-      console.log(`\n📊 #สรุปสัปดาห์ โดย ${senderName} (กลุ่ม ${groupId})`);
+      const srcGroup = resolveSummarySource(groupId);
+      console.log(`\n📊 #สรุปสัปดาห์ โดย ${senderName} (กลุ่ม ${groupId}${srcGroup !== groupId ? ` ← ข้อมูล ${srcGroup}` : ''})`);
       const wos = await getAllWorkOrders();
-      const d = weeklySummaryData(wos, groupId);
+      const d = weeklySummaryData(wos, srcGroup);
       await sendFlexReply(event.replyToken, '📊 สรุปงานรายสัปดาห์', buildWeeklyFlex(d));
       continue;
     }

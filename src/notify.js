@@ -10,28 +10,13 @@ const router = express.Router();
 const { getOpenWorkOrders, getAllWorkOrders } = require('./sheets');
 const { buildWeeklyFlex, buildMonthlyFlex } = require('./flex');
 const { weeklySummaryData, monthlySummaryData } = require('./summary');
+const { summaryMirrors } = require('./mirrors');
 
 const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
 const allowedGroups = process.env.ALLOWED_GROUP_IDS
   ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
   : [];
-
-// SUMMARY_MIRRORS — map "กลุ่มแสดง : กลุ่มต้นทางข้อมูล" สำหรับ Flex สรุปรายสัปดาห์/รายเดือน
-// รูปแบบ: "DISPLAY1:SOURCE1,DISPLAY2:SOURCE2"
-//   DISPLAY = กลุ่มที่บอทจะ push การ์ดสรุปเข้าไป (บอทต้องอยู่ในกลุ่มนี้)
-//   SOURCE  = กลุ่มที่เป็นเจ้าของข้อมูล (groupId ในชีต) ที่จะเอามาคำนวณสรุป
-// ใช้เมื่อ "กลุ่มแสดง" กับ "กลุ่มต้นทางข้อมูล" เป็นคนละกลุ่ม (เช่น กลุ่มผู้บริหารดูสรุปของกลุ่มหน้างาน)
-// ถ้าต้องการให้กลุ่มดูสรุปของตัวเอง ใส่ค่าเท่ากัน เช่น "Cxxx:Cxxx"
-const summaryMirrors = (process.env.SUMMARY_MIRRORS || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean)
-  .map(pair => {
-    const [display, source] = pair.split(':').map(x => (x || '').trim());
-    return { display, source };
-  })
-  .filter(m => m.display && m.source);
 
 async function pushMessage(groupId, text) {
   try {
