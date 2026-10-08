@@ -268,6 +268,13 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       ? await getMemberName(groupId, event.source.userId)
       : 'ไม่ระบุ';
 
+    // #groupid — ตอบ Group ID ของกลุ่มนี้กลับไป (ใช้ตอนตั้งค่า SUMMARY_MIRRORS / ALLOWED_GROUP_IDS)
+    if (/^#?\s*groupid\s*$/i.test(text)) {
+      console.log(`\n🆔 ขอ Group ID โดย ${senderName} → ${groupId}`);
+      await replyMessage(event.replyToken, `🆔 Group ID กลุ่มนี้:\n${groupId}`);
+      continue;
+    }
+
     // #สรุปเดือน — Flex สรุปรายเดือน (ข้อมูลจริงของกลุ่มนี้ เดือนนี้ + เทียบเดือนก่อน)
     if (/^(#\s*)?(สรุปเดือน|พรีวิวสรุปเดือน|พรีวิวเดือน)\s*$/i.test(text)) {
       console.log(`\n📅 #สรุปเดือน โดย ${senderName} (กลุ่ม ${groupId})`);
