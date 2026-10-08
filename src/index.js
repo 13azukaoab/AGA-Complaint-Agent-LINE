@@ -294,8 +294,8 @@ app.post('/webhook', middleware(lineConfig), async (req, res) => {
       continue;
     }
 
-    // ตรวจ command: "ขอลิงค์ dashboard" / "ดู dashboard" / คำใกล้เคียง
-    if (/dashboard|แดชบอร์ด|ขอลิงค์|ลิงค์ดู/i.test(text)) {
+    // ตรวจ command: "#dashboard" / "#ขอลิงค์" — บังคับ # นำหน้า กันเด้งจากคำในประโยคปกติ
+    if (/^#\s*(dashboard|แดชบอร์ด|ขอลิงค์|ลิงค์ดู)\s*$/i.test(text)) {
       console.log(`\n📊 ขอลิงค์ dashboard โดย ${senderName}`);
       await replyMessage(event.replyToken,
         '📊 Dashboard AGA Complaint Agent\nhttps://aga-complaint-agent-line.netlify.app/dashboard.html'
