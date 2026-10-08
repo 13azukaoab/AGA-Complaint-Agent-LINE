@@ -2,6 +2,8 @@
 // GET /notify?type=morning → รายงานงานค้างจากวันก่อน (8:30) — ส่งทุกกลุ่มใน ALLOWED_GROUP_IDS
 // GET /notify?type=check   → งานเปิดวันนี้เท่านั้น (12:00, 16:00) — ส่งเฉพาะกลุ่มที่มีค้าง
 // GET /notify?type=daily   → สรุปรายวัน (17:30)
+// GET /notify?type=weekly  → Flex สรุปรายสัปดาห์ (จันทร์ 8:30) — ตาม SUMMARY_MIRRORS (กลุ่มแสดง ← กลุ่มต้นทาง)
+// GET /notify?type=monthly → Flex สรุปรายเดือน (วันที่ 1 8:30) — ตาม SUMMARY_MIRRORS
 
 const express = require('express');
 const router = express.Router();
@@ -14,6 +16,22 @@ const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const allowedGroups = process.env.ALLOWED_GROUP_IDS
   ? process.env.ALLOWED_GROUP_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
   : [];
+
+// SUMMARY_MIRRORS — map "กลุ่มแสดง : กลุ่มต้นทางข้อมูล" สำหรับ Flex สรุปรายสัปดาห์/รายเดือน
+// รูปแบบ: "DISPLAY1:SOURCE1,DISPLAY2:SOURCE2"
+//   DISPLAY = กลุ่มที่บอทจะ push การ์ดสรุปเข้าไป (บอทต้องอยู่ในกลุ่มนี้)
+//   SOURCE  = กลุ่มที่เป็นเจ้าของข้อมูล (groupId ในชีต) ที่จะเอามาคำนวณสรุป
+// ใช้เมื่อ "กลุ่มแสดง" กับ "กลุ่มต้นทางข้อมูล" เป็นคนละกลุ่ม (เช่น กลุ่มผู้บริหารดูสรุปของกลุ่มหน้างาน)
+// ถ้าต้องการให้กลุ่มดูสรุปของตัวเอง ใส่ค่าเท่ากัน เช่น "Cxxx:Cxxx"
+const summaryMirrors = (process.env.SUMMARY_MIRRORS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+  .map(pair => {
+    const [display, source] = pair.split(':').map(x => (x || '').trim());
+    return { display, source };
+  })
+  .filter(m => m.display && m.source);
 
 async function pushMessage(groupId, text) {
   try {
@@ -60,28 +78,30 @@ async function pushFlex(groupId, altText, contents) {
   }
 }
 
-// จันทร์ 08:30 — สรุปรายสัปดาห์ (สัปดาห์ที่แล้ว จ-อา) push Flex เข้าแต่ละกลุ่ม
-async function sendWeeklySummary(groups) {
+// จันทร์ 08:30 — สรุปรายสัปดาห์ (สัปดาห์ที่แล้ว จ-อา)
+// mirrors = [{ display, source }] — คำนวณสรุปจาก source แล้ว push Flex เข้า display
+async function sendWeeklySummary(mirrors) {
   const wos = await getAllWorkOrders();
   let sent = 0;
-  for (const gid of groups) {
-    const d = weeklySummaryData(wos, gid, { scheduled: true });
-    if (await pushFlex(gid, '📊 สรุปงานรายสัปดาห์', buildWeeklyFlex(d))) sent++;
+  for (const m of mirrors) {
+    const d = weeklySummaryData(wos, m.source, { scheduled: true });
+    if (await pushFlex(m.display, '📊 สรุปงานรายสัปดาห์', buildWeeklyFlex(d))) sent++;
   }
-  console.log(`[notify/weekly] ส่ง ${sent}/${groups.length} กลุ่ม`);
-  return { sent, groups: groups.length };
+  console.log(`[notify/weekly] ส่ง ${sent}/${mirrors.length} กลุ่ม`);
+  return { sent, targets: mirrors.length };
 }
 
-// วันที่ 1 08:30 — สรุปรายเดือน (เดือนก่อน) push Flex เข้าแต่ละกลุ่ม
-async function sendMonthlySummary(groups) {
+// วันที่ 1 08:30 — สรุปรายเดือน (เดือนก่อน)
+// mirrors = [{ display, source }] — คำนวณสรุปจาก source แล้ว push Flex เข้า display
+async function sendMonthlySummary(mirrors) {
   const wos = await getAllWorkOrders();
   let sent = 0;
-  for (const gid of groups) {
-    const d = monthlySummaryData(wos, gid, { scheduled: true });
-    if (await pushFlex(gid, '📅 สรุปงานรายเดือน', buildMonthlyFlex(d))) sent++;
+  for (const m of mirrors) {
+    const d = monthlySummaryData(wos, m.source, { scheduled: true });
+    if (await pushFlex(m.display, '📅 สรุปงานรายเดือน', buildMonthlyFlex(d))) sent++;
   }
-  console.log(`[notify/monthly] ส่ง ${sent}/${groups.length} กลุ่ม`);
-  return { sent, groups: groups.length };
+  console.log(`[notify/monthly] ส่ง ${sent}/${mirrors.length} กลุ่ม`);
+  return { sent, targets: mirrors.length };
 }
 
 // แปลง timestamp ไทย (พ.ศ.) → Date object (ค.ศ.)
@@ -321,12 +341,23 @@ async function handleNotify(req, res) {
   // dev: ?group=<id> → ยิงเฉพาะกลุ่มนั้น (ทดสอบก่อนเปิดครบ) · ไม่ระบุ = ทุกกลุ่มใน ALLOWED_GROUP_IDS
   const targetGroups = req.query.group ? [req.query.group.trim()] : allowedGroups;
 
+  // weekly/monthly ใช้ mirror (กลุ่มแสดง ← กลุ่มต้นทางข้อมูล)
+  // dev override: ?display=<id>&source=<id> ยิงคู่เดียว · ?group=<id> → แสดงสรุปของตัวเอง (display=source)
+  let targetMirrors;
+  if (req.query.display && req.query.source) {
+    targetMirrors = [{ display: req.query.display.trim(), source: req.query.source.trim() }];
+  } else if (req.query.group) {
+    targetMirrors = [{ display: req.query.group.trim(), source: req.query.group.trim() }];
+  } else {
+    targetMirrors = summaryMirrors;
+  }
+
   try {
     if (type === 'weekly') {
-      const result = await sendWeeklySummary(targetGroups);
+      const result = await sendWeeklySummary(targetMirrors);
       res.json({ ok: true, type: 'weekly', ...result });
     } else if (type === 'monthly') {
-      const result = await sendMonthlySummary(targetGroups);
+      const result = await sendMonthlySummary(targetMirrors);
       res.json({ ok: true, type: 'monthly', ...result });
     } else if (type === 'morning') {
       const result = await checkMorningOverdue();

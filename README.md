@@ -170,7 +170,12 @@ GOOGLE_SHEET_ID=xxxx
 GEMINI_API_KEY=xxxx
 DASHBOARD_KEY=xxxx
 ALLOWED_GROUP_IDS=Cxxxx,Cyyy   # เว้นว่าง = อนุญาตทุกกลุ่ม (morning report ส่งไปยัง IDs เหล่านี้)
+SUMMARY_MIRRORS=Cdisplay:Csource   # Flex สรุปราย สัปดาห์/เดือน — "กลุ่มแสดง:กลุ่มต้นทางข้อมูล" (หลายคู่คั่น ,)
 ```
+
+> **`SUMMARY_MIRRORS`** = map ให้ "กลุ่มแสดง" โชว์สรุปของ "กลุ่มต้นทางข้อมูล" (ข้ามกลุ่มได้)
+> ใช้ตอน `?type=weekly` / `?type=monthly` — เช่น กลุ่มผู้บริหารดูสรุปของกลุ่มหน้างาน
+> อยากให้กลุ่มดูสรุปตัวเอง ใส่ค่าเท่ากัน เช่น `Cxxx:Cxxx`
 
 ### Service Account Credentials
 
@@ -338,6 +343,11 @@ gcloud run services logs read aga-complaint-agent --region asia-southeast1 --lim
 | `aga-notify-morning` | `30 8 * * *` | `?type=morning` |
 | `aga-notify-check` | `0 12 * * *` | `?type=check` |
 | `aga-notify-daily` | `30 17 * * *` | `?type=daily` |
+| `aga-summary-weekly` | `30 8 * * 1` | `?type=weekly` (Flex สรุปรายสัปดาห์ — จันทร์) |
+| `aga-summary-monthly` | `30 8 1 * *` | `?type=monthly` (Flex สรุปรายเดือน — วันที่ 1) |
+
+> `weekly` / `monthly` ส่ง Flex สรุปตาม `SUMMARY_MIRRORS` (กลุ่มแสดง ← กลุ่มต้นทางข้อมูล)
+> ทุก job ตั้ง timezone `Asia/Bangkok` + header `X-Notify-Key: <NOTIFY_KEY>`
 
 ---
 
