@@ -1,10 +1,31 @@
 # Task Tracking — AGA Complaint Agent (LINE)
 
-อัปเดตล่าสุด: 5 ตุลาคม 2569 (ลดค่าใช้จ่าย Gemini + ยกเลิกระบบเก็บรูป)
+อัปเดตล่าสุด: 8 ตุลาคม 2569 (mirror สรุปข้ามกลุ่ม + คำสั่ง #groupid + บังคับ # นำหน้า)
 
 ---
 
 ## ✅ เสร็จแล้ว — ระบบ Production พร้อมใช้งาน 100%
+
+### Phase 18 — Mirror สรุปข้ามกลุ่ม + #groupid + บังคับ # (8 ต.ค. 2569) ✅ deploy แล้ว (revision 00020-4h4)
+
+> โจทย์: กลุ่มใหม่ (ผู้บริหาร) `C508e43f2cdf1d654eb8740b813a41008` ต้องเห็น Flex สรุปของกลุ่มหน้างาน `Cc0527...` — แยก "กลุ่มแสดง" ออกจาก "กลุ่มต้นทางข้อมูล"
+
+**① Mirror สรุปข้ามกลุ่ม (commit `9115f0b`):**
+- `src/notify.js` — type `weekly`/`monthly` เปลี่ยนจาก "ยิงกลุ่มตัวเอง" → อ่าน env **`SUMMARY_MIRRORS`** (`"กลุ่มแสดง:กลุ่มต้นทาง"` หลายคู่คั่น `,`)
+- คำนวณสรุปจาก `source` → `pushFlex` เข้า `display` · dev override: `?display=&source=` (คู่เดียว) · `?group=` (แสดงสรุปตัวเอง)
+- env ตั้งจริง 2 คู่: `Cc0527...:Cc0527...` (กลุ่มหน้างานดูตัวเอง) + `C508e43f...:Cc0527...` (กลุ่มใหม่ดูของหน้างาน)
+- ⚠️ ค่า env มี `,` → ตั้งผ่าน `--update-env-vars "^@^SUMMARY_MIRRORS=..."` (เปลี่ยน delimiter)
+
+**② คำสั่ง `#groupid` (commit `4cfde90`):**
+- `src/index.js` — พิมพ์ `#groupid` ในกลุ่ม → บอทตอบ Group ID กลับ (ใช้ตั้งค่า SUMMARY_MIRRORS / ALLOWED_GROUP_IDS เอง)
+
+**③ บังคับ `#` นำหน้า (commit `b498936` + `a1e7c2a`):**
+- `#สรุปเดือน` / `#สรุปสัปดาห์` / `#groupid` / `#dashboard` / `#ขอลิงค์` — เปลี่ยน `#` จาก optional → **บังคับ** (anchored `^#...$`) กันคำในประโยคปกติทริกเกอร์บอท/เด้ง Flex เกินจำเป็น
+- คงเดิมไม่ต้องมี `#`: `งานค้าง`, `ปิดงาน Wxxx`
+
+**④ Docs (commit `c523e83`, `31746be`):** README ตารางคำสั่ง (เพิ่ม # commands) + env SUMMARY_MIRRORS + scheduler weekly/monthly · ลบแถว "ปิดงานพร้อมรูป" (ยกเลิกเก็บรูปแล้ว)
+
+**Deploy:** build/deploy จาก **เครื่อง local** (gcloud login ไว้แล้ว ไม่ต้องเปิด Cloud Shell) → revision 00017→00020 · ✅ ทดสอบ push monthly เข้ากลุ่มใหม่ผ่าน (`sent:1`) · user ยืนยันใช้งานได้ปกติ
 
 ### Cost Optimization + ยกเลิกเก็บรูป (5 ต.ค. 2569) — ✅ deploy แล้ว (revision 00016-sbn)
 > เป้าหมาย: ลดค่า Gemini (฿377 YTD = ~90% ของค่า agent) — Cloud Run ถูกมาก (~฿45)
@@ -328,20 +349,23 @@ gcloud scheduler jobs pause|resume|delete aga-summary-weekly --project aga-compl
 
 ---
 
-## 📋 สถานะระบบปัจจุบัน (4 ส.ค. 2569)
+## 📋 สถานะระบบปัจจุบัน (8 ต.ค. 2569)
 
 | Component | สถานะ |
 |-----------|-------|
 | **GCP Project** | ✅ **`aga-complaint-line` (#929114248743)** — ย้ายจาก `qcs-bait-app-v5` (28 ก.ย.) · มี lien กันลบ |
 | **Cloud Run URL** | ✅ `https://aga-complaint-agent-929114248743.asia-southeast1.run.app` |
-| Cloud Run Backend | ✅ deploy บน project ใหม่ + `--no-cpu-throttling` + 512Mi · SA `929114248743-compute@` |
-| Netlify Dashboard | ✅ commit `cdf75e6` (Phase 16 + dataviz audit fix — ล่าสุด) |
-| Gemini Model | ✅ `gemini-3.8-flash` + retry (revision 00008) · key ใหม่จาก `aga-complaint-line` (paid tier) · override ผ่าน env `GEMINI_MODEL` (สลับ 3.6 ได้ถ้า 3.8 เจอ 503 บ่อย) |
+| Cloud Run Backend | ✅ **revision 00020-4h4** · `--no-cpu-throttling` + 512Mi · SA `929114248743-compute@` |
+| Netlify Dashboard | ✅ commit `cdf75e6` (Phase 16 + dataviz audit fix — ล่าสุด, ยังไม่แตะตั้งแต่ ส.ค.) |
+| Gemini Model | ✅ `gemini-3.8-flash` + retry · key จาก `aga-complaint-line` (paid tier) · override ผ่าน env `GEMINI_MODEL` (สลับ 3.6 ได้ถ้า 3.8 เจอ 503 บ่อย) |
 | Google Sheet Grid | ✅ ขยายอัตโนมัติเมื่อเต็ม (`ensureGridCapacity` — commit `26c7fb2`) |
 | Cloud Scheduler morning (08:30) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler check (12:00) | ⏸️ **Paused ตั้งใจ** (user ยืนยัน 31 ก.ค. 2569) |
 | Cloud Scheduler daily (17:30) | ✅ Enabled |
-| ALLOWED_GROUP_IDS | ✅ 2 กลุ่ม: ศิริราช + Test |
+| Cloud Scheduler weekly (จันทร์ 08:30) | ✅ Enabled — Flex สรุปรายสัปดาห์ (ตาม SUMMARY_MIRRORS) |
+| Cloud Scheduler monthly (วันที่ 1 08:30) | ✅ Enabled — Flex สรุปรายเดือน (ตาม SUMMARY_MIRRORS) |
+| ALLOWED_GROUP_IDS | ✅ 2 กลุ่ม: ศิริราช + Test (ใช้กับ morning/daily) |
+| SUMMARY_MIRRORS | ✅ 2 คู่: `Cc0527...:Cc0527...` + `C508e43f...(Project.ศิริราช_พุทธมณฑล):Cc0527...` |
 | Security `/notify` | ✅ X-Notify-Key header |
 | Building Name Normalize (Dashboard) | ✅ 32 อาคารมาตรฐาน จากทะเบียน 67 อาคาร — `docs/building-registry.md` |
 | Building Name Normalize (gemini.js / ต้นทาง) | ✅ Deploy 2 ส.ค. — production verified (W176 = ตึกสยามินทร์) |
